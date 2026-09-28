@@ -161,46 +161,144 @@ public class SalesController : ControllerBase
 public class PurchasesController : ControllerBase
 {
     private readonly IPurchaseService _svc;
-    public PurchasesController(IPurchaseService svc) => _svc = svc;
+    private readonly IDocumentWorkflowService _workflow;
 
+    public PurchasesController(IPurchaseService svc, IDocumentWorkflowService workflow)
+    {
+        _svc = svc;
+        _workflow = workflow;
+    }
+
+    // ── Purchase invoices ──────────────────────────────────────────────────
     [HttpGet]
+    [HttpGet("invoices")]
     public async Task<ActionResult<IReadOnlyList<PurchaseInvoiceDto>>> GetAll(CancellationToken ct) =>
         Ok(await _svc.GetAllAsync(ct));
 
+    [HttpGet("{id:guid}")]
+    [HttpGet("invoices/{id:guid}")]
+    public async Task<IActionResult> GetInvoice(Guid id, CancellationToken ct) =>
+        (await _svc.GetInvoiceByIdAsync(id, ct)) is { } x ? Ok(x) : NotFound();
+
     [HttpPost]
+    [HttpPost("invoices")]
     public async Task<ActionResult<PurchaseInvoiceDto>> Create([FromBody] PurchaseInvoiceCreateDto dto, CancellationToken ct)
     {
         try { return Ok(await _svc.CreateAsync(dto, ct)); }
         catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+        catch (UnauthorizedAccessException) { return Forbid(); }
     }
 
+    [HttpPost("{id:guid}/{actionName:regex(^(submit|verify|approve|post|cancel)$)}")]
+    [HttpPost("invoices/{id:guid}/{actionName:regex(^(submit|verify|approve|post|cancel)$)}")]
+    public Task<IActionResult> InvoiceTransition(Guid id, string actionName, [FromBody] DocumentActionDto? body, CancellationToken ct) =>
+        RunInvoice(id, actionName, body?.Remarks, ct);
+
+    // ── Purchase orders ────────────────────────────────────────────────────
     [HttpGet("orders")]
     public async Task<ActionResult<IReadOnlyList<PurchaseOrderDto>>> GetOrders(CancellationToken ct) =>
         Ok(await _svc.GetOrdersAsync(ct));
+
+    [HttpGet("orders/{id:guid}")]
+    public async Task<IActionResult> GetOrder(Guid id, CancellationToken ct) =>
+        (await _svc.GetOrderByIdAsync(id, ct)) is { } x ? Ok(x) : NotFound();
 
     [HttpPost("orders")]
     public async Task<ActionResult<PurchaseOrderDto>> CreateOrder([FromBody] PurchaseOrderCreateDto dto, CancellationToken ct)
     {
         try { return Ok(await _svc.CreateOrderAsync(dto, ct)); }
         catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+        catch (UnauthorizedAccessException) { return Forbid(); }
     }
 
+    [HttpPut("orders/{id:guid}")]
+    public async Task<IActionResult> UpdateOrder(Guid id, [FromBody] PurchaseOrderCreateDto dto, CancellationToken ct)
+    {
+        try { return (await _svc.UpdateOrderAsync(id, dto, ct)) is { } x ? Ok(x) : NotFound(); }
+        catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+    }
+
+    [HttpPost("orders/{id:guid}/{actionName:regex(^(submit|verify|approve|post|cancel)$)}")]
+    public Task<IActionResult> OrderTransition(Guid id, string actionName, [FromBody] DocumentActionDto? body, CancellationToken ct) =>
+        RunOrder(id, actionName, body?.Remarks, ct);
+
+    // ── Goods receipts ─────────────────────────────────────────────────────
     [HttpGet("receipts")]
     public async Task<ActionResult<IReadOnlyList<GoodsReceiptDto>>> GetReceipts(CancellationToken ct) =>
         Ok(await _svc.GetReceiptsAsync(ct));
+
+    [HttpGet("receipts/{id:guid}")]
+    public async Task<IActionResult> GetReceipt(Guid id, CancellationToken ct) =>
+        (await _svc.GetReceiptByIdAsync(id, ct)) is { } x ? Ok(x) : NotFound();
 
     [HttpPost("receipts")]
     public async Task<ActionResult<GoodsReceiptDto>> CreateReceipt([FromBody] GoodsReceiptCreateDto dto, CancellationToken ct)
     {
         try { return Ok(await _svc.CreateReceiptAsync(dto, ct)); }
         catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+        catch (UnauthorizedAccessException) { return Forbid(); }
     }
+
+    [HttpPost("receipts/{id:guid}/{actionName:regex(^(submit|verify|approve|post|cancel)$)}")]
+    public Task<IActionResult> ReceiptTransition(Guid id, string actionName, [FromBody] DocumentActionDto? body, CancellationToken ct) =>
+        RunReceipt(id, actionName, body?.Remarks, ct);
+
+    // ── Audit / payables ───────────────────────────────────────────────────
+    [HttpGet("orders/{id:guid}/audit")]
+    public async Task<IActionResult> OrderAudit(Guid id, CancellationToken ct) =>
+        Ok(await _svc.GetAuditAsync("PurchaseOrder", id, ct));
+
+    [HttpGet("receipts/{id:guid}/audit")]
+    public async Task<IActionResult> ReceiptAudit(Guid id, CancellationToken ct) =>
+        Ok(await _svc.GetAuditAsync("GoodsReceipt", id, ct));
+
+    [HttpGet("{id:guid}/audit")]
+    [HttpGet("invoices/{id:guid}/audit")]
+    public async Task<IActionResult> InvoiceAudit(Guid id, CancellationToken ct) =>
+        Ok(await _svc.GetAuditAsync("PurchaseInvoice", id, ct));
 
     [HttpGet("payables/{partyId:guid}")]
     public async Task<ActionResult<PayableBalanceDto>> GetPayable(Guid partyId, CancellationToken ct)
     {
         var bal = await _svc.GetPayableAsync(partyId, ct);
         return bal is null ? NotFound() : Ok(bal);
+    }
+
+    [HttpGet("audit/{entityName}/{id:guid}")]
+    public async Task<IActionResult> Audit(string entityName, Guid id, CancellationToken ct) =>
+        Ok(await _svc.GetAuditAsync(entityName, id, ct));
+
+    private async Task<IActionResult> RunOrder(Guid id, string action, string? remarks, CancellationToken ct)
+    {
+        try
+        {
+            var result = await _workflow.TransitionOrderAsync(id, action, remarks, ct);
+            return result is null ? NotFound() : Ok(result);
+        }
+        catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+        catch (UnauthorizedAccessException) { return Forbid(); }
+    }
+
+    private async Task<IActionResult> RunReceipt(Guid id, string action, string? remarks, CancellationToken ct)
+    {
+        try
+        {
+            var result = await _workflow.TransitionReceiptAsync(id, action, remarks, ct);
+            return result is null ? NotFound() : Ok(result);
+        }
+        catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+        catch (UnauthorizedAccessException) { return Forbid(); }
+    }
+
+    private async Task<IActionResult> RunInvoice(Guid id, string action, string? remarks, CancellationToken ct)
+    {
+        try
+        {
+            var result = await _workflow.TransitionInvoiceAsync(id, action, remarks, ct);
+            return result is null ? NotFound() : Ok(result);
+        }
+        catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+        catch (UnauthorizedAccessException) { return Forbid(); }
     }
 }
 

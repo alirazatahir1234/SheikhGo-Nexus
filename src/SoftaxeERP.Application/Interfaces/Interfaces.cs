@@ -58,14 +58,63 @@ public interface IPurchaseService
 {
     // Legacy PI list/create (PI posts AP only — never stock)
     Task<IReadOnlyList<PurchaseInvoiceDto>> GetAllAsync(CancellationToken ct = default);
+    Task<PurchaseInvoiceDto?> GetInvoiceByIdAsync(Guid id, CancellationToken ct = default);
     Task<PurchaseInvoiceDto> CreateAsync(PurchaseInvoiceCreateDto dto, CancellationToken ct = default);
 
     // Phase 0 vertical slice
     Task<IReadOnlyList<PurchaseOrderDto>> GetOrdersAsync(CancellationToken ct = default);
+    Task<PurchaseOrderDto?> GetOrderByIdAsync(Guid id, CancellationToken ct = default);
     Task<PurchaseOrderDto> CreateOrderAsync(PurchaseOrderCreateDto dto, CancellationToken ct = default);
     Task<IReadOnlyList<GoodsReceiptDto>> GetReceiptsAsync(CancellationToken ct = default);
+    Task<GoodsReceiptDto?> GetReceiptByIdAsync(Guid id, CancellationToken ct = default);
     Task<GoodsReceiptDto> CreateReceiptAsync(GoodsReceiptCreateDto dto, CancellationToken ct = default);
     Task<PayableBalanceDto?> GetPayableAsync(Guid partyId, CancellationToken ct = default);
+    Task<PurchaseOrderDto?> UpdateOrderAsync(Guid id, PurchaseOrderCreateDto dto, CancellationToken ct = default);
+    Task<PurchaseOrderDto?> TransitionOrderAsync(Guid id, string action, CancellationToken ct = default);
+    Task<GoodsReceiptDto?> TransitionReceiptAsync(Guid id, string action, CancellationToken ct = default);
+    Task<PurchaseInvoiceDto?> TransitionInvoiceAsync(Guid id, string action, CancellationToken ct = default);
+    Task<IReadOnlyList<AuditLogDto>> GetAuditAsync(string entityName, Guid id, CancellationToken ct = default);
+}
+
+public interface IDocumentWorkflowService
+{
+    Task<PurchaseOrderDto?> TransitionOrderAsync(Guid id, string action, string? remarks = null, CancellationToken ct = default);
+    Task<GoodsReceiptDto?> TransitionReceiptAsync(Guid id, string action, string? remarks = null, CancellationToken ct = default);
+    Task<PurchaseInvoiceDto?> TransitionInvoiceAsync(Guid id, string action, string? remarks = null, CancellationToken ct = default);
+}
+
+public interface IPermissionService
+{
+    Task EnsureAsync(string permissionCode, CancellationToken ct = default);
+    Task<bool> HasAsync(string permissionCode, CancellationToken ct = default);
+}
+
+public interface IAuditService
+{
+    Task WriteAsync(string entityName, Guid entityId, string action, string? oldValues = null, string? newValues = null, CancellationToken ct = default);
+}
+
+public interface IAdminService
+{
+    Task<CompanyDto?> GetCompanyAsync(CancellationToken ct = default);
+    Task<CompanyDto?> UpdateCompanyAsync(CompanyUpdateDto dto, CancellationToken ct = default);
+    Task<IReadOnlyList<BranchDto>> GetBranchesAsync(CancellationToken ct = default);
+    Task<BranchDto> CreateBranchAsync(BranchUpsertDto dto, CancellationToken ct = default);
+    Task<BranchDto?> UpdateBranchAsync(Guid id, BranchUpsertDto dto, CancellationToken ct = default);
+    Task<IReadOnlyList<RoleDto>> GetRolesAsync(CancellationToken ct = default);
+    Task<RoleDto> CreateRoleAsync(RoleCreateDto dto, CancellationToken ct = default);
+    Task<IReadOnlyList<PermissionDto>> GetPermissionsAsync(CancellationToken ct = default);
+    Task<RolePermissionsDto?> GetRolePermissionsAsync(Guid roleId, CancellationToken ct = default);
+    Task<RolePermissionsDto?> SetRolePermissionsAsync(Guid roleId, IReadOnlyList<string> codes, CancellationToken ct = default);
+    Task<bool> SetUserRolesAsync(Guid userId, IReadOnlyList<Guid> roleIds, CancellationToken ct = default);
+    Task<IReadOnlyList<FinancialYearDto>> GetFinancialYearsAsync(CancellationToken ct = default);
+    Task<FinancialYearDto> CreateFinancialYearAsync(FinancialYearCreateDto dto, CancellationToken ct = default);
+    Task<FinancialYearDto?> SetCurrentFinancialYearAsync(Guid id, CancellationToken ct = default);
+    Task<IReadOnlyList<FiscalPeriodDto>> GetFiscalPeriodsAsync(Guid yearId, CancellationToken ct = default);
+    Task<FiscalPeriodDto> CreateFiscalPeriodAsync(Guid yearId, FiscalPeriodCreateDto dto, CancellationToken ct = default);
+    Task<IReadOnlyList<AuditLogDto>> GetAuditLogsAsync(string? entityName, string? entityId, int take, CancellationToken ct = default);
+    Task<IReadOnlyList<DocumentTypeDto>> GetDocumentTypesAsync(CancellationToken ct = default);
+    Task<DocumentTypeDto?> UpdateDocumentTypeAsync(Guid id, DocumentTypeUpsertDto dto, CancellationToken ct = default);
 }
 
 public interface IInventoryService

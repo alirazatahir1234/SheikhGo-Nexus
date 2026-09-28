@@ -27,6 +27,10 @@ public static class DependencyInjection
         services.AddScoped<IWarehouseService, WarehouseService>();
         services.AddScoped<IUserAdminService, UserAdminService>();
         services.AddScoped<IPurchaseService, PurchaseService>();
+        services.AddScoped<IAdminService, AdminService>();
+        services.AddScoped<IAuditService, AuditService>();
+        services.AddScoped<IPermissionService, PermissionService>();
+        services.AddScoped<IDocumentWorkflowService, DocumentWorkflowService>();
         services.AddScoped<ITenantPlatformService, TenantPlatformService>();
 
         // Deferred module stubs

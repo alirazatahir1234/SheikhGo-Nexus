@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard, guestGuard } from './core/guards/auth.guard';
+import { authGuard, guestGuard, permissionGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
   {
@@ -21,9 +21,93 @@ export const routes: Routes = [
           import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent),
       },
       {
-        path: 'accounts',
+        path: 'coming-soon/:domain',
         loadComponent: () =>
-          import('./features/accounts/accounts.component').then((m) => m.AccountsComponent),
+          import('./features/coming-soon/coming-soon.component').then((m) => m.ComingSoonComponent),
+      },
+      {
+        path: 'administration/companies',
+        canActivate: [permissionGuard],
+        data: { permission: 'Admin.Company.View' },
+        loadComponent: () =>
+          import('./features/administration/companies/companies.component').then(
+            (m) => m.AdminCompaniesComponent,
+          ),
+      },
+      {
+        path: 'administration/branches',
+        canActivate: [permissionGuard],
+        data: { permission: 'Admin.Branch.View' },
+        loadComponent: () =>
+          import('./features/administration/branches/branches.component').then(
+            (m) => m.AdminBranchesComponent,
+          ),
+      },
+      {
+        path: 'administration/users',
+        canActivate: [permissionGuard],
+        data: { permission: 'Admin.User.Edit' },
+        loadComponent: () =>
+          import('./features/administration/users/admin-users.component').then(
+            (m) => m.AdminUsersComponent,
+          ),
+      },
+      {
+        path: 'administration/roles',
+        canActivate: [permissionGuard],
+        data: { permission: 'Admin.Role.View' },
+        loadComponent: () =>
+          import('./features/administration/roles/roles.component').then(
+            (m) => m.AdminRolesComponent,
+          ),
+      },
+      {
+        path: 'administration/financial-years',
+        canActivate: [permissionGuard],
+        data: { permission: 'Admin.FinancialYear.View' },
+        loadComponent: () =>
+          import('./features/administration/financial-years/financial-years.component').then(
+            (m) => m.AdminFinancialYearsComponent,
+          ),
+      },
+      {
+        path: 'administration/audit',
+        canActivate: [permissionGuard],
+        data: { permission: 'Admin.Audit.View' },
+        loadComponent: () =>
+          import('./features/administration/audit/audit.component').then(
+            (m) => m.AdminAuditComponent,
+          ),
+      },
+      {
+        path: 'administration/document-types',
+        canActivate: [permissionGuard],
+        data: { permission: 'Admin.DocumentType.View' },
+        loadComponent: () =>
+          import('./features/administration/document-types/document-types.component').then(
+            (m) => m.AdminDocumentTypesComponent,
+          ),
+      },
+      {
+        path: 'purchase',
+        canActivate: [permissionGuard],
+        data: {
+          permissions: [
+            'Procurement.PurchaseOrder.View',
+            'Procurement.GoodsReceipt.View',
+            'Procurement.PurchaseInvoice.View',
+          ],
+          permissionMode: 'any',
+        },
+        loadComponent: () =>
+          import('./features/purchase/purchase.component').then((m) => m.PurchaseComponent),
+      },
+      {
+        path: 'inventory',
+        canActivate: [permissionGuard],
+        data: { permission: 'Inventory.Product.View' },
+        loadComponent: () =>
+          import('./features/inventory/inventory.component').then((m) => m.InventoryComponent),
       },
       {
         path: 'parties',
@@ -34,26 +118,6 @@ export const routes: Routes = [
         path: 'products',
         loadComponent: () =>
           import('./features/products/products.component').then((m) => m.ProductsComponent),
-      },
-      {
-        path: 'vouchers',
-        loadComponent: () =>
-          import('./features/vouchers/vouchers.component').then((m) => m.VouchersComponent),
-      },
-      {
-        path: 'sales',
-        loadComponent: () =>
-          import('./features/sales/sales.component').then((m) => m.SalesComponent),
-      },
-      {
-        path: 'purchase',
-        loadComponent: () =>
-          import('./features/purchase/purchase.component').then((m) => m.PurchaseComponent),
-      },
-      {
-        path: 'inventory',
-        loadComponent: () =>
-          import('./features/inventory/inventory.component').then((m) => m.InventoryComponent),
       },
       {
         path: 'warehouses',

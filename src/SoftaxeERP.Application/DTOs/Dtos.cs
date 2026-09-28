@@ -3,8 +3,16 @@ using SoftaxeERP.Domain.Enums;
 namespace SoftaxeERP.Application.DTOs;
 
 public record LoginRequest(string Email, string Password);
-public record LoginResponse(string Token, UserDto User, CompanyDto Company);
+public record LoginResponse(
+    string Token,
+    UserDto User,
+    CompanyDto Company,
+    IReadOnlyList<CompanyBriefDto> Companies,
+    BranchDto? DefaultBranch,
+    FinancialYearDto? CurrentFinancialYear,
+    IReadOnlyList<string> Permissions);
 public record UserDto(Guid Id, string Email, string FullName, string Role, bool IsPlatformAdmin);
+public record CompanyBriefDto(Guid Id, string Name, string ShortName);
 public record CompanyDto(
     Guid Id, string Name, string ShortName, string? Address, string? City,
     string Country, string? Phone, string? Email, string Currency, string? Ntn,
@@ -14,9 +22,30 @@ public record CompanyDto(
 public record DashboardSummaryDto(
     decimal SalesToday,
     decimal PurchasesToday,
+    decimal InventoryValue,
     decimal Receivables,
     decimal Payables,
-    IReadOnlyList<VoucherListDto> RecentVouchers);
+    IReadOnlyList<VoucherListDto> RecentVouchers,
+    IReadOnlyList<PendingApprovalDto> PendingApprovals,
+    IReadOnlyList<RecentDocumentDto> RecentDocuments);
+
+public record PendingApprovalDto(
+    Guid Id,
+    string DocumentNo,
+    string DocumentKind,
+    string Status,
+    DateTime Date,
+    string? PartyName,
+    decimal Amount);
+
+public record RecentDocumentDto(
+    Guid Id,
+    string DocumentNo,
+    string DocumentKind,
+    string Status,
+    DateTime Date,
+    string? PartyName,
+    decimal Amount);
 
 public record AccountDto(
     Guid Id, string Code, string Name, AccountType AccountType,
@@ -75,6 +104,33 @@ public record CompanyUpdateDto(
     string? Phone, string? Email, string Currency, string? Ntn, IndustryType Industry,
     decimal DefaultSaleTaxPercent = 0, decimal DefaultPurchaseTaxPercent = 0,
     bool SyncToFbr = false, bool TaxModule = false);
+
+public record BranchDto(Guid Id, Guid CompanyId, string Code, string Name, bool IsDefault);
+public record BranchUpsertDto(string Code, string Name, bool IsDefault);
+public record RoleDto(Guid Id, string Code, string Name);
+public record RoleCreateDto(string Code, string Name);
+public record PermissionDto(Guid Id, string Code, string Name, string? Module);
+public record RolePermissionsDto(Guid RoleId, IReadOnlyList<string> PermissionCodes);
+public record UserRolesDto(IReadOnlyList<Guid> RoleIds);
+public record FinancialYearDto(Guid Id, Guid CompanyId, string Code, DateTime StartDate, DateTime EndDate, bool IsCurrent, bool IsClosed);
+public record FinancialYearCreateDto(string Code, DateTime StartDate, DateTime EndDate);
+public record FiscalPeriodDto(Guid Id, Guid FinancialYearId, string Name, int PeriodNumber, DateTime StartDate, DateTime EndDate, bool IsClosed);
+public record FiscalPeriodCreateDto(string Name, int PeriodNumber, DateTime StartDate, DateTime EndDate);
+public record AuditLogDto(Guid Id, string EntityName, string EntityId, string Action, string? OldValues, string? NewValues, Guid? UserId, DateTime Timestamp);
+public record DocumentTypeDto(Guid Id, string Code, string Name, bool RequiresVerification, bool RequiresApproval, string? Prefix, bool AffectsInventory, bool AffectsGl);
+public record DocumentTypeUpsertDto(string Code, string Name, bool RequiresVerification, bool RequiresApproval, string? Prefix, bool AffectsInventory, bool AffectsGl);
+
+/// <summary>Optional remarks on a document workflow transition (submit/verify/approve/post/cancel).</summary>
+public record DocumentActionDto(string? Remarks = null);
+
+/// <summary>Result of a document workflow transition.</summary>
+public record DocumentTransitionResultDto(
+    Guid Id,
+    string DocumentKind,
+    string DocumentNo,
+    DocumentStatus PreviousStatus,
+    DocumentStatus Status,
+    string Action);
 
 // ---- Platform / Tenants ----
 public static class SoftaxeModuleCatalog

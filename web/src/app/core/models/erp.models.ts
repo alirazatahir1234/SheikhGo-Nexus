@@ -181,7 +181,30 @@ export interface RecentVoucher {
 export interface DashboardSummary {
   salesToday: number;
   purchasesToday: number;
+  inventoryValue?: number;
   receivables: number;
   payables: number;
   recentVouchers: RecentVoucher[];
+  pendingApprovals?: PendingApprovalItem[];
+  recentDocuments?: RecentDocumentItem[];
+}
+
+export interface PendingApprovalItem {
+  id: string;
+  documentNo: string;
+  documentKind: string;
+  status: string;
+  date: string;
+  partyName?: string;
+  amount: number;
+}
+
+export interface RecentDocumentItem {
+  id: string;
+  documentNo: string;
+  documentKind: string;
+  status: string;
+  date: string;
+  partyName?: string;
+  amount: number;
 }

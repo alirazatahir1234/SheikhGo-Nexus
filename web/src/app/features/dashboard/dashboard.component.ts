@@ -29,9 +29,12 @@ export class DashboardComponent implements OnInit {
         this.summary.set({
           salesToday: 0,
           purchasesToday: 0,
+          inventoryValue: 0,
           receivables: 0,
           payables: 0,
           recentVouchers: [],
+          pendingApprovals: [],
+          recentDocuments: [],
         });
         this.error.set('Unable to load live dashboard data. Showing empty state until API is available.');
         this.loading.set(false);

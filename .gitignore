@@ -1,0 +1,30 @@
+## .NET
+**/bin/
+**/obj/
+**/out/
+*.user
+*.suo
+.vs/
+*.swp
+
+## Node / Angular
+**/node_modules/
+**/.angular/
+**/dist/
+**/.sass-cache/
+npm-debug.log*
+
+## IDE / OS
+.idea/
+.DS_Store
+*.log
+.env
+.env.*
+!.env.example
+
+## Test / coverage
+**/TestResults/
+**/coverage/
+
+## EF / local
+**/appsettings.*.local.json

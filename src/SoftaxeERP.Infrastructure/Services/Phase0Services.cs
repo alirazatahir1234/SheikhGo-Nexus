@@ -49,10 +49,75 @@ public class DashboardService : IDashboardService
     public async Task<DashboardSummaryDto> GetSummaryAsync(CancellationToken ct = default)
     {
         var payables = await _db.PayableBalances.SumAsync(x => (decimal?)x.Balance, ct) ?? 0;
+        var today = DateTime.UtcNow.Date;
         var purchases = await _db.PurchaseInvoices
-            .Where(x => x.InvoiceDate == DateTime.UtcNow.Date && x.Status == DocumentStatus.Posted)
+            .Where(x => x.InvoiceDate == today && x.Status == DocumentStatus.Posted)
             .SumAsync(x => (decimal?)x.GrandTotal, ct) ?? 0;
-        return new DashboardSummaryDto(0, purchases, 0, payables, Array.Empty<VoucherListDto>());
+
+        var inventoryValue = await (
+            from s in _db.WarehouseStocks
+            join p in _db.Products on s.ProductId equals p.Id
+            select (decimal?)(s.Quantity * p.PurchasePrice)
+        ).SumAsync(ct) ?? 0;
+
+        var pendingStatuses = new[] { DocumentStatus.Submitted, DocumentStatus.Verified };
+
+        var pendingOrders = await _db.PurchaseOrders.AsNoTracking()
+            .Include(x => x.Party)
+            .Where(x => pendingStatuses.Contains(x.Status))
+            .OrderByDescending(x => x.OrderDate)
+            .Take(10)
+            .Select(x => new PendingApprovalDto(x.Id, x.OrderNo, "PurchaseOrder", x.Status.ToString(), x.OrderDate, x.Party!.Name, x.GrandTotal))
+            .ToListAsync(ct);
+
+        var pendingReceipts = await _db.GoodsReceipts.AsNoTracking()
+            .Include(x => x.Party)
+            .Where(x => pendingStatuses.Contains(x.Status))
+            .OrderByDescending(x => x.ReceiptDate)
+            .Take(10)
+            .Select(x => new PendingApprovalDto(x.Id, x.ReceiptNo, "GoodsReceipt", x.Status.ToString(), x.ReceiptDate, x.Party!.Name, 0))
+            .ToListAsync(ct);
+
+        var pendingInvoices = await _db.PurchaseInvoices.AsNoTracking()
+            .Include(x => x.Party)
+            .Where(x => pendingStatuses.Contains(x.Status) || x.Status == DocumentStatus.Approved)
+            .OrderByDescending(x => x.InvoiceDate)
+            .Take(10)
+            .Select(x => new PendingApprovalDto(x.Id, x.InvoiceNo, "PurchaseInvoice", x.Status.ToString(), x.InvoiceDate, x.Party!.Name, x.GrandTotal))
+            .ToListAsync(ct);
+
+        var pending = pendingOrders.Concat(pendingReceipts).Concat(pendingInvoices)
+            .OrderByDescending(x => x.Date)
+            .Take(12)
+            .ToList();
+
+        var recentOrders = await _db.PurchaseOrders.AsNoTracking()
+            .Include(x => x.Party)
+            .OrderByDescending(x => x.OrderDate).ThenByDescending(x => x.CreatedAt)
+            .Take(5)
+            .Select(x => new RecentDocumentDto(x.Id, x.OrderNo, "PurchaseOrder", x.Status.ToString(), x.OrderDate, x.Party!.Name, x.GrandTotal))
+            .ToListAsync(ct);
+
+        var recentReceipts = await _db.GoodsReceipts.AsNoTracking()
+            .Include(x => x.Party)
+            .OrderByDescending(x => x.ReceiptDate).ThenByDescending(x => x.CreatedAt)
+            .Take(5)
+            .Select(x => new RecentDocumentDto(x.Id, x.ReceiptNo, "GoodsReceipt", x.Status.ToString(), x.ReceiptDate, x.Party!.Name, 0))
+            .ToListAsync(ct);
+
+        var recentInvoices = await _db.PurchaseInvoices.AsNoTracking()
+            .Include(x => x.Party)
+            .OrderByDescending(x => x.InvoiceDate).ThenByDescending(x => x.CreatedAt)
+            .Take(5)
+            .Select(x => new RecentDocumentDto(x.Id, x.InvoiceNo, "PurchaseInvoice", x.Status.ToString(), x.InvoiceDate, x.Party!.Name, x.GrandTotal))
+            .ToListAsync(ct);
+
+        var recent = recentOrders.Concat(recentReceipts).Concat(recentInvoices)
+            .OrderByDescending(x => x.Date)
+            .Take(12)
+            .ToList();
+
+        return new DashboardSummaryDto(0, purchases, inventoryValue, 0, payables, Array.Empty<VoucherListDto>(), pending, recent);
     }
 }
 
@@ -344,7 +409,14 @@ public class UserAdminService : IUserAdminService
 public class PurchaseService : IPurchaseService
 {
     private readonly AppDbContext _db;
-    public PurchaseService(AppDbContext db) => _db = db;
+    private readonly IAuditService _audit;
+    private readonly IDocumentWorkflowService _workflow;
+    public PurchaseService(AppDbContext db, IAuditService audit, IDocumentWorkflowService workflow)
+    {
+        _db = db;
+        _audit = audit;
+        _workflow = workflow;
+    }
 
     private async Task<(Company company, Branch branch, FinancialYear fy)> ScopeAsync(CancellationToken ct)
     {
@@ -365,6 +437,9 @@ public class PurchaseService : IPurchaseService
                 x.Lines.Select(l => new InvoiceLineDto(l.Id, l.ProductId, l.Product!.Name, l.Qty, l.Rate, l.Amount)).ToList()))
             .ToListAsync(ct);
 
+    public async Task<PurchaseOrderDto?> GetOrderByIdAsync(Guid id, CancellationToken ct = default) =>
+        (await GetOrdersAsync(ct)).FirstOrDefault(x => x.Id == id);
+
     public async Task<PurchaseOrderDto> CreateOrderAsync(PurchaseOrderCreateDto dto, CancellationToken ct = default)
     {
         var (company, branch, fy) = await ScopeAsync(ct);
@@ -372,10 +447,11 @@ public class PurchaseService : IPurchaseService
         await using var tx = await _db.Database.BeginTransactionAsync(ct);
         var no = await DocumentNumbering.NextAsync(_db, company.Id, branch.Id, dt.Id, fy.Id, dt.Prefix ?? "PO", fy.StartDate.Year, ct);
         var sub = dto.Lines.Sum(l => l.Qty * l.Rate);
+        var document = new Document { DocumentTypeId = dt.Id, CompanyId = company.Id, BranchId = branch.Id, FinancialYearId = fy.Id, DocumentNo = no, DocumentDate = dto.Date.Date, PartyId = dto.PartyId, Narration = dto.Remarks };
         var po = new PurchaseOrder
         {
             OrderNo = no, OrderDate = dto.Date.Date, PartyId = dto.PartyId, WarehouseId = dto.WarehouseId,
-            Status = dto.Post ? DocumentStatus.Posted : DocumentStatus.Draft,
+            Document = document, Status = DocumentStatus.Draft,
             SubTotal = sub, Tax = dto.Tax, GrandTotal = sub + dto.Tax, Remarks = dto.Remarks
         };
         var lineNo = 1;
@@ -389,6 +465,8 @@ public class PurchaseService : IPurchaseService
         _db.PurchaseOrders.Add(po);
         await _db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
+        await _audit.WriteAsync(nameof(PurchaseOrder), po.Id, "Created", null, po.Status.ToString(), ct);
+        if (dto.Post) await RunQuickPathAsync(po.Id, "order", ct);
         return (await GetOrdersAsync(ct)).First(x => x.Id == po.Id);
     }
 
@@ -400,17 +478,34 @@ public class PurchaseService : IPurchaseService
                 x.Lines.Select(l => new InvoiceLineDto(l.Id, l.ProductId, l.Product!.Name, l.Qty, l.Rate, l.Amount)).ToList()))
             .ToListAsync(ct);
 
+    public async Task<GoodsReceiptDto?> GetReceiptByIdAsync(Guid id, CancellationToken ct = default) =>
+        (await GetReceiptsAsync(ct)).FirstOrDefault(x => x.Id == id);
+
     public async Task<GoodsReceiptDto> CreateReceiptAsync(GoodsReceiptCreateDto dto, CancellationToken ct = default)
     {
         var (company, branch, fy) = await ScopeAsync(ct);
         var dt = await DocTypeAsync("GRN", ct);
+        if (dto.PurchaseOrderId is Guid orderId)
+        {
+            var po = await _db.PurchaseOrders.Include(x => x.Lines).FirstOrDefaultAsync(x => x.Id == orderId, ct)
+                ?? throw new InvalidOperationException("Purchase order not found.");
+            if (po.PartyId != dto.PartyId) throw new InvalidOperationException("GRN supplier must match its purchase order.");
+            foreach (var line in dto.Lines)
+            {
+                var poLine = po.Lines.FirstOrDefault(x => x.ProductId == line.ProductId)
+                    ?? throw new InvalidOperationException("GRN product is not on the purchase order.");
+                if (line.Qty <= 0 || line.Qty > poLine.Qty - poLine.ReceivedQty)
+                    throw new InvalidOperationException($"GRN quantity exceeds remaining purchase-order quantity for product {line.ProductId}.");
+            }
+        }
         await using var tx = await _db.Database.BeginTransactionAsync(ct);
         var no = await DocumentNumbering.NextAsync(_db, company.Id, branch.Id, dt.Id, fy.Id, dt.Prefix ?? "GRN", fy.StartDate.Year, ct);
+        var document = new Document { DocumentTypeId = dt.Id, CompanyId = company.Id, BranchId = branch.Id, FinancialYearId = fy.Id, DocumentNo = no, DocumentDate = dto.Date.Date, PartyId = dto.PartyId, Narration = dto.Remarks };
         var grn = new GoodsReceipt
         {
             ReceiptNo = no, ReceiptDate = dto.Date.Date, PartyId = dto.PartyId, WarehouseId = dto.WarehouseId,
             PurchaseOrderId = dto.PurchaseOrderId,
-            Status = dto.Post ? DocumentStatus.Posted : DocumentStatus.Draft,
+            Document = document, Status = DocumentStatus.Draft,
             Remarks = dto.Remarks
         };
         var lineNo = 1;
@@ -418,36 +513,15 @@ public class PurchaseService : IPurchaseService
         {
             grn.Lines.Add(new GoodsReceiptLine
             {
-                LineNo = lineNo++, ProductId = l.ProductId, Qty = l.Qty, Rate = l.Rate, Amount = l.Qty * l.Rate
+                LineNo = lineNo++, ProductId = l.ProductId, PurchaseOrderLineId = dto.PurchaseOrderId is Guid poId ? await _db.PurchaseOrderLines.Where(x => x.PurchaseOrderId == poId && x.ProductId == l.ProductId).Select(x => (Guid?)x.Id).FirstOrDefaultAsync(ct) : null, Qty = l.Qty, Rate = l.Rate, Amount = l.Qty * l.Rate
             });
         }
         _db.GoodsReceipts.Add(grn);
 
-        // GRN owns stock increase
-        if (dto.Post)
-        {
-            foreach (var l in dto.Lines)
-            {
-                var stock = await _db.WarehouseStocks
-                    .FirstOrDefaultAsync(x => x.ProductId == l.ProductId && x.WarehouseId == dto.WarehouseId, ct);
-                if (stock is null)
-                {
-                    stock = new WarehouseStock { ProductId = l.ProductId, WarehouseId = dto.WarehouseId, Quantity = 0 };
-                    _db.WarehouseStocks.Add(stock);
-                }
-                stock.Quantity += l.Qty;
-
-                if (dto.PurchaseOrderId is Guid poId)
-                {
-                    var poLine = await _db.PurchaseOrderLines
-                        .FirstOrDefaultAsync(x => x.PurchaseOrderId == poId && x.ProductId == l.ProductId, ct);
-                    if (poLine is not null) poLine.ReceivedQty += l.Qty;
-                }
-            }
-        }
-
         await _db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
+        await _audit.WriteAsync(nameof(GoodsReceipt), grn.Id, "Created", null, grn.Status.ToString(), ct);
+        if (dto.Post) await RunQuickPathAsync(grn.Id, "receipt", ct);
         return (await GetReceiptsAsync(ct)).First(x => x.Id == grn.Id);
     }
 
@@ -459,6 +533,9 @@ public class PurchaseService : IPurchaseService
                 x.Lines.Select(l => new InvoiceLineDto(l.Id, l.ProductId, l.Product!.Name, l.Qty, l.Rate, l.Amount)).ToList()))
             .ToListAsync(ct);
 
+    public async Task<PurchaseInvoiceDto?> GetInvoiceByIdAsync(Guid id, CancellationToken ct = default) =>
+        (await GetAllAsync(ct)).FirstOrDefault(x => x.Id == id);
+
     public async Task<PurchaseInvoiceDto> CreateAsync(PurchaseInvoiceCreateDto dto, CancellationToken ct = default)
     {
         var (company, branch, fy) = await ScopeAsync(ct);
@@ -467,11 +544,12 @@ public class PurchaseService : IPurchaseService
         var no = await DocumentNumbering.NextAsync(_db, company.Id, branch.Id, dt.Id, fy.Id, dt.Prefix ?? "PI", fy.StartDate.Year, ct);
         var sub = dto.Lines.Sum(l => l.Qty * l.Rate);
         var grand = sub - dto.Discount + dto.Tax;
+        var document = new Document { DocumentTypeId = dt.Id, CompanyId = company.Id, BranchId = branch.Id, FinancialYearId = fy.Id, DocumentNo = no, DocumentDate = dto.Date.Date, PartyId = dto.PartyId, Narration = dto.Remarks };
         var pi = new PurchaseInvoice
         {
             InvoiceNo = no, InvoiceDate = dto.Date.Date, PartyId = dto.PartyId,
             GoodsReceiptId = dto.GoodsReceiptId, PurchaseOrderId = dto.PurchaseOrderId,
-            Status = dto.Post ? DocumentStatus.Posted : DocumentStatus.Draft,
+            Document = document, Status = DocumentStatus.Draft,
             SubTotal = sub, Discount = dto.Discount, Tax = dto.Tax, GrandTotal = grand, Remarks = dto.Remarks
         };
         var lineNo = 1;
@@ -484,20 +562,10 @@ public class PurchaseService : IPurchaseService
         }
         _db.PurchaseInvoices.Add(pi);
 
-        // PI owns AP only — NEVER stock
-        if (dto.Post)
-        {
-            var bal = await _db.PayableBalances.FirstOrDefaultAsync(x => x.PartyId == dto.PartyId, ct);
-            if (bal is null)
-            {
-                bal = new PayableBalance { PartyId = dto.PartyId, Balance = 0 };
-                _db.PayableBalances.Add(bal);
-            }
-            bal.Balance += grand;
-        }
-
         await _db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
+        await _audit.WriteAsync(nameof(PurchaseInvoice), pi.Id, "Created", null, pi.Status.ToString(), ct);
+        if (dto.Post) await RunQuickPathAsync(pi.Id, "invoice", ct);
         return (await GetAllAsync(ct)).First(x => x.Id == pi.Id);
     }
 
@@ -506,5 +574,38 @@ public class PurchaseService : IPurchaseService
         var bal = await _db.PayableBalances.Include(x => x.Party)
             .FirstOrDefaultAsync(x => x.PartyId == partyId, ct);
         return bal is null ? null : new PayableBalanceDto(bal.PartyId, bal.Party?.Name, bal.Balance);
+    }
+
+    public async Task<PurchaseOrderDto?> UpdateOrderAsync(Guid id, PurchaseOrderCreateDto dto, CancellationToken ct = default)
+    {
+        var po = await _db.PurchaseOrders.Include(x => x.Lines).FirstOrDefaultAsync(x => x.Id == id, ct);
+        if (po is null) return null;
+        if (po.Status != DocumentStatus.Draft) throw new InvalidOperationException("Only draft purchase orders can be edited.");
+        po.OrderDate = dto.Date.Date; po.PartyId = dto.PartyId; po.WarehouseId = dto.WarehouseId; po.Tax = dto.Tax; po.Remarks = dto.Remarks;
+        _db.PurchaseOrderLines.RemoveRange(po.Lines);
+        po.Lines = dto.Lines.Select((x, i) => new PurchaseOrderLine { LineNo = i + 1, ProductId = x.ProductId, Qty = x.Qty, Rate = x.Rate, Amount = x.Qty * x.Rate }).ToList();
+        po.SubTotal = po.Lines.Sum(x => x.Amount); po.GrandTotal = po.SubTotal + po.Tax;
+        await _db.SaveChangesAsync(ct); await _audit.WriteAsync(nameof(PurchaseOrder), id, "Updated", null, "Draft updated", ct);
+        return (await GetOrdersAsync(ct)).First(x => x.Id == id);
+    }
+
+    public Task<PurchaseOrderDto?> TransitionOrderAsync(Guid id, string action, CancellationToken ct = default) =>
+        _workflow.TransitionOrderAsync(id, action, null, ct);
+
+    public Task<GoodsReceiptDto?> TransitionReceiptAsync(Guid id, string action, CancellationToken ct = default) =>
+        _workflow.TransitionReceiptAsync(id, action, null, ct);
+
+    public Task<PurchaseInvoiceDto?> TransitionInvoiceAsync(Guid id, string action, CancellationToken ct = default) =>
+        _workflow.TransitionInvoiceAsync(id, action, null, ct);
+
+    public async Task<IReadOnlyList<AuditLogDto>> GetAuditAsync(string entityName, Guid id, CancellationToken ct = default) =>
+        await _db.AuditLogs.Where(x => x.EntityName == entityName && x.EntityId == id.ToString()).OrderByDescending(x => x.Timestamp)
+            .Select(x => new AuditLogDto(x.Id, x.EntityName, x.EntityId, x.Action, x.OldValues, x.NewValues, x.UserId, x.Timestamp)).ToListAsync(ct);
+
+    private async Task RunQuickPathAsync(Guid id, string kind, CancellationToken ct)
+    {
+        if (kind == "order") { await TransitionOrderAsync(id, "submit", ct); await TransitionOrderAsync(id, "verify", ct); await TransitionOrderAsync(id, "approve", ct); await TransitionOrderAsync(id, "post", ct); }
+        if (kind == "receipt") { await TransitionReceiptAsync(id, "submit", ct); await TransitionReceiptAsync(id, "verify", ct); await TransitionReceiptAsync(id, "approve", ct); await TransitionReceiptAsync(id, "post", ct); }
+        if (kind == "invoice") { await TransitionInvoiceAsync(id, "submit", ct); await TransitionInvoiceAsync(id, "verify", ct); await TransitionInvoiceAsync(id, "approve", ct); await TransitionInvoiceAsync(id, "post", ct); }
     }
 }

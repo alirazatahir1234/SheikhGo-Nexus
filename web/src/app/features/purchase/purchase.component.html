@@ -1,95 +1,407 @@
-<app-page-header title="Purchase" subtitle="Supplier invoices and goods receipts.">
-  <app-search-box placeholder="Search invoices…" [value]="search()" (valueChange)="search.set($event)" />
-  <button type="button" class="btn btn--primary" (click)="openForm()">New invoice</button>
+<app-page-header title="Procurement" subtitle="PO → GRN → stock → PI → AP">
+  <app-search-box placeholder="Search…" [value]="search()" (valueChange)="search.set($event)" />
+  <button type="button" class="btn btn--primary" (click)="openForm()">{{ newButtonLabel() }}</button>
 </app-page-header>
 
 @if (error()) {
   <div class="alert alert--warn">{{ error() }}</div>
 }
 
+<div class="tabs">
+  <button type="button" [class.active]="tab() === 'orders'" (click)="setTab('orders')">Purchase Orders</button>
+  <button type="button" [class.active]="tab() === 'receipts'" (click)="setTab('receipts')">Goods Receipts</button>
+  <button type="button" [class.active]="tab() === 'invoices'" (click)="setTab('invoices')">Purchase Invoices</button>
+</div>
+
 @if (showForm()) {
   <section class="panel form-panel">
-    <h2>Create purchase invoice</h2>
-    <form [formGroup]="form" (ngSubmit)="save()">
-      <div class="form-grid">
-        <label class="field"><span>Invoice #</span><input formControlName="invoiceNo" /></label>
-        <label class="field"><span>Date</span><input type="date" formControlName="date" /></label>
-        <label class="field">
-          <span>Supplier</span>
-          <select formControlName="partyId">
-            <option [ngValue]="0">Select…</option>
-            @for (p of parties(); track p.id) {
-              <option [ngValue]="p.id">{{ p.code }} — {{ p.name }}</option>
-            }
-          </select>
-        </label>
-        <label class="field"><span>Discount</span><input type="number" formControlName="discount" (input)="applyDefaultTax()" /></label>
-        <label class="field">
-          <span>Tax{{ taxEnabled() ? ' (' + taxPercent() + '%)' : '' }}</span>
-          <input type="number" formControlName="tax" />
-        </label>
-      </div>
-
-      <div class="lines" formArrayName="lines">
-        <div class="lines__head">
-          <h3>Lines</h3>
-          <button type="button" class="btn btn--ghost btn--sm" (click)="addLine()">Add line</button>
+    @if (tab() === 'orders') {
+      <h2>Create purchase order</h2>
+      <form [formGroup]="orderForm" (ngSubmit)="save()">
+        <div class="form-grid">
+          <label class="field"><span>Date</span><input type="date" formControlName="date" /></label>
+          <label class="field">
+            <span>Supplier</span>
+            <select formControlName="partyId">
+              <option value="">Select…</option>
+              @for (p of parties(); track p.id) {
+                <option [ngValue]="p.id">{{ p.code }} — {{ p.name }}</option>
+              }
+            </select>
+          </label>
+          <label class="field">
+            <span>Warehouse</span>
+            <select formControlName="warehouseId">
+              <option value="">Optional…</option>
+              @for (w of warehouses(); track w.id) {
+                <option [ngValue]="w.id">{{ w.code }} — {{ w.name }}</option>
+              }
+            </select>
+          </label>
+          <label class="field">
+            <span>Tax{{ taxEnabled() ? ' (' + taxPercent() + '%)' : '' }}</span>
+            <input type="number" formControlName="tax" />
+          </label>
+          <label class="field span-2"><span>Remarks</span><input formControlName="remarks" /></label>
         </div>
-        @for (line of lines.controls; track $index; let i = $index) {
-          <div class="line-row" [formGroupName]="i">
-            <label class="field">
-              <span>Product</span>
-              <select formControlName="productId" (change)="onProductChange(i)">
-                <option [ngValue]="0">Select…</option>
-                @for (p of products(); track p.id) {
-                  <option [ngValue]="p.id">{{ p.code }} — {{ p.name }}</option>
-                }
-              </select>
-            </label>
-            <label class="field"><span>Qty</span><input type="number" formControlName="qty" (input)="recalcLine(i)" /></label>
-            <label class="field"><span>Rate</span><input type="number" formControlName="rate" (input)="recalcLine(i)" /></label>
-            <label class="field"><span>Amount</span><input type="number" formControlName="amount" readonly /></label>
-            <button type="button" class="btn btn--ghost btn--sm" (click)="removeLine(i)">×</button>
+        <div class="lines" formArrayName="lines">
+          <div class="lines__head">
+            <h3>Lines</h3>
+            <button type="button" class="btn btn--ghost btn--sm" (click)="addLine('orders')">Add line</button>
           </div>
-        }
-        <p class="totals">Subtotal {{ subTotal() | currency: 'PKR' : 'symbol' : '1.2-2' }} · Grand {{ grandTotal() | currency: 'PKR' : 'symbol' : '1.2-2' }}</p>
-      </div>
+          @for (line of orderLines.controls; track $index; let i = $index) {
+            <div class="line-row" [formGroupName]="i">
+              <label class="field">
+                <span>Product</span>
+                <select formControlName="productId" (change)="onProductChange('orders', i)">
+                  <option value="">Select…</option>
+                  @for (p of products(); track p.id) {
+                    <option [ngValue]="p.id">{{ p.code }} — {{ p.name }}</option>
+                  }
+                </select>
+              </label>
+              <label class="field"><span>Qty</span><input type="number" formControlName="qty" (input)="recalcLine('orders', i)" /></label>
+              <label class="field"><span>Rate</span><input type="number" formControlName="rate" (input)="recalcLine('orders', i)" /></label>
+              <label class="field"><span>Amount</span><input type="number" formControlName="amount" readonly /></label>
+              <button type="button" class="btn btn--ghost btn--sm" (click)="removeLine('orders', i)">×</button>
+            </div>
+          }
+          <p class="totals">
+            Subtotal {{ subTotal('orders') | currency: 'PKR' : 'symbol' : '1.2-2' }}
+            · Grand {{ grandTotal('orders') | currency: 'PKR' : 'symbol' : '1.2-2' }}
+          </p>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn--ghost" (click)="showForm.set(false)">Cancel</button>
+          <button type="submit" class="btn btn--primary" [disabled]="saving()">{{ saving() ? 'Saving…' : 'Save PO' }}</button>
+        </div>
+      </form>
+    }
 
-      <div class="form-actions">
-        <button type="button" class="btn btn--ghost" (click)="showForm.set(false)">Cancel</button>
-        <button type="submit" class="btn btn--primary" [disabled]="saving()">{{ saving() ? 'Saving…' : 'Save invoice' }}</button>
-      </div>
-    </form>
+    @if (tab() === 'receipts') {
+      <h2>Create goods receipt</h2>
+      <form [formGroup]="receiptForm" (ngSubmit)="save()">
+        <div class="form-grid">
+          <label class="field"><span>Date</span><input type="date" formControlName="date" /></label>
+          <label class="field">
+            <span>Purchase order (optional)</span>
+            <select formControlName="purchaseOrderId" (change)="onReceiptPoChange()">
+              <option value="">None</option>
+              @for (o of orders(); track o.id) {
+                <option [ngValue]="o.id">{{ o.orderNo }} — {{ o.partyName }}</option>
+              }
+            </select>
+          </label>
+          <label class="field">
+            <span>Supplier</span>
+            <select formControlName="partyId">
+              <option value="">Select…</option>
+              @for (p of parties(); track p.id) {
+                <option [ngValue]="p.id">{{ p.code }} — {{ p.name }}</option>
+              }
+            </select>
+          </label>
+          <label class="field">
+            <span>Warehouse *</span>
+            <select formControlName="warehouseId">
+              <option value="">Select…</option>
+              @for (w of warehouses(); track w.id) {
+                <option [ngValue]="w.id">{{ w.code }} — {{ w.name }}</option>
+              }
+            </select>
+          </label>
+          <label class="field span-2"><span>Remarks</span><input formControlName="remarks" /></label>
+        </div>
+        <div class="lines" formArrayName="lines">
+          <div class="lines__head">
+            <h3>Lines</h3>
+            <button type="button" class="btn btn--ghost btn--sm" (click)="addLine('receipts')">Add line</button>
+          </div>
+          @for (line of receiptLines.controls; track $index; let i = $index) {
+            <div class="line-row" [formGroupName]="i">
+              <label class="field">
+                <span>Product</span>
+                <select formControlName="productId" (change)="onProductChange('receipts', i)">
+                  <option value="">Select…</option>
+                  @for (p of products(); track p.id) {
+                    <option [ngValue]="p.id">{{ p.code }} — {{ p.name }}</option>
+                  }
+                </select>
+              </label>
+              <label class="field"><span>Qty</span><input type="number" formControlName="qty" (input)="recalcLine('receipts', i)" /></label>
+              <label class="field"><span>Rate</span><input type="number" formControlName="rate" (input)="recalcLine('receipts', i)" /></label>
+              <label class="field"><span>Amount</span><input type="number" formControlName="amount" readonly /></label>
+              <button type="button" class="btn btn--ghost btn--sm" (click)="removeLine('receipts', i)">×</button>
+            </div>
+          }
+          <p class="totals">Total {{ grandTotal('receipts') | currency: 'PKR' : 'symbol' : '1.2-2' }}</p>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn--ghost" (click)="showForm.set(false)">Cancel</button>
+          <button type="submit" class="btn btn--primary" [disabled]="saving()">{{ saving() ? 'Saving…' : 'Save GRN' }}</button>
+        </div>
+      </form>
+    }
+
+    @if (tab() === 'invoices') {
+      <h2>Create purchase invoice</h2>
+      <form [formGroup]="invoiceForm" (ngSubmit)="save()">
+        <div class="form-grid">
+          <label class="field"><span>Date</span><input type="date" formControlName="date" /></label>
+          <label class="field">
+            <span>Supplier</span>
+            <select formControlName="partyId" (change)="onInvoicePartyChange()">
+              <option value="">Select…</option>
+              @for (p of parties(); track p.id) {
+                <option [ngValue]="p.id">{{ p.code }} — {{ p.name }}</option>
+              }
+            </select>
+          </label>
+          <label class="field">
+            <span>Purchase order (optional)</span>
+            <select formControlName="purchaseOrderId">
+              <option value="">None</option>
+              @for (o of orders(); track o.id) {
+                <option [ngValue]="o.id">{{ o.orderNo }}</option>
+              }
+            </select>
+          </label>
+          <label class="field">
+            <span>Goods receipt (optional)</span>
+            <select formControlName="goodsReceiptId">
+              <option value="">None</option>
+              @for (r of receipts(); track r.id) {
+                <option [ngValue]="r.id">{{ r.receiptNo }}</option>
+              }
+            </select>
+          </label>
+          <label class="field"><span>Discount</span><input type="number" formControlName="discount" (input)="applyDefaultTax('invoices')" /></label>
+          <label class="field">
+            <span>Tax{{ taxEnabled() ? ' (' + taxPercent() + '%)' : '' }}</span>
+            <input type="number" formControlName="tax" />
+          </label>
+          <label class="field span-2"><span>Remarks</span><input formControlName="remarks" /></label>
+        </div>
+        @if (payable()) {
+          <p class="alert alert--success">
+            Payable balance for {{ payable()!.partyName || 'supplier' }}:
+            {{ payable()!.balance | currency: 'PKR' : 'symbol' : '1.2-2' }}
+          </p>
+        }
+        <div class="lines" formArrayName="lines">
+          <div class="lines__head">
+            <h3>Lines</h3>
+            <button type="button" class="btn btn--ghost btn--sm" (click)="addLine('invoices')">Add line</button>
+          </div>
+          @for (line of invoiceLines.controls; track $index; let i = $index) {
+            <div class="line-row" [formGroupName]="i">
+              <label class="field">
+                <span>Product</span>
+                <select formControlName="productId" (change)="onProductChange('invoices', i)">
+                  <option value="">Select…</option>
+                  @for (p of products(); track p.id) {
+                    <option [ngValue]="p.id">{{ p.code }} — {{ p.name }}</option>
+                  }
+                </select>
+              </label>
+              <label class="field"><span>Qty</span><input type="number" formControlName="qty" (input)="recalcLine('invoices', i)" /></label>
+              <label class="field"><span>Rate</span><input type="number" formControlName="rate" (input)="recalcLine('invoices', i)" /></label>
+              <label class="field"><span>Amount</span><input type="number" formControlName="amount" readonly /></label>
+              <button type="button" class="btn btn--ghost btn--sm" (click)="removeLine('invoices', i)">×</button>
+            </div>
+          }
+          <p class="totals">
+            Subtotal {{ subTotal('invoices') | currency: 'PKR' : 'symbol' : '1.2-2' }}
+            · Grand {{ grandTotal('invoices') | currency: 'PKR' : 'symbol' : '1.2-2' }}
+          </p>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn--ghost" (click)="showForm.set(false)">Cancel</button>
+          <button type="submit" class="btn btn--primary" [disabled]="saving()">{{ saving() ? 'Saving…' : 'Save invoice' }}</button>
+        </div>
+      </form>
+    }
   </section>
 }
 
-<section class="panel">
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>Invoice #</th>
-          <th>Date</th>
-          <th>Supplier</th>
-          <th class="num">Subtotal</th>
-          <th class="num">Grand total</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (inv of filtered(); track inv.id) {
-          <tr>
-            <td>{{ inv.invoiceNo }}</td>
-            <td>{{ inv.date | date: 'mediumDate' }}</td>
-            <td>{{ inv.partyName || ('#' + inv.partyId) }}</td>
-            <td class="num">{{ inv.subTotal | currency: 'PKR' : 'symbol' : '1.0-2' }}</td>
-            <td class="num">{{ inv.grandTotal | currency: 'PKR' : 'symbol' : '1.0-2' }}</td>
-            <td>{{ inv.status }}</td>
-          </tr>
-        } @empty {
-          <tr><td colspan="6" class="empty">{{ loading() ? 'Loading…' : 'No purchase invoices found.' }}</td></tr>
-        }
-      </tbody>
-    </table>
-  </div>
-</section>
+<div class="proc-layout">
+  <section class="panel">
+    <div class="table-wrap">
+      @if (tab() === 'orders') {
+        <table>
+          <thead>
+            <tr>
+              <th>PO #</th>
+              <th>Date</th>
+              <th>Supplier</th>
+              <th class="num">Grand</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (o of filteredOrders(); track o.id) {
+              <tr
+                class="row-selectable"
+                [class.row-selected]="selectedOrder()?.id === o.id"
+                (click)="selectOrder(o)"
+              >
+                <td>{{ o.orderNo }}</td>
+                <td>{{ o.date | date: 'mediumDate' }}</td>
+                <td>{{ o.partyName || ('#' + o.partyId) }}</td>
+                <td class="num">{{ o.grandTotal | currency: 'PKR' : 'symbol' : '1.0-2' }}</td>
+                <td><span class="badge">{{ statusLabel(o.status) }}</span></td>
+              </tr>
+            } @empty {
+              <tr><td colspan="5" class="empty">{{ loading() ? 'Loading…' : 'No purchase orders.' }}</td></tr>
+            }
+          </tbody>
+        </table>
+      }
+
+      @if (tab() === 'receipts') {
+        <table>
+          <thead>
+            <tr>
+              <th>GRN #</th>
+              <th>Date</th>
+              <th>Supplier</th>
+              <th>PO</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (r of filteredReceipts(); track r.id) {
+              <tr
+                class="row-selectable"
+                [class.row-selected]="selectedReceipt()?.id === r.id"
+                (click)="selectReceipt(r)"
+              >
+                <td>{{ r.receiptNo }}</td>
+                <td>{{ r.date | date: 'mediumDate' }}</td>
+                <td>{{ r.partyName || ('#' + r.partyId) }}</td>
+                <td>{{ poNo(r.purchaseOrderId) }}</td>
+                <td><span class="badge">{{ statusLabel(r.status) }}</span></td>
+              </tr>
+            } @empty {
+              <tr><td colspan="5" class="empty">{{ loading() ? 'Loading…' : 'No goods receipts.' }}</td></tr>
+            }
+          </tbody>
+        </table>
+      }
+
+      @if (tab() === 'invoices') {
+        <table>
+          <thead>
+            <tr>
+              <th>Invoice #</th>
+              <th>Date</th>
+              <th>Supplier</th>
+              <th class="num">Grand</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (inv of filteredInvoices(); track inv.id) {
+              <tr
+                class="row-selectable"
+                [class.row-selected]="selectedInvoice()?.id === inv.id"
+                (click)="selectInvoice(inv)"
+              >
+                <td>{{ inv.invoiceNo }}</td>
+                <td>{{ inv.date | date: 'mediumDate' }}</td>
+                <td>{{ inv.partyName || ('#' + inv.partyId) }}</td>
+                <td class="num">{{ inv.grandTotal | currency: 'PKR' : 'symbol' : '1.0-2' }}</td>
+                <td><span class="badge">{{ statusLabel(inv.status) }}</span></td>
+              </tr>
+            } @empty {
+              <tr><td colspan="5" class="empty">{{ loading() ? 'Loading…' : 'No purchase invoices.' }}</td></tr>
+            }
+          </tbody>
+        </table>
+      }
+    </div>
+  </section>
+
+  @if (selectedOrder(); as o) {
+    <section class="panel detail-panel">
+      <app-document-header
+        title="Purchase order"
+        [docNo]="o.orderNo"
+        [date]="o.date"
+        [partyName]="o.partyName || ''"
+        [status]="o.status"
+        [remarks]="o.remarks"
+      />
+      <app-document-status-stepper [status]="o.status" />
+      <app-document-lines [lines]="o.lines" />
+      <app-document-totals [subTotal]="o.subTotal" [tax]="o.tax" [grandTotal]="o.grandTotal" />
+      <app-verification-panel [required]="poFlags().requiresVerification" />
+      <app-document-actions
+        [status]="o.status"
+        [busy]="transitioning()"
+        [requiresVerification]="poFlags().requiresVerification"
+        [requiresApproval]="poFlags().requiresApproval"
+        [allowed]="orderActionAllowed()"
+        (action)="onApproval($event)"
+      />
+      <app-audit-timeline [entries]="auditEntries()" />
+    </section>
+  }
+
+  @if (selectedReceipt(); as r) {
+    <section class="panel detail-panel">
+      <app-document-header
+        title="Goods receipt"
+        [docNo]="r.receiptNo"
+        [date]="r.date"
+        [partyName]="r.partyName || ''"
+        [status]="r.status"
+        [remarks]="r.remarks"
+      />
+      <app-document-status-stepper [status]="r.status" />
+      <app-document-lines [lines]="r.lines" />
+      <app-document-totals [subTotal]="receiptSubTotal(r)" [grandTotal]="receiptSubTotal(r)" />
+      <app-verification-panel [required]="grnFlags().requiresVerification" />
+      <app-document-actions
+        [status]="r.status"
+        [busy]="transitioning()"
+        [requiresVerification]="grnFlags().requiresVerification"
+        [requiresApproval]="grnFlags().requiresApproval"
+        [allowed]="receiptActionAllowed()"
+        (action)="onApproval($event)"
+      />
+      <app-audit-timeline [entries]="auditEntries()" />
+    </section>
+  }
+
+  @if (selectedInvoice(); as inv) {
+    <section class="panel detail-panel">
+      <app-document-header
+        title="Purchase invoice"
+        [docNo]="inv.invoiceNo"
+        [date]="inv.date"
+        [partyName]="inv.partyName || ''"
+        [status]="inv.status"
+        [remarks]="inv.remarks"
+      />
+      <app-document-status-stepper [status]="inv.status" />
+      <app-document-lines [lines]="inv.lines" />
+      <app-document-totals
+        [subTotal]="inv.subTotal"
+        [tax]="inv.tax"
+        [discount]="inv.discount"
+        [grandTotal]="inv.grandTotal"
+      />
+      <app-verification-panel [required]="piFlags().requiresVerification" />
+      <app-document-actions
+        [status]="inv.status"
+        [busy]="transitioning()"
+        [requiresVerification]="piFlags().requiresVerification"
+        [requiresApproval]="piFlags().requiresApproval"
+        [allowed]="invoiceActionAllowed()"
+        (action)="onApproval($event)"
+      />
+      <app-audit-timeline [entries]="auditEntries()" />
+    </section>
+  }
+</div>

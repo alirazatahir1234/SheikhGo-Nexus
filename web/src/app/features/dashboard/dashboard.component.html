@@ -1,6 +1,6 @@
 <app-page-header
   title="Dashboard"
-  subtitle="Today’s trading pulse across sales, purchases, and ledgers."
+  subtitle="SheikhGo Nexus — procurement, inventory, and payables at a glance."
 />
 
 @if (error()) {
@@ -9,47 +9,83 @@
 
 @if (summary(); as data) {
   <section class="kpi-grid">
-    <app-kpi-card label="Sales today" [value]="data.salesToday" hint="Invoiced revenue" />
-    <app-kpi-card label="Purchases today" [value]="data.purchasesToday" hint="Stock intake" />
-    <app-kpi-card label="Receivables" [value]="data.receivables" hint="Customer balances" />
+    <app-kpi-card label="Purchases today" [value]="data.purchasesToday" hint="Posted purchase invoices" />
+    <app-kpi-card label="Inventory" [value]="data.inventoryValue ?? 0" hint="Stock at purchase cost" />
     <app-kpi-card label="Payables" [value]="data.payables" hint="Supplier balances" />
+    <app-kpi-card label="Receivables" [value]="data.receivables" hint="Coming in Sales phase" />
   </section>
 
-  <section class="panel">
-    <div class="panel__head">
-      <h2>Recent vouchers</h2>
-    </div>
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Voucher #</th>
-            <th>Type</th>
-            <th>Date</th>
-            <th>Narration</th>
-            <th class="num">Amount</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (v of data.recentVouchers; track v.id) {
+  <div class="dash-split">
+    <section class="panel">
+      <div class="panel__head">
+        <h2>Pending approvals</h2>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
             <tr>
-              <td>{{ v.voucherNo }}</td>
-              <td><span class="badge">{{ v.voucherType }}</span></td>
-              <td>{{ v.date | date: 'mediumDate' }}</td>
-              <td>{{ v.narration }}</td>
-              <td class="num">{{ v.totalDebit | currency: 'PKR' : 'symbol' : '1.0-0' }}</td>
-              <td>{{ v.status }}</td>
+              <th>Document</th>
+              <th>Type</th>
+              <th>Status</th>
+              <th class="num">Amount</th>
             </tr>
-          } @empty {
+          </thead>
+          <tbody>
+            @for (p of data.pendingApprovals ?? []; track p.id) {
+              <tr>
+                <td>
+                  <strong>{{ p.documentNo }}</strong>
+                  <div class="muted">{{ p.partyName }}</div>
+                </td>
+                <td><span class="badge">{{ p.documentKind }}</span></td>
+                <td>{{ p.status }}</td>
+                <td class="num">{{ p.amount | currency: 'PKR' : 'symbol' : '1.0-0' }}</td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="4" class="empty">No documents awaiting action.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel__head">
+        <h2>Recent transactions</h2>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
             <tr>
-              <td colspan="6" class="empty">No recent vouchers yet.</td>
+              <th>Document</th>
+              <th>Type</th>
+              <th>Date</th>
+              <th>Status</th>
             </tr>
-          }
-        </tbody>
-      </table>
-    </div>
-  </section>
+          </thead>
+          <tbody>
+            @for (d of data.recentDocuments ?? []; track d.id + d.documentKind) {
+              <tr>
+                <td>
+                  <strong>{{ d.documentNo }}</strong>
+                  <div class="muted">{{ d.partyName }}</div>
+                </td>
+                <td><span class="badge">{{ d.documentKind }}</span></td>
+                <td>{{ d.date | date: 'mediumDate' }}</td>
+                <td>{{ d.status }}</td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="4" class="empty">No recent procurement documents yet.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
 } @else if (loading()) {
   <p class="muted">Loading dashboard…</p>
 }
