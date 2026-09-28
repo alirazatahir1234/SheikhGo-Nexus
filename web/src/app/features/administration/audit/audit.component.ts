@@ -40,6 +40,7 @@ import { AdminApiService, AuditLogRow } from '../../../core/services/admin-api.s
               <th>ID</th>
               <th>Action</th>
               <th>User</th>
+              <th>IP</th>
             </tr>
           </thead>
           <tbody>
@@ -50,10 +51,11 @@ import { AdminApiService, AuditLogRow } from '../../../core/services/admin-api.s
                 <td style="font-family: var(--font-mono, monospace); font-size: 0.8rem">{{ row.entityId }}</td>
                 <td><span class="badge">{{ row.action }}</span></td>
                 <td>{{ row.userId || '—' }}</td>
+                <td>{{ row.ipAddress || '—' }}</td>
               </tr>
             } @empty {
               <tr>
-                <td colspan="5" class="empty">{{ loading() ? 'Loading…' : 'No audit rows.' }}</td>
+                <td colspan="6" class="empty">{{ loading() ? 'Loading…' : 'No audit rows.' }}</td>
               </tr>
             }
           </tbody>

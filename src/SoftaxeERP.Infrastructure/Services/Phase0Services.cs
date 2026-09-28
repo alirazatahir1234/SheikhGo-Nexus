@@ -434,11 +434,18 @@ public class PurchaseService : IPurchaseService
             .OrderByDescending(x => x.OrderDate)
             .Select(x => new PurchaseOrderDto(x.Id, x.OrderNo, x.OrderDate, x.PartyId, x.Party!.Name, x.WarehouseId, x.Status,
                 x.SubTotal, x.Tax, x.GrandTotal, x.Remarks,
-                x.Lines.Select(l => new InvoiceLineDto(l.Id, l.ProductId, l.Product!.Name, l.Qty, l.Rate, l.Amount)).ToList()))
+                x.Lines.Select(l => new InvoiceLineDto(l.Id, l.ProductId, l.Product!.Name, l.Qty, l.Rate, l.Amount)).ToList(), null))
             .ToListAsync(ct);
 
-    public async Task<PurchaseOrderDto?> GetOrderByIdAsync(Guid id, CancellationToken ct = default) =>
-        (await GetOrdersAsync(ct)).FirstOrDefault(x => x.Id == id);
+    public async Task<PurchaseOrderDto?> GetOrderByIdAsync(Guid id, CancellationToken ct = default)
+    {
+        var dto = (await GetOrdersAsync(ct)).FirstOrDefault(x => x.Id == id);
+        if (dto is null) return null;
+        var entity = await _db.PurchaseOrders.AsNoTracking().FirstAsync(x => x.Id == id, ct);
+        var workflow = await DocumentWorkflowActorsResolver.ResolveAsync(
+            _db, nameof(PurchaseOrder), id, entity.DocumentId, entity.CreatedBy, entity.CreatedAt, ct);
+        return dto with { Workflow = workflow };
+    }
 
     public async Task<PurchaseOrderDto> CreateOrderAsync(PurchaseOrderCreateDto dto, CancellationToken ct = default)
     {
@@ -475,11 +482,18 @@ public class PurchaseService : IPurchaseService
             .OrderByDescending(x => x.ReceiptDate)
             .Select(x => new GoodsReceiptDto(x.Id, x.ReceiptNo, x.ReceiptDate, x.PartyId, x.Party!.Name, x.WarehouseId,
                 x.PurchaseOrderId, x.Status, x.Remarks,
-                x.Lines.Select(l => new InvoiceLineDto(l.Id, l.ProductId, l.Product!.Name, l.Qty, l.Rate, l.Amount)).ToList()))
+                x.Lines.Select(l => new InvoiceLineDto(l.Id, l.ProductId, l.Product!.Name, l.Qty, l.Rate, l.Amount)).ToList(), null))
             .ToListAsync(ct);
 
-    public async Task<GoodsReceiptDto?> GetReceiptByIdAsync(Guid id, CancellationToken ct = default) =>
-        (await GetReceiptsAsync(ct)).FirstOrDefault(x => x.Id == id);
+    public async Task<GoodsReceiptDto?> GetReceiptByIdAsync(Guid id, CancellationToken ct = default)
+    {
+        var dto = (await GetReceiptsAsync(ct)).FirstOrDefault(x => x.Id == id);
+        if (dto is null) return null;
+        var entity = await _db.GoodsReceipts.AsNoTracking().FirstAsync(x => x.Id == id, ct);
+        var workflow = await DocumentWorkflowActorsResolver.ResolveAsync(
+            _db, nameof(GoodsReceipt), id, entity.DocumentId, entity.CreatedBy, entity.CreatedAt, ct);
+        return dto with { Workflow = workflow };
+    }
 
     public async Task<GoodsReceiptDto> CreateReceiptAsync(GoodsReceiptCreateDto dto, CancellationToken ct = default)
     {
@@ -530,11 +544,18 @@ public class PurchaseService : IPurchaseService
             .OrderByDescending(x => x.InvoiceDate)
             .Select(x => new PurchaseInvoiceDto(x.Id, x.InvoiceNo, x.InvoiceDate, x.PartyId, x.Party!.Name, x.Status,
                 x.SubTotal, x.Discount, x.Tax, x.GrandTotal, x.Remarks,
-                x.Lines.Select(l => new InvoiceLineDto(l.Id, l.ProductId, l.Product!.Name, l.Qty, l.Rate, l.Amount)).ToList()))
+                x.Lines.Select(l => new InvoiceLineDto(l.Id, l.ProductId, l.Product!.Name, l.Qty, l.Rate, l.Amount)).ToList(), null))
             .ToListAsync(ct);
 
-    public async Task<PurchaseInvoiceDto?> GetInvoiceByIdAsync(Guid id, CancellationToken ct = default) =>
-        (await GetAllAsync(ct)).FirstOrDefault(x => x.Id == id);
+    public async Task<PurchaseInvoiceDto?> GetInvoiceByIdAsync(Guid id, CancellationToken ct = default)
+    {
+        var dto = (await GetAllAsync(ct)).FirstOrDefault(x => x.Id == id);
+        if (dto is null) return null;
+        var entity = await _db.PurchaseInvoices.AsNoTracking().FirstAsync(x => x.Id == id, ct);
+        var workflow = await DocumentWorkflowActorsResolver.ResolveAsync(
+            _db, nameof(PurchaseInvoice), id, entity.DocumentId, entity.CreatedBy, entity.CreatedAt, ct);
+        return dto with { Workflow = workflow };
+    }
 
     public async Task<PurchaseInvoiceDto> CreateAsync(PurchaseInvoiceCreateDto dto, CancellationToken ct = default)
     {
@@ -600,12 +621,43 @@ public class PurchaseService : IPurchaseService
 
     public async Task<IReadOnlyList<AuditLogDto>> GetAuditAsync(string entityName, Guid id, CancellationToken ct = default) =>
         await _db.AuditLogs.Where(x => x.EntityName == entityName && x.EntityId == id.ToString()).OrderByDescending(x => x.Timestamp)
-            .Select(x => new AuditLogDto(x.Id, x.EntityName, x.EntityId, x.Action, x.OldValues, x.NewValues, x.UserId, x.Timestamp)).ToListAsync(ct);
+            .Select(x => new AuditLogDto(x.Id, x.EntityName, x.EntityId, x.Action, x.OldValues, x.NewValues, x.UserId, x.Timestamp, x.IpAddress)).ToListAsync(ct);
 
     private async Task RunQuickPathAsync(Guid id, string kind, CancellationToken ct)
     {
-        if (kind == "order") { await TransitionOrderAsync(id, "submit", ct); await TransitionOrderAsync(id, "verify", ct); await TransitionOrderAsync(id, "approve", ct); await TransitionOrderAsync(id, "post", ct); }
-        if (kind == "receipt") { await TransitionReceiptAsync(id, "submit", ct); await TransitionReceiptAsync(id, "verify", ct); await TransitionReceiptAsync(id, "approve", ct); await TransitionReceiptAsync(id, "post", ct); }
-        if (kind == "invoice") { await TransitionInvoiceAsync(id, "submit", ct); await TransitionInvoiceAsync(id, "verify", ct); await TransitionInvoiceAsync(id, "approve", ct); await TransitionInvoiceAsync(id, "post", ct); }
+        var code = kind switch
+        {
+            "order" => "PO",
+            "receipt" => "GRN",
+            "invoice" => "PI",
+            _ => throw new InvalidOperationException($"Unknown quick-path kind '{kind}'.")
+        };
+        var docType = await DocTypeAsync(code, ct);
+        async Task Step(Func<Task> action)
+        {
+            await action();
+        }
+
+        if (kind == "order")
+        {
+            await Step(() => TransitionOrderAsync(id, "submit", ct));
+            if (docType.RequiresVerification) await Step(() => TransitionOrderAsync(id, "verify", ct));
+            if (docType.RequiresApproval) await Step(() => TransitionOrderAsync(id, "approve", ct));
+            await Step(() => TransitionOrderAsync(id, "post", ct));
+        }
+        else if (kind == "receipt")
+        {
+            await Step(() => TransitionReceiptAsync(id, "submit", ct));
+            if (docType.RequiresVerification) await Step(() => TransitionReceiptAsync(id, "verify", ct));
+            if (docType.RequiresApproval) await Step(() => TransitionReceiptAsync(id, "approve", ct));
+            await Step(() => TransitionReceiptAsync(id, "post", ct));
+        }
+        else
+        {
+            await Step(() => TransitionInvoiceAsync(id, "submit", ct));
+            if (docType.RequiresVerification) await Step(() => TransitionInvoiceAsync(id, "verify", ct));
+            if (docType.RequiresApproval) await Step(() => TransitionInvoiceAsync(id, "approve", ct));
+            await Step(() => TransitionInvoiceAsync(id, "post", ct));
+        }
     }
 }

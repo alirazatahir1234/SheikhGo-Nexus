@@ -514,7 +514,7 @@ public class PurchaseService : IPurchaseService
         await _db.PurchaseInvoices.Include(x => x.Party).Include(x => x.Lines).ThenInclude(l => l.Product)
             .OrderByDescending(x => x.Date)
             .Select(x => new PurchaseInvoiceDto(x.Id, x.InvoiceNo, x.Date, x.PartyId, x.Party!.Name, x.Status, x.SubTotal, x.Discount, x.Tax, x.GrandTotal, x.Remarks,
-                x.Lines.OrderBy(l => l.LineNo).Select(l => new InvoiceLineDto(l.Id, l.ProductId, l.Product!.Name, l.Qty, l.Rate, l.Amount)).ToList()))
+                x.Lines.OrderBy(l => l.LineNo).Select(l => new InvoiceLineDto(l.Id, l.ProductId, l.Product!.Name, l.Qty, l.Rate, l.Amount)).ToList(), null))
             .ToListAsync(ct);
 
     public async Task<PurchaseInvoiceDto> CreateAsync(PurchaseInvoiceCreateDto dto, CancellationToken ct = default)

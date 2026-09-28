@@ -6,7 +6,8 @@ public interface ITenantContext
 {
     Guid TenantId { get; }
     Guid? UserId { get; }
-    void Set(Guid tenantId, Guid? userId);
+    string? ClientIp { get; }
+    void Set(Guid tenantId, Guid? userId, string? clientIp = null);
 }
 
 public interface IAuthService

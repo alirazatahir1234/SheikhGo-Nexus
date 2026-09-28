@@ -74,6 +74,7 @@ export interface AuditLogRow {
   newValues?: string;
   userId?: string;
   timestamp: string;
+  ipAddress?: string | null;
 }
 
 export interface DocumentTypeRow {

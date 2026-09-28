@@ -8,6 +8,7 @@ import {
 import { CurrencyPipe, DatePipe } from '@angular/common';
 import {
   AuditLogEntry,
+  DocumentWorkflowActors,
   GoodsReceipt,
   PayableBalance,
   PurchaseInvoice,
@@ -25,12 +26,12 @@ import { DocumentStatusStepperComponent, statusLabel } from '../../shared/docume
 import { DocumentHeaderComponent } from '../../shared/documents/document-header.component';
 import { DocumentLinesComponent } from '../../shared/documents/document-lines.component';
 import { DocumentTotalsComponent } from '../../shared/documents/document-totals.component';
-import { VerificationPanelComponent } from '../../shared/documents/verification-panel.component';
+import { VerificationPanelComponent, VerificationEntry } from '../../shared/documents/verification-panel.component';
 import { DocumentActionsComponent, DocumentAction } from '../../shared/documents/document-actions.component';
 import { AuditTimelineComponent, AuditTimelineEntry } from '../../shared/documents/audit-timeline.component';
+import { WorkflowActorsComponent } from '../../shared/documents/workflow-actors.component';
 import { AuthService } from '../../core/services/auth.service';
 import { AdminApiService, DocumentTypeRow } from '../../core/services/admin-api.service';
-
 type ProcTab = 'orders' | 'receipts' | 'invoices';
 
 @Component({
@@ -49,6 +50,7 @@ type ProcTab = 'orders' | 'receipts' | 'invoices';
     VerificationPanelComponent,
     DocumentActionsComponent,
     AuditTimelineComponent,
+    WorkflowActorsComponent,
   ],
   templateUrl: './purchase.component.html',
   styleUrl: './purchase.component.scss',
@@ -103,7 +105,7 @@ export class PurchaseComponent implements OnInit {
   private actionAllowed(docKind: string): Partial<Record<DocumentAction, boolean>> {
     return {
       submit: this.auth.hasPermission(`Procurement.${docKind}.Submit`),
-      verify: this.auth.hasPermission(`Procurement.${docKind}.Approve`),
+      verify: this.auth.hasPermission(`Procurement.${docKind}.Verify`),
       approve: this.auth.hasPermission(`Procurement.${docKind}.Approve`),
       post: this.auth.hasPermission(`Procurement.${docKind}.Post`),
       cancel: this.auth.hasPermission(`Procurement.${docKind}.Edit`),
@@ -554,6 +556,12 @@ export class PurchaseComponent implements OnInit {
     this.selectedOrder.set(order);
     this.selectedReceipt.set(null);
     this.selectedInvoice.set(null);
+    this.api.getOrder(order.id).subscribe({
+      next: (full) => {
+        this.selectedOrder.set(full);
+        this.orders.update((list) => list.map((o) => (o.id === full.id ? full : o)));
+      },
+    });
     this.loadAudit('PurchaseOrder', order.id);
   }
 
@@ -562,6 +570,12 @@ export class PurchaseComponent implements OnInit {
     this.selectedReceipt.set(receipt);
     this.selectedOrder.set(null);
     this.selectedInvoice.set(null);
+    this.api.getReceipt(receipt.id).subscribe({
+      next: (full) => {
+        this.selectedReceipt.set(full);
+        this.receipts.update((list) => list.map((r) => (r.id === full.id ? full : r)));
+      },
+    });
     this.loadAudit('GoodsReceipt', receipt.id);
   }
 
@@ -570,7 +584,26 @@ export class PurchaseComponent implements OnInit {
     this.selectedInvoice.set(invoice);
     this.selectedOrder.set(null);
     this.selectedReceipt.set(null);
+    this.api.getInvoice(invoice.id).subscribe({
+      next: (full) => {
+        this.selectedInvoice.set(full);
+        this.invoices.update((list) => list.map((i) => (i.id === full.id ? full : i)));
+      },
+    });
     this.loadAudit('PurchaseInvoice', invoice.id);
+  }
+
+  verificationEntries(workflow?: DocumentWorkflowActors | null): VerificationEntry[] {
+    const v = workflow?.verified;
+    if (!v) return [];
+    return [
+      {
+        verifiedAt: v.at,
+        verifiedBy: v.userName || v.userId,
+        remarks: v.remarks,
+        isVerified: true,
+      },
+    ];
   }
 
   loadAudit(entity: 'PurchaseOrder' | 'GoodsReceipt' | 'PurchaseInvoice', id: string): void {
@@ -583,6 +616,7 @@ export class PurchaseComponent implements OnInit {
             oldValues: r.oldValues,
             newValues: r.newValues,
             userId: r.userId,
+            ipAddress: r.ipAddress,
           })),
         ),
       error: () => this.auditEntries.set([]),

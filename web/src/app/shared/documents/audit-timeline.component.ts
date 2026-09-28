@@ -7,6 +7,7 @@ export interface AuditTimelineEntry {
   oldValues?: string | null;
   newValues?: string | null;
   userId?: string | null;
+  ipAddress?: string | null;
 }
 
 @Component({
@@ -27,7 +28,9 @@ export interface AuditTimelineEntry {
                 <span class="muted">{{ e.timestamp | date: 'medium' }}</span>
               </div>
               @if (e.userId) {
-                <p class="muted">User {{ e.userId }}</p>
+                <p class="muted">User {{ e.userId }}@if (e.ipAddress) { · IP {{ e.ipAddress }} }</p>
+              } @else if (e.ipAddress) {
+                <p class="muted">IP {{ e.ipAddress }}</p>
               }
               @if (e.oldValues || e.newValues) {
                 <p class="audit-timeline__diff">

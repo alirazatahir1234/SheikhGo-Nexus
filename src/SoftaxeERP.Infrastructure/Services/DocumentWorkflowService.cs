@@ -64,7 +64,8 @@ public class DocumentWorkflowService(
         var suffix = key switch
         {
             "submit" => "Submit",
-            "verify" or "approve" => "Approve",
+            "verify" => "Verify",
+            "approve" => "Approve",
             "post" => "Post",
             "cancel" => "Edit",
             _ => throw new InvalidOperationException($"Unknown workflow action '{action}'.")
@@ -197,27 +198,48 @@ public class DocumentWorkflowService(
         await audit.WriteAsync(nameof(PurchaseInvoice), pi.Id, "PostedEffects", null, $"Payable +{pi.GrandTotal}", ct);
     }
 
-    private Task<PurchaseOrderDto?> MapOrderAsync(Guid id, CancellationToken ct) =>
-        db.PurchaseOrders.Include(x => x.Party).Include(x => x.Lines).ThenInclude(l => l.Product)
+    private async Task<PurchaseOrderDto?> MapOrderAsync(Guid id, CancellationToken ct)
+    {
+        var dto = await db.PurchaseOrders.Include(x => x.Party).Include(x => x.Lines).ThenInclude(l => l.Product)
             .Where(x => x.Id == id)
             .Select(x => new PurchaseOrderDto(x.Id, x.OrderNo, x.OrderDate, x.PartyId, x.Party!.Name, x.WarehouseId, x.Status,
                 x.SubTotal, x.Tax, x.GrandTotal, x.Remarks,
-                x.Lines.Select(l => new InvoiceLineDto(l.Id, l.ProductId, l.Product!.Name, l.Qty, l.Rate, l.Amount)).ToList()))
+                x.Lines.Select(l => new InvoiceLineDto(l.Id, l.ProductId, l.Product!.Name, l.Qty, l.Rate, l.Amount)).ToList(), null))
             .FirstOrDefaultAsync(ct);
+        if (dto is null) return null;
+        var entity = await db.PurchaseOrders.AsNoTracking().FirstAsync(x => x.Id == id, ct);
+        var workflow = await DocumentWorkflowActorsResolver.ResolveAsync(
+            db, nameof(PurchaseOrder), id, entity.DocumentId, entity.CreatedBy, entity.CreatedAt, ct);
+        return dto with { Workflow = workflow };
+    }
 
-    private Task<GoodsReceiptDto?> MapReceiptAsync(Guid id, CancellationToken ct) =>
-        db.GoodsReceipts.Include(x => x.Party).Include(x => x.Lines).ThenInclude(l => l.Product)
+    private async Task<GoodsReceiptDto?> MapReceiptAsync(Guid id, CancellationToken ct)
+    {
+        var dto = await db.GoodsReceipts.Include(x => x.Party).Include(x => x.Lines).ThenInclude(l => l.Product)
             .Where(x => x.Id == id)
             .Select(x => new GoodsReceiptDto(x.Id, x.ReceiptNo, x.ReceiptDate, x.PartyId, x.Party!.Name, x.WarehouseId,
                 x.PurchaseOrderId, x.Status, x.Remarks,
-                x.Lines.Select(l => new InvoiceLineDto(l.Id, l.ProductId, l.Product!.Name, l.Qty, l.Rate, l.Amount)).ToList()))
+                x.Lines.Select(l => new InvoiceLineDto(l.Id, l.ProductId, l.Product!.Name, l.Qty, l.Rate, l.Amount)).ToList(), null))
             .FirstOrDefaultAsync(ct);
+        if (dto is null) return null;
+        var entity = await db.GoodsReceipts.AsNoTracking().FirstAsync(x => x.Id == id, ct);
+        var workflow = await DocumentWorkflowActorsResolver.ResolveAsync(
+            db, nameof(GoodsReceipt), id, entity.DocumentId, entity.CreatedBy, entity.CreatedAt, ct);
+        return dto with { Workflow = workflow };
+    }
 
-    private Task<PurchaseInvoiceDto?> MapInvoiceAsync(Guid id, CancellationToken ct) =>
-        db.PurchaseInvoices.Include(x => x.Party).Include(x => x.Lines).ThenInclude(l => l.Product)
+    private async Task<PurchaseInvoiceDto?> MapInvoiceAsync(Guid id, CancellationToken ct)
+    {
+        var dto = await db.PurchaseInvoices.Include(x => x.Party).Include(x => x.Lines).ThenInclude(l => l.Product)
             .Where(x => x.Id == id)
             .Select(x => new PurchaseInvoiceDto(x.Id, x.InvoiceNo, x.InvoiceDate, x.PartyId, x.Party!.Name, x.Status,
                 x.SubTotal, x.Discount, x.Tax, x.GrandTotal, x.Remarks,
-                x.Lines.Select(l => new InvoiceLineDto(l.Id, l.ProductId, l.Product!.Name, l.Qty, l.Rate, l.Amount)).ToList()))
+                x.Lines.Select(l => new InvoiceLineDto(l.Id, l.ProductId, l.Product!.Name, l.Qty, l.Rate, l.Amount)).ToList(), null))
             .FirstOrDefaultAsync(ct);
+        if (dto is null) return null;
+        var entity = await db.PurchaseInvoices.AsNoTracking().FirstAsync(x => x.Id == id, ct);
+        var workflow = await DocumentWorkflowActorsResolver.ResolveAsync(
+            db, nameof(PurchaseInvoice), id, entity.DocumentId, entity.CreatedBy, entity.CreatedAt, ct);
+        return dto with { Workflow = workflow };
+    }
 }

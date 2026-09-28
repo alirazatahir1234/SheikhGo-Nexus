@@ -19,6 +19,7 @@ public static class DbSeeder
         ("Procurement.PurchaseOrder.Create", "Create purchase orders", "Procurement"),
         ("Procurement.PurchaseOrder.Edit", "Edit purchase orders", "Procurement"),
         ("Procurement.PurchaseOrder.Submit", "Submit purchase orders", "Procurement"),
+        ("Procurement.PurchaseOrder.Verify", "Verify purchase orders", "Procurement"),
         ("Procurement.PurchaseOrder.Approve", "Approve purchase orders", "Procurement"),
         ("Procurement.PurchaseOrder.Post", "Post purchase orders", "Procurement"),
 
@@ -26,6 +27,7 @@ public static class DbSeeder
         ("Procurement.GoodsReceipt.Create", "Create goods receipts", "Procurement"),
         ("Procurement.GoodsReceipt.Edit", "Edit goods receipts", "Procurement"),
         ("Procurement.GoodsReceipt.Submit", "Submit goods receipts", "Procurement"),
+        ("Procurement.GoodsReceipt.Verify", "Verify goods receipts", "Procurement"),
         ("Procurement.GoodsReceipt.Approve", "Approve goods receipts", "Procurement"),
         ("Procurement.GoodsReceipt.Post", "Post goods receipts", "Procurement"),
 
@@ -33,6 +35,7 @@ public static class DbSeeder
         ("Procurement.PurchaseInvoice.Create", "Create purchase invoices", "Procurement"),
         ("Procurement.PurchaseInvoice.Edit", "Edit purchase invoices", "Procurement"),
         ("Procurement.PurchaseInvoice.Submit", "Submit purchase invoices", "Procurement"),
+        ("Procurement.PurchaseInvoice.Verify", "Verify purchase invoices", "Procurement"),
         ("Procurement.PurchaseInvoice.Approve", "Approve purchase invoices", "Procurement"),
         ("Procurement.PurchaseInvoice.Post", "Post purchase invoices", "Procurement"),
 

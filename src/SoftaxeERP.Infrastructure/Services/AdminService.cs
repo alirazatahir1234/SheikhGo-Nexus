@@ -10,7 +10,19 @@ public class AuditService(AppDbContext db, ITenantContext tenant) : IAuditServic
 {
     public async Task WriteAsync(string entityName, Guid entityId, string action, string? oldValues = null, string? newValues = null, CancellationToken ct = default)
     {
-        db.AuditLogs.Add(new AuditLog { EntityName = entityName, EntityId = entityId.ToString(), Action = action, OldValues = oldValues, NewValues = newValues, UserId = tenant.UserId });
+        Guid? companyId = await db.Companies.Select(c => (Guid?)c.Id).FirstOrDefaultAsync(ct);
+        db.AuditLogs.Add(new AuditLog
+        {
+            EntityName = entityName,
+            EntityId = entityId.ToString(),
+            Action = action,
+            OldValues = oldValues,
+            NewValues = newValues,
+            UserId = tenant.UserId,
+            CompanyId = companyId,
+            IpAddress = tenant.ClientIp,
+            Timestamp = DateTime.UtcNow
+        });
         await db.SaveChangesAsync(ct);
     }
 }
@@ -52,7 +64,7 @@ public class AdminService(AppDbContext db) : IAdminService
     public async Task<FinancialYearDto?> SetCurrentFinancialYearAsync(Guid id, CancellationToken ct = default) { var fy = await db.FinancialYears.FirstOrDefaultAsync(x => x.Id == id, ct); if (fy is null) return null; await db.FinancialYears.ExecuteUpdateAsync(x => x.SetProperty(y => y.IsCurrent, false), ct); fy.IsCurrent = true; await db.SaveChangesAsync(ct); return new(fy.Id, fy.CompanyId, fy.Code, fy.StartDate, fy.EndDate, true, fy.IsClosed); }
     public Task<IReadOnlyList<FiscalPeriodDto>> GetFiscalPeriodsAsync(Guid yearId, CancellationToken ct = default) => db.FiscalPeriods.Where(x => x.FinancialYearId == yearId).OrderBy(x => x.PeriodNumber).Select(x => new FiscalPeriodDto(x.Id, x.FinancialYearId, x.Name, x.PeriodNumber, x.StartDate, x.EndDate, x.IsClosed)).ToListAsync(ct).ContinueWith(x => (IReadOnlyList<FiscalPeriodDto>)x.Result, ct);
     public async Task<FiscalPeriodDto> CreateFiscalPeriodAsync(Guid yearId, FiscalPeriodCreateDto dto, CancellationToken ct = default) { if (!await db.FinancialYears.AnyAsync(x => x.Id == yearId, ct)) throw new InvalidOperationException("Financial year not found."); var p = new FiscalPeriod { FinancialYearId = yearId, Name = dto.Name, PeriodNumber = dto.PeriodNumber, StartDate = dto.StartDate.Date, EndDate = dto.EndDate.Date }; db.FiscalPeriods.Add(p); await db.SaveChangesAsync(ct); return new(p.Id, p.FinancialYearId, p.Name, p.PeriodNumber, p.StartDate, p.EndDate, p.IsClosed); }
-    public Task<IReadOnlyList<AuditLogDto>> GetAuditLogsAsync(string? name, string? id, int take, CancellationToken ct = default) { var q = db.AuditLogs.AsQueryable(); if (!string.IsNullOrWhiteSpace(name)) q = q.Where(x => x.EntityName == name); if (!string.IsNullOrWhiteSpace(id)) q = q.Where(x => x.EntityId == id); return q.OrderByDescending(x => x.Timestamp).Take(Math.Clamp(take, 1, 500)).Select(x => new AuditLogDto(x.Id, x.EntityName, x.EntityId, x.Action, x.OldValues, x.NewValues, x.UserId, x.Timestamp)).ToListAsync(ct).ContinueWith(x => (IReadOnlyList<AuditLogDto>)x.Result, ct); }
+    public Task<IReadOnlyList<AuditLogDto>> GetAuditLogsAsync(string? name, string? id, int take, CancellationToken ct = default) { var q = db.AuditLogs.AsQueryable(); if (!string.IsNullOrWhiteSpace(name)) q = q.Where(x => x.EntityName == name); if (!string.IsNullOrWhiteSpace(id)) q = q.Where(x => x.EntityId == id); return q.OrderByDescending(x => x.Timestamp).Take(Math.Clamp(take, 1, 500)).Select(x => new AuditLogDto(x.Id, x.EntityName, x.EntityId, x.Action, x.OldValues, x.NewValues, x.UserId, x.Timestamp, x.IpAddress)).ToListAsync(ct).ContinueWith(x => (IReadOnlyList<AuditLogDto>)x.Result, ct); }
     public Task<IReadOnlyList<DocumentTypeDto>> GetDocumentTypesAsync(CancellationToken ct = default) => db.DocumentTypes.OrderBy(x => x.Code).Select(x => Map(x)).ToListAsync(ct).ContinueWith(x => (IReadOnlyList<DocumentTypeDto>)x.Result, ct);
     public async Task<DocumentTypeDto?> UpdateDocumentTypeAsync(Guid id, DocumentTypeUpsertDto dto, CancellationToken ct = default) { var d = await db.DocumentTypes.FirstOrDefaultAsync(x => x.Id == id, ct); if (d is null) return null; d.Code = dto.Code; d.Name = dto.Name; d.RequiresVerification = dto.RequiresVerification; d.RequiresApproval = dto.RequiresApproval; d.Prefix = dto.Prefix; d.AffectsInventory = dto.AffectsInventory; d.AffectsGl = dto.AffectsGl; await db.SaveChangesAsync(ct); return Map(d); }
     private static CompanyDto Map(Company x) => new(x.Id, x.Name, x.ShortName, x.Address, x.City, x.Country, x.Phone, x.Email, x.Currency, x.Ntn, x.Industry, x.DefaultSaleTaxPercent, x.DefaultPurchaseTaxPercent);

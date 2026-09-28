@@ -84,13 +84,13 @@ public record InvoiceLineDto(Guid? Id, Guid ProductId, string? ProductName, deci
 public record SaleInvoiceDto(Guid Id, string InvoiceNo, DateTime Date, Guid PartyId, string? PartyName, DocumentStatus Status, decimal SubTotal, decimal Discount, decimal Tax, decimal GrandTotal, string? Remarks, IReadOnlyList<InvoiceLineDto> Lines);
 public record SaleInvoiceCreateDto(DateTime Date, Guid PartyId, decimal Discount, decimal Tax, string? Remarks, bool Post, IReadOnlyList<InvoiceLineDto> Lines);
 
-public record PurchaseInvoiceDto(Guid Id, string InvoiceNo, DateTime Date, Guid PartyId, string? PartyName, DocumentStatus Status, decimal SubTotal, decimal Discount, decimal Tax, decimal GrandTotal, string? Remarks, IReadOnlyList<InvoiceLineDto> Lines);
+public record PurchaseInvoiceDto(Guid Id, string InvoiceNo, DateTime Date, Guid PartyId, string? PartyName, DocumentStatus Status, decimal SubTotal, decimal Discount, decimal Tax, decimal GrandTotal, string? Remarks, IReadOnlyList<InvoiceLineDto> Lines, DocumentWorkflowActorsDto? Workflow = null);
 public record PurchaseInvoiceCreateDto(DateTime Date, Guid PartyId, decimal Discount, decimal Tax, string? Remarks, bool Post, IReadOnlyList<InvoiceLineDto> Lines, Guid? GoodsReceiptId = null, Guid? PurchaseOrderId = null);
 
-public record PurchaseOrderDto(Guid Id, string OrderNo, DateTime Date, Guid PartyId, string? PartyName, Guid? WarehouseId, DocumentStatus Status, decimal SubTotal, decimal Tax, decimal GrandTotal, string? Remarks, IReadOnlyList<InvoiceLineDto> Lines);
+public record PurchaseOrderDto(Guid Id, string OrderNo, DateTime Date, Guid PartyId, string? PartyName, Guid? WarehouseId, DocumentStatus Status, decimal SubTotal, decimal Tax, decimal GrandTotal, string? Remarks, IReadOnlyList<InvoiceLineDto> Lines, DocumentWorkflowActorsDto? Workflow = null);
 public record PurchaseOrderCreateDto(DateTime Date, Guid PartyId, Guid? WarehouseId, decimal Tax, string? Remarks, bool Post, IReadOnlyList<InvoiceLineDto> Lines);
 
-public record GoodsReceiptDto(Guid Id, string ReceiptNo, DateTime Date, Guid PartyId, string? PartyName, Guid WarehouseId, Guid? PurchaseOrderId, DocumentStatus Status, string? Remarks, IReadOnlyList<InvoiceLineDto> Lines);
+public record GoodsReceiptDto(Guid Id, string ReceiptNo, DateTime Date, Guid PartyId, string? PartyName, Guid WarehouseId, Guid? PurchaseOrderId, DocumentStatus Status, string? Remarks, IReadOnlyList<InvoiceLineDto> Lines, DocumentWorkflowActorsDto? Workflow = null);
 public record GoodsReceiptCreateDto(DateTime Date, Guid PartyId, Guid WarehouseId, Guid? PurchaseOrderId, string? Remarks, bool Post, IReadOnlyList<InvoiceLineDto> Lines);
 
 public record PayableBalanceDto(Guid PartyId, string? PartyName, decimal Balance);
@@ -116,12 +116,23 @@ public record FinancialYearDto(Guid Id, Guid CompanyId, string Code, DateTime St
 public record FinancialYearCreateDto(string Code, DateTime StartDate, DateTime EndDate);
 public record FiscalPeriodDto(Guid Id, Guid FinancialYearId, string Name, int PeriodNumber, DateTime StartDate, DateTime EndDate, bool IsClosed);
 public record FiscalPeriodCreateDto(string Name, int PeriodNumber, DateTime StartDate, DateTime EndDate);
-public record AuditLogDto(Guid Id, string EntityName, string EntityId, string Action, string? OldValues, string? NewValues, Guid? UserId, DateTime Timestamp);
+public record AuditLogDto(Guid Id, string EntityName, string EntityId, string Action, string? OldValues, string? NewValues, Guid? UserId, DateTime Timestamp, string? IpAddress = null);
 public record DocumentTypeDto(Guid Id, string Code, string Name, bool RequiresVerification, bool RequiresApproval, string? Prefix, bool AffectsInventory, bool AffectsGl);
 public record DocumentTypeUpsertDto(string Code, string Name, bool RequiresVerification, bool RequiresApproval, string? Prefix, bool AffectsInventory, bool AffectsGl);
 
 /// <summary>Optional remarks on a document workflow transition (submit/verify/approve/post/cancel).</summary>
 public record DocumentActionDto(string? Remarks = null);
+
+/// <summary>Actor stamp for a document workflow step (projected from audit / verification / approval).</summary>
+public record DocumentActorDto(Guid? UserId, string? UserName, DateTime? At, string? Remarks = null);
+
+/// <summary>Submitted / Verified / Approved / Posted actors for UI panels (no schema churn).</summary>
+public record DocumentWorkflowActorsDto(
+    DocumentActorDto? Created,
+    DocumentActorDto? Submitted,
+    DocumentActorDto? Verified,
+    DocumentActorDto? Approved,
+    DocumentActorDto? Posted);
 
 /// <summary>Result of a document workflow transition.</summary>
 public record DocumentTransitionResultDto(

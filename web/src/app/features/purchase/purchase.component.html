@@ -335,7 +335,11 @@
       <app-document-status-stepper [status]="o.status" />
       <app-document-lines [lines]="o.lines" />
       <app-document-totals [subTotal]="o.subTotal" [tax]="o.tax" [grandTotal]="o.grandTotal" />
-      <app-verification-panel [required]="poFlags().requiresVerification" />
+      <app-workflow-actors [workflow]="o.workflow" />
+      <app-verification-panel
+        [required]="poFlags().requiresVerification"
+        [entries]="verificationEntries(o.workflow)"
+      />
       <app-document-actions
         [status]="o.status"
         [busy]="transitioning()"
@@ -361,7 +365,11 @@
       <app-document-status-stepper [status]="r.status" />
       <app-document-lines [lines]="r.lines" />
       <app-document-totals [subTotal]="receiptSubTotal(r)" [grandTotal]="receiptSubTotal(r)" />
-      <app-verification-panel [required]="grnFlags().requiresVerification" />
+      <app-workflow-actors [workflow]="r.workflow" />
+      <app-verification-panel
+        [required]="grnFlags().requiresVerification"
+        [entries]="verificationEntries(r.workflow)"
+      />
       <app-document-actions
         [status]="r.status"
         [busy]="transitioning()"
@@ -392,7 +400,11 @@
         [discount]="inv.discount"
         [grandTotal]="inv.grandTotal"
       />
-      <app-verification-panel [required]="piFlags().requiresVerification" />
+      <app-workflow-actors [workflow]="inv.workflow" />
+      <app-verification-panel
+        [required]="piFlags().requiresVerification"
+        [entries]="verificationEntries(inv.workflow)"
+      />
       <app-document-actions
         [status]="inv.status"
         [busy]="transitioning()"

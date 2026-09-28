@@ -22,6 +22,21 @@ export interface PurchaseLine {
   amount: number;
 }
 
+export interface DocumentActor {
+  userId?: string | null;
+  userName?: string | null;
+  at?: string | null;
+  remarks?: string | null;
+}
+
+export interface DocumentWorkflowActors {
+  created?: DocumentActor | null;
+  submitted?: DocumentActor | null;
+  verified?: DocumentActor | null;
+  approved?: DocumentActor | null;
+  posted?: DocumentActor | null;
+}
+
 export interface PurchaseOrder {
   id: string;
   orderNo: string;
@@ -35,6 +50,7 @@ export interface PurchaseOrder {
   grandTotal: number;
   remarks?: string;
   lines: PurchaseLine[];
+  workflow?: DocumentWorkflowActors | null;
 }
 
 export interface GoodsReceipt {
@@ -48,6 +64,7 @@ export interface GoodsReceipt {
   status: DocumentStatusName | number | string;
   remarks?: string;
   lines: PurchaseLine[];
+  workflow?: DocumentWorkflowActors | null;
 }
 
 export interface PurchaseInvoice {
@@ -65,6 +82,7 @@ export interface PurchaseInvoice {
   lines: PurchaseLine[];
   goodsReceiptId?: string | null;
   purchaseOrderId?: string | null;
+  workflow?: DocumentWorkflowActors | null;
 }
 
 export interface PayableBalance {
@@ -82,6 +100,7 @@ export interface AuditLogEntry {
   newValues?: string | null;
   userId?: string | null;
   timestamp: string;
+  ipAddress?: string | null;
 }
 
 export interface PurchaseOrderCreatePayload {
@@ -134,6 +153,10 @@ export class PurchasesService {
     return this.http.get<PurchaseOrder[]>(`${this.url}/orders`);
   }
 
+  getOrder(id: string): Observable<PurchaseOrder> {
+    return this.http.get<PurchaseOrder>(`${this.url}/orders/${id}`);
+  }
+
   createOrder(payload: PurchaseOrderCreatePayload): Observable<PurchaseOrder> {
     return this.http.post<PurchaseOrder>(`${this.url}/orders`, payload);
   }
@@ -150,12 +173,20 @@ export class PurchasesService {
     return this.http.get<GoodsReceipt[]>(`${this.url}/receipts`);
   }
 
+  getReceipt(id: string): Observable<GoodsReceipt> {
+    return this.http.get<GoodsReceipt>(`${this.url}/receipts/${id}`);
+  }
+
   createReceipt(payload: GoodsReceiptCreatePayload): Observable<GoodsReceipt> {
     return this.http.post<GoodsReceipt>(`${this.url}/receipts`, payload);
   }
 
   transitionReceipt(id: string, action: DocTransitionAction): Observable<GoodsReceipt> {
     return this.http.post<GoodsReceipt>(`${this.url}/receipts/${id}/${action}`, {});
+  }
+
+  getInvoice(id: string): Observable<PurchaseInvoice> {
+    return this.http.get<PurchaseInvoice>(`${this.url}/${id}`);
   }
 
   transitionInvoice(id: string, action: DocTransitionAction): Observable<PurchaseInvoice> {

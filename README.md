@@ -37,13 +37,15 @@ Development allowlist: connection `Database` must be `SheikhGo_Nexus_Dev` (enfor
 
 - **Shell:** SheikhGo Nexus login, domain sidebar, company/branch/FY session context, breadcrumb
 - **Session:** Login returns companies, default branch, current FY, and permission codes; topbar switcher persists `nexus_*` keys
-- **RBAC:** API `PermissionService` enforces workflow; Angular `permissionGuard` + sidebar/action gating
-- **Administration APIs + UI:** Companies, Branches, Users/Roles/Permissions, Financial Years / Fiscal Periods, Audit Log, Document Types
+- **RBAC:** API `PermissionService` enforces workflow; Angular `permissionGuard` + sidebar/action gating; `Procurement.*.Verify` seeded and enforced separately from Approve
+- **Administration APIs + UI:** Companies, Branches, Users/Roles/Permissions, Financial Years / Fiscal Periods, Audit Log (incl. IP), Document Types
 - **Document Engine:** DocumentType-driven lifecycle (PO skips verify; GRN skips approve; PI uses full chain) with Verification/Approval + AuditLog
-- **Procurement UX:** shared document components (header, lines, totals, status stepper, document-actions, verification panel, audit timeline) on PO / GRN / PI
+- **Procurement UX:** shared document components (header, lines, totals, status stepper, document-actions, verification panel, workflow actors, audit timeline) on PO / GRN / PI
 - **Dashboard:** Purchases / Inventory / Payables / Receivables KPIs, pending approvals, recent documents
 - **Partial GRN:** quantities cannot exceed remaining PO line qty; multiple GRNs per PO allowed
-- **Permission seed:** Inventory.*, Procurement.*.View|Create|Edit|Submit|Approve|Post, Admin.* (Admin role gets all)
+- **Permission seed:** Inventory.*, Procurement.*.View|Create|Edit|Submit|Verify|Approve|Post, Admin.* (Admin role gets all)
+- **Audit IP:** `AuditLog.IpAddress` populated from `X-Forwarded-For` / remote IP via `ITenantContext.ClientIp`
+- **Workflow actors:** Get-by-id DTOs expose Created/Submitted/Verified/Approved/Posted (projected; no Document column churn)
 
 ### Key API routes
 
