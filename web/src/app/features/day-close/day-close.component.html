@@ -1,0 +1,30 @@
+<app-page-header title="Day close" subtitle="Lock a business day (Softaxe TblDayClose).">
+  <button type="button" class="btn btn--primary" (click)="showForm.set(true)">Close day</button>
+</app-page-header>
+@if (error()) { <div class="alert alert--warn">{{ error() }}</div> }
+@if (showForm()) {
+  <section class="panel form-panel">
+    <h2>Close business day</h2>
+    <form class="form-grid" [formGroup]="form" (ngSubmit)="save()">
+      <label class="field"><span>Date</span><input type="date" formControlName="closeDate" /></label>
+      <label class="field"><span>Remarks</span><input formControlName="remarks" /></label>
+      <div class="form-actions span-2">
+        <button type="button" class="btn btn--ghost" (click)="showForm.set(false)">Cancel</button>
+        <button type="submit" class="btn btn--primary" [disabled]="saving()">Close</button>
+      </div>
+    </form>
+  </section>
+}
+<section class="panel"><div class="table-wrap"><table>
+  <thead><tr><th>Date</th><th>Closed</th><th>By</th><th>Remarks</th></tr></thead>
+  <tbody>
+    @for (d of items(); track d.id) {
+      <tr>
+        <td>{{ d.closeDate | date:'mediumDate' }}</td>
+        <td>{{ d.isClosed ? 'Yes' : 'No' }}</td>
+        <td>{{ d.closedBy || '—' }}</td>
+        <td>{{ d.remarks || '—' }}</td>
+      </tr>
+    } @empty { <tr><td colspan="4" class="empty">No day closes yet.</td></tr> }
+  </tbody>
+</table></div></section>

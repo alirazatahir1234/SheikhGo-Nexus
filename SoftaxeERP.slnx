@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/SoftaxeERP.Api/SoftaxeERP.Api.csproj" />
+    <Project Path="src/SoftaxeERP.Application/SoftaxeERP.Application.csproj" />
+    <Project Path="src/SoftaxeERP.Domain/SoftaxeERP.Domain.csproj" />
+    <Project Path="src/SoftaxeERP.Infrastructure/SoftaxeERP.Infrastructure.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,66 @@
+<app-page-header title="Chart of Accounts" subtitle="Ledger structure for Softaxe ERP.">
+  <app-search-box placeholder="Search accounts…" [value]="search()" (valueChange)="search.set($event)" />
+  <button type="button" class="btn btn--primary" (click)="openForm()">Add account</button>
+</app-page-header>
+
+@if (error()) {
+  <div class="alert alert--warn">{{ error() }}</div>
+}
+
+@if (showForm()) {
+  <section class="panel form-panel">
+    <h2>New account</h2>
+    <form class="form-grid" [formGroup]="form" (ngSubmit)="save()">
+      <label class="field"><span>Code</span><input formControlName="code" /></label>
+      <label class="field"><span>Name</span><input formControlName="name" /></label>
+      <label class="field">
+        <span>Type</span>
+        <select formControlName="accountType">
+          @for (t of accountTypes; track t) {
+            <option [value]="t">{{ t }}</option>
+          }
+        </select>
+      </label>
+      <label class="field"><span>Parent ID</span><input type="number" formControlName="parentId" /></label>
+      <label class="field checkbox">
+        <input type="checkbox" formControlName="isPostable" />
+        <span>Postable</span>
+      </label>
+      <div class="form-actions">
+        <button type="button" class="btn btn--ghost" (click)="showForm.set(false)">Cancel</button>
+        <button type="submit" class="btn btn--primary" [disabled]="saving()">{{ saving() ? 'Saving…' : 'Save' }}</button>
+      </div>
+    </form>
+  </section>
+}
+
+<section class="panel">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Code</th>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Parent</th>
+          <th>Postable</th>
+          <th class="num">Balance</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (a of filtered(); track a.id) {
+          <tr>
+            <td>{{ a.code }}</td>
+            <td>{{ a.name }}</td>
+            <td><span class="badge">{{ a.accountType }}</span></td>
+            <td>{{ a.parentId ?? '—' }}</td>
+            <td>{{ a.isPostable ? 'Yes' : 'No' }}</td>
+            <td class="num">{{ a.balance | currency: 'PKR' : 'symbol' : '1.0-2' }}</td>
+          </tr>
+        } @empty {
+          <tr><td colspan="6" class="empty">{{ loading() ? 'Loading…' : 'No accounts found.' }}</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

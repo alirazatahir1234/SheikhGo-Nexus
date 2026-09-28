@@ -1,0 +1,11 @@
+/Users/alirazatahir/Projects/SoftaxeERP/src/SoftaxeERP.Domain/bin/Debug/net8.0/SoftaxeERP.Domain.deps.json
+/Users/alirazatahir/Projects/SoftaxeERP/src/SoftaxeERP.Domain/bin/Debug/net8.0/SoftaxeERP.Domain.dll
+/Users/alirazatahir/Projects/SoftaxeERP/src/SoftaxeERP.Domain/bin/Debug/net8.0/SoftaxeERP.Domain.pdb
+/Users/alirazatahir/Projects/SoftaxeERP/src/SoftaxeERP.Domain/obj/Debug/net8.0/SoftaxeERP.Domain.GeneratedMSBuildEditorConfig.editorconfig
+/Users/alirazatahir/Projects/SoftaxeERP/src/SoftaxeERP.Domain/obj/Debug/net8.0/SoftaxeERP.Domain.AssemblyInfoInputs.cache
+/Users/alirazatahir/Projects/SoftaxeERP/src/SoftaxeERP.Domain/obj/Debug/net8.0/SoftaxeERP.Domain.AssemblyInfo.cs
+/Users/alirazatahir/Projects/SoftaxeERP/src/SoftaxeERP.Domain/obj/Debug/net8.0/SoftaxeERP.Domain.csproj.CoreCompileInputs.cache
+/Users/alirazatahir/Projects/SoftaxeERP/src/SoftaxeERP.Domain/obj/Debug/net8.0/SoftaxeERP.Domain.dll
+/Users/alirazatahir/Projects/SoftaxeERP/src/SoftaxeERP.Domain/obj/Debug/net8.0/refint/SoftaxeERP.Domain.dll
+/Users/alirazatahir/Projects/SoftaxeERP/src/SoftaxeERP.Domain/obj/Debug/net8.0/SoftaxeERP.Domain.pdb
+/Users/alirazatahir/Projects/SoftaxeERP/src/SoftaxeERP.Domain/obj/Debug/net8.0/ref/SoftaxeERP.Domain.dll

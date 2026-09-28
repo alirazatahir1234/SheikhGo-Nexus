@@ -1,0 +1,72 @@
+<app-page-header title="Parties" subtitle="Customers and suppliers.">
+  <app-search-box placeholder="Search parties…" [value]="search()" (valueChange)="search.set($event)" />
+  <button type="button" class="btn btn--primary" (click)="openCreate()">Add party</button>
+</app-page-header>
+
+@if (error()) {
+  <div class="alert alert--warn">{{ error() }}</div>
+}
+
+@if (showForm()) {
+  <section class="panel form-panel">
+    <h2>{{ editingId() ? 'Edit party' : 'New party' }}</h2>
+    <form class="form-grid" [formGroup]="form" (ngSubmit)="save()">
+      <label class="field"><span>Code</span><input formControlName="code" /></label>
+      <label class="field"><span>Name</span><input formControlName="name" /></label>
+      <label class="field">
+        <span>Type</span>
+        <select formControlName="partyType">
+          @for (t of partyTypes; track t) {
+            <option [value]="t">{{ t }}</option>
+          }
+        </select>
+      </label>
+      <label class="field"><span>Phone</span><input formControlName="phone" /></label>
+      <label class="field"><span>Email</span><input type="email" formControlName="email" /></label>
+      <label class="field"><span>City</span><input formControlName="city" /></label>
+      <label class="field span-2"><span>Address</span><input formControlName="address" /></label>
+      <label class="field"><span>Credit limit</span><input type="number" formControlName="creditLimit" /></label>
+      <label class="field"><span>Opening balance</span><input type="number" formControlName="openingBalance" /></label>
+      <div class="form-actions span-2">
+        <button type="button" class="btn btn--ghost" (click)="showForm.set(false)">Cancel</button>
+        <button type="submit" class="btn btn--primary" [disabled]="saving()">{{ saving() ? 'Saving…' : 'Save' }}</button>
+      </div>
+    </form>
+  </section>
+}
+
+<section class="panel">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Code</th>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Phone</th>
+          <th>City</th>
+          <th class="num">Credit limit</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (p of filtered(); track p.id) {
+          <tr>
+            <td>{{ p.code }}</td>
+            <td>{{ p.name }}</td>
+            <td><span class="badge">{{ p.partyType }}</span></td>
+            <td>{{ p.phone || '—' }}</td>
+            <td>{{ p.city || '—' }}</td>
+            <td class="num">{{ p.creditLimit | currency: 'PKR' : 'symbol' : '1.0-0' }}</td>
+            <td class="actions">
+              <button type="button" class="btn btn--ghost btn--sm" (click)="openEdit(p)">Edit</button>
+              <button type="button" class="btn btn--danger btn--sm" (click)="remove(p)">Delete</button>
+            </td>
+          </tr>
+        } @empty {
+          <tr><td colspan="7" class="empty">{{ loading() ? 'Loading…' : 'No parties found.' }}</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

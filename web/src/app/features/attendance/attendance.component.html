@@ -1,0 +1,72 @@
+<app-page-header title="Attendance & OT" subtitle="Daily attendance and overtime (Softaxe tblOverTime).">
+  <button type="button" class="btn btn--ghost" (click)="show.set('ot')">+ Overtime</button>
+  <button type="button" class="btn btn--primary" (click)="show.set('att')">+ Attendance</button>
+</app-page-header>
+@if (error()) { <div class="alert alert--warn">{{ error() }}</div> }
+<div class="tabs">
+  <button type="button" [class.active]="tab()==='attendance'" (click)="tab.set('attendance')">Attendance</button>
+  <button type="button" [class.active]="tab()==='overtime'" (click)="tab.set('overtime')">Overtime</button>
+</div>
+@if (show()==='att') {
+  <section class="panel form-panel"><h2>Attendance</h2>
+    <form class="form-grid" [formGroup]="attForm" (ngSubmit)="saveAtt()">
+      <label class="field"><span>Date</span><input type="date" formControlName="date" /></label>
+      <label class="field"><span>Employee</span>
+        <select formControlName="employeeId"><option value="">Select…</option>
+          @for (e of employees(); track e.id) { <option [ngValue]="e.id">{{ e.code }} — {{ e.name }}</option> }
+        </select>
+      </label>
+      <label class="field"><span>Status</span>
+        <select formControlName="status"><option>Present</option><option>Absent</option><option>Leave</option><option>Holiday</option></select>
+      </label>
+      <label class="field"><span>Shift</span><input formControlName="shift" /></label>
+      <label class="field span-2"><span>Remarks</span><input formControlName="remarks" /></label>
+      <div class="form-actions span-2">
+        <button type="button" class="btn btn--ghost" (click)="show.set(null)">Cancel</button>
+        <button type="submit" class="btn btn--primary" [disabled]="saving()">Save</button>
+      </div>
+    </form>
+  </section>
+}
+@if (show()==='ot') {
+  <section class="panel form-panel"><h2>Overtime</h2>
+    <form class="form-grid" [formGroup]="otForm" (ngSubmit)="saveOt()">
+      <label class="field"><span>Date</span><input type="date" formControlName="date" /></label>
+      <label class="field"><span>Employee</span>
+        <select formControlName="employeeId"><option value="">Select…</option>
+          @for (e of employees(); track e.id) { <option [ngValue]="e.id">{{ e.code }} — {{ e.name }}</option> }
+        </select>
+      </label>
+      <label class="field"><span>Hours</span><input type="number" formControlName="hours" step="0.25" /></label>
+      <label class="field"><span>Rate / hr</span><input type="number" formControlName="perHourRate" /></label>
+      <label class="field span-2"><span>Remarks</span><input formControlName="remarks" /></label>
+      <div class="form-actions span-2">
+        <button type="button" class="btn btn--ghost" (click)="show.set(null)">Cancel</button>
+        <button type="submit" class="btn btn--primary" [disabled]="saving()">Save</button>
+      </div>
+    </form>
+  </section>
+}
+@if (tab()==='attendance') {
+  <section class="panel"><div class="table-wrap"><table>
+    <thead><tr><th>Date</th><th>Employee</th><th>Status</th><th>Shift</th><th>Remarks</th></tr></thead>
+    <tbody>
+      @for (a of attendance(); track a.id) {
+        <tr><td>{{ a.date | date:'mediumDate' }}</td><td>{{ a.employeeName }}</td><td>{{ a.status }}</td><td>{{ a.shift || '—' }}</td><td>{{ a.remarks || '—' }}</td></tr>
+      } @empty { <tr><td colspan="5" class="empty">No attendance.</td></tr> }
+    </tbody>
+  </table></div></section>
+} @else {
+  <section class="panel"><div class="table-wrap"><table>
+    <thead><tr><th>Doc #</th><th>Date</th><th>Employee</th><th class="num">Hours</th><th class="num">Rate</th><th class="num">Amount</th></tr></thead>
+    <tbody>
+      @for (o of overtime(); track o.id) {
+        <tr>
+          <td>{{ o.docNo }}</td><td>{{ o.date | date:'mediumDate' }}</td><td>{{ o.employeeName }}</td>
+          <td class="num">{{ o.hours }}</td><td class="num">{{ o.perHourRate | currency:'PKR':'symbol':'1.0-2' }}</td>
+          <td class="num">{{ o.amount | currency:'PKR':'symbol':'1.0-0' }}</td>
+        </tr>
+      } @empty { <tr><td colspan="6" class="empty">No overtime.</td></tr> }
+    </tbody>
+  </table></div></section>
+}

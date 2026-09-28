@@ -1,0 +1,152 @@
+<section class="reports">
+  <app-page-header title="Reports" subtitle="Ledger, trial balance, and AR/AP aging for the current company." />
+
+  <div class="tabs">
+    <button type="button" [class.active]="tab() === 'ledger'" (click)="setTab('ledger')">Account ledger</button>
+    <button type="button" [class.active]="tab() === 'trial'" (click)="setTab('trial')">Trial balance</button>
+    <button type="button" [class.active]="tab() === 'ar'" (click)="setTab('ar')">AR aging</button>
+    <button type="button" [class.active]="tab() === 'ap'" (click)="setTab('ap')">AP aging</button>
+  </div>
+
+  @if (error()) {
+    <div class="alert alert--danger">{{ error() }}</div>
+  }
+
+  @if (tab() === 'ledger') {
+    <form class="panel filters" [formGroup]="ledgerForm" (ngSubmit)="runLedger()">
+      <label class="field">
+        <span>Account</span>
+        <select formControlName="accountId">
+          <option value="">Select account</option>
+          @for (a of accounts(); track a.id) {
+            <option [value]="a.id">{{ a.code }} — {{ a.name }}</option>
+          }
+        </select>
+      </label>
+      <label class="field"><span>From</span><input type="date" formControlName="from" /></label>
+      <label class="field"><span>To</span><input type="date" formControlName="to" /></label>
+      <button class="btn btn--primary" type="submit" [disabled]="loading()">Run</button>
+    </form>
+
+    @if (ledger(); as r) {
+      <div class="panel">
+        <div class="meta">
+          <strong>{{ r.accountCode }} — {{ r.accountName }}</strong>
+          <span>Opening: {{ r.openingBalance | currency: 'PKR':'symbol':'1.0-2' }}</span>
+          <span>Closing: {{ r.closingBalance | currency: 'PKR':'symbol':'1.0-2' }}</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th><th>Voucher</th><th>Type</th><th>Narration</th>
+                <th class="num">Debit</th><th class="num">Credit</th><th class="num">Balance</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (l of r.lines; track l.voucherNo + l.date + l.debit + l.credit) {
+                <tr>
+                  <td>{{ l.date | date: 'mediumDate' }}</td>
+                  <td>{{ l.voucherNo }}</td>
+                  <td>{{ l.voucherType }}</td>
+                  <td>{{ l.narration || '—' }}</td>
+                  <td class="num">{{ l.debit | currency: 'PKR':'symbol':'1.0-2' }}</td>
+                  <td class="num">{{ l.credit | currency: 'PKR':'symbol':'1.0-2' }}</td>
+                  <td class="num">{{ l.balance | currency: 'PKR':'symbol':'1.0-2' }}</td>
+                </tr>
+              } @empty {
+                <tr><td colspan="7" class="muted">No movements in this period.</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+  }
+
+  @if (tab() === 'trial') {
+    <form class="panel filters" [formGroup]="asOfForm" (ngSubmit)="runTrial()">
+      <label class="field"><span>As of</span><input type="date" formControlName="asOf" /></label>
+      <button class="btn btn--primary" type="submit" [disabled]="loading()">Run</button>
+    </form>
+
+    @if (trial(); as r) {
+      <div class="panel">
+        <div class="meta">
+          <strong>As of {{ r.asOf | date: 'mediumDate' }}</strong>
+          <span>Total Dr {{ r.totalDebit | currency: 'PKR':'symbol':'1.0-2' }}</span>
+          <span>Total Cr {{ r.totalCredit | currency: 'PKR':'symbol':'1.0-2' }}</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Code</th><th>Account</th><th>Type</th>
+                <th class="num">Debit</th><th class="num">Credit</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (l of r.lines; track l.accountId) {
+                <tr>
+                  <td>{{ l.code }}</td>
+                  <td>{{ l.name }}</td>
+                  <td>{{ l.accountType }}</td>
+                  <td class="num">{{ l.debit | currency: 'PKR':'symbol':'1.0-2' }}</td>
+                  <td class="num">{{ l.credit | currency: 'PKR':'symbol':'1.0-2' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+  }
+
+  @if (tab() === 'ar' || tab() === 'ap') {
+    <form class="panel filters" [formGroup]="asOfForm" (ngSubmit)="runAging(tab() === 'ar' ? 'ar' : 'ap')">
+      <label class="field"><span>As of</span><input type="date" formControlName="asOf" /></label>
+      <button class="btn btn--primary" type="submit" [disabled]="loading()">
+        Run {{ tab() === 'ar' ? 'receivables' : 'payables' }} aging
+      </button>
+    </form>
+
+    @if (aging(); as r) {
+      <div class="panel">
+        <div class="meta">
+          <strong>{{ r.kind }} aging — {{ r.asOf | date: 'mediumDate' }}</strong>
+          <span>Total {{ r.grandTotal | currency: 'PKR':'symbol':'1.0-2' }}</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Party</th>
+                <th class="num">Current</th>
+                <th class="num">1–30</th>
+                <th class="num">31–60</th>
+                <th class="num">61–90</th>
+                <th class="num">90+</th>
+                <th class="num">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of r.rows; track row.partyCode + row.partyName) {
+                <tr>
+                  <td><strong>{{ row.partyName }}</strong><div class="muted tiny">{{ row.partyCode }}</div></td>
+                  <td class="num">{{ row.current | currency: 'PKR':'symbol':'1.0-2' }}</td>
+                  <td class="num">{{ row.days1To30 | currency: 'PKR':'symbol':'1.0-2' }}</td>
+                  <td class="num">{{ row.days31To60 | currency: 'PKR':'symbol':'1.0-2' }}</td>
+                  <td class="num">{{ row.days61To90 | currency: 'PKR':'symbol':'1.0-2' }}</td>
+                  <td class="num">{{ row.days90Plus | currency: 'PKR':'symbol':'1.0-2' }}</td>
+                  <td class="num"><strong>{{ row.total | currency: 'PKR':'symbol':'1.0-2' }}</strong></td>
+                </tr>
+              } @empty {
+                <tr><td colspan="7" class="muted">No outstanding balances.</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+  }
+</section>

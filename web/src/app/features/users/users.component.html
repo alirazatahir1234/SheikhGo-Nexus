@@ -1,0 +1,41 @@
+<section class="users">
+  <app-page-header title="Users & Roles" subtitle="Tenant users with Softaxe ERP roles.">
+    <button class="btn btn--primary" type="button" (click)="showForm.set(true)">+ User</button>
+  </app-page-header>
+
+  @if (error()) { <div class="alert alert--danger">{{ error() }}</div> }
+
+  @if (showForm()) {
+    <form class="panel grid" [formGroup]="form" (ngSubmit)="save()">
+      <label class="field"><span>Full name</span><input formControlName="fullName" /></label>
+      <label class="field"><span>Email</span><input formControlName="email" /></label>
+      <label class="field"><span>Password</span><input type="password" formControlName="password" /></label>
+      <label class="field">
+        <span>Role</span>
+        <select formControlName="role">
+          @for (r of roles; track r) { <option [value]="r">{{ r }}</option> }
+        </select>
+      </label>
+      <div class="actions">
+        <button class="btn btn--ghost" type="button" (click)="showForm.set(false)">Cancel</button>
+        <button class="btn btn--primary" type="submit" [disabled]="saving()">Create</button>
+      </div>
+    </form>
+  }
+
+  <div class="panel table-wrap">
+    <table>
+      <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Platform</th></tr></thead>
+      <tbody>
+        @for (u of users(); track u.id) {
+          <tr>
+            <td>{{ u.fullName }}</td>
+            <td>{{ u.email }}</td>
+            <td>{{ u.role }}</td>
+            <td>{{ u.isPlatformAdmin ? 'Yes' : '—' }}</td>
+          </tr>
+        } @empty { <tr><td colspan="4" class="muted">No users.</td></tr> }
+      </tbody>
+    </table>
+  </div>
+</section>

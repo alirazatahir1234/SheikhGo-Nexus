@@ -1,0 +1,66 @@
+<app-page-header title="Brands & packing" subtitle="Product brands and packing conversions.">
+  <button type="button" class="btn btn--ghost" (click)="show.set('conv')">+ Conversion</button>
+  <button type="button" class="btn btn--primary" (click)="show.set('brand')">+ Brand</button>
+</app-page-header>
+@if (error()) { <div class="alert alert--warn">{{ error() }}</div> }
+<div class="tabs">
+  <button type="button" [class.active]="tab()==='brands'" (click)="tab.set('brands')">Brands</button>
+  <button type="button" [class.active]="tab()==='conversions'" (click)="tab.set('conversions')">Conversions</button>
+</div>
+@if (show()==='brand') {
+  <section class="panel form-panel"><h2>Brand</h2>
+    <form class="form-grid" [formGroup]="brandForm" (ngSubmit)="saveBrand()">
+      <label class="field"><span>Code</span><input formControlName="code" /></label>
+      <label class="field"><span>Name</span><input formControlName="name" /></label>
+      <div class="form-actions span-2">
+        <button type="button" class="btn btn--ghost" (click)="show.set(null)">Cancel</button>
+        <button type="submit" class="btn btn--primary" [disabled]="saving()">Save</button>
+      </div>
+    </form>
+  </section>
+}
+@if (show()==='conv') {
+  <section class="panel form-panel"><h2>Packing conversion</h2>
+    <form class="form-grid" [formGroup]="convForm" (ngSubmit)="saveConv()">
+      <label class="field"><span>Product</span>
+        <select formControlName="productId"><option value="">Select…</option>
+          @for (p of products(); track p.id) { <option [ngValue]="p.id">{{ p.code }} — {{ p.name }}</option> }
+        </select>
+      </label>
+      <label class="field"><span>Unit</span><input formControlName="unit" /></label>
+      <label class="field"><span>Packing</span><input type="number" formControlName="packing" /></label>
+      <label class="field"><span>Pack size</span><input type="number" formControlName="packingSize" /></label>
+      <label class="field"><span>Purchase rate</span><input type="number" formControlName="purchaseRate" /></label>
+      <label class="field"><span>Min rate</span><input type="number" formControlName="minRate" /></label>
+      <label class="field"><span>Max rate</span><input type="number" formControlName="maxRate" /></label>
+      <div class="form-actions span-2">
+        <button type="button" class="btn btn--ghost" (click)="show.set(null)">Cancel</button>
+        <button type="submit" class="btn btn--primary" [disabled]="saving()">Save</button>
+      </div>
+    </form>
+  </section>
+}
+@if (tab()==='brands') {
+  <section class="panel"><div class="table-wrap"><table>
+    <thead><tr><th>Code</th><th>Name</th><th>Active</th></tr></thead>
+    <tbody>
+      @for (b of brands(); track b.id) { <tr><td>{{ b.code }}</td><td>{{ b.name }}</td><td>{{ b.isActive ? 'Yes' : 'No' }}</td></tr> }
+      @empty { <tr><td colspan="3" class="empty">No brands.</td></tr> }
+    </tbody>
+  </table></div></section>
+} @else {
+  <section class="panel"><div class="table-wrap"><table>
+    <thead><tr><th>Product</th><th>Unit</th><th>Pack</th><th>Size</th><th class="num">Purchase</th><th class="num">Min</th><th class="num">Max</th></tr></thead>
+    <tbody>
+      @for (c of conversions(); track c.id) {
+        <tr>
+          <td>{{ c.productName }}</td><td>{{ c.unit }}</td><td>{{ c.packing }}</td><td>{{ c.packingSize }}</td>
+          <td class="num">{{ c.purchaseRate | currency:'PKR':'symbol':'1.0-2' }}</td>
+          <td class="num">{{ c.minRate | currency:'PKR':'symbol':'1.0-2' }}</td>
+          <td class="num">{{ c.maxRate | currency:'PKR':'symbol':'1.0-2' }}</td>
+        </tr>
+      }
+      @empty { <tr><td colspan="7" class="empty">No conversions.</td></tr> }
+    </tbody>
+  </table></div></section>
+}

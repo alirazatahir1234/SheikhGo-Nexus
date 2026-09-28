@@ -1,0 +1,88 @@
+<app-page-header title="Purchase contracts" subtitle="Supplier purchase contracts (Softaxe PO-Pur).">
+  <button type="button" class="btn btn--primary" (click)="openForm()">New contract</button>
+</app-page-header>
+
+@if (error()) { <div class="alert alert--warn">{{ error() }}</div> }
+
+@if (showForm()) {
+  <section class="panel form-panel">
+    <h2>New purchase contract</h2>
+    <form [formGroup]="form" (ngSubmit)="save()">
+      <div class="form-grid">
+        <label class="field"><span>Date</span><input type="date" formControlName="date" /></label>
+        <label class="field"><span>Delivery date</span><input type="date" formControlName="deliveryDate" /></label>
+        <label class="field">
+          <span>Supplier</span>
+          <select formControlName="partyId">
+            <option value="">Select…</option>
+            @for (p of parties(); track p.id) {
+              <option [ngValue]="p.id">{{ p.code }} — {{ p.name }}</option>
+            }
+          </select>
+        </label>
+        <label class="field"><span>Remarks</span><input formControlName="remarks" /></label>
+      </div>
+      <div class="lines" formArrayName="lines">
+        <div class="lines__head">
+          <h3>Lines</h3>
+          <button type="button" class="btn btn--ghost btn--sm" (click)="addLine()">Add line</button>
+        </div>
+        @for (l of lines.controls; track $index; let i = $index) {
+          <div class="line-row" [formGroupName]="i">
+            <label class="field">
+              <span>Product</span>
+              <select formControlName="productId">
+                <option value="">Select…</option>
+                @for (p of products(); track p.id) {
+                  <option [ngValue]="p.id">{{ p.code }} — {{ p.name }}</option>
+                }
+              </select>
+            </label>
+            <label class="field"><span>Qty</span><input type="number" formControlName="qty" /></label>
+            <label class="field"><span>Rate</span><input type="number" formControlName="rate" /></label>
+            <label class="field"><span>Unit</span><input formControlName="unit" /></label>
+          </div>
+        }
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn--ghost" (click)="showForm.set(false)">Cancel</button>
+        <button type="submit" class="btn btn--primary" [disabled]="saving()">{{ saving() ? 'Saving…' : 'Save' }}</button>
+      </div>
+    </form>
+  </section>
+}
+
+<section class="panel">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Contract #</th>
+          <th>Date</th>
+          <th>Supplier</th>
+          <th>Status</th>
+          <th class="num">Lines</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (c of items(); track c.id) {
+          <tr>
+            <td>{{ c.contractNo }}</td>
+            <td>{{ c.date | date: 'mediumDate' }}</td>
+            <td>{{ c.partyName }}</td>
+            <td>{{ c.status }}</td>
+            <td class="num">{{ c.lines?.length || 0 }}</td>
+            <td>
+              @if (c.status === 'Open') {
+                <button type="button" class="btn btn--ghost btn--sm" (click)="close(c.id)">Close</button>
+              }
+            </td>
+          </tr>
+        } @empty {
+          <tr><td colspan="6" class="empty">No contracts yet.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

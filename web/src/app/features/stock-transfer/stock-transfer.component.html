@@ -1,0 +1,75 @@
+<app-page-header title="Stock transfer" subtitle="Move stock between godowns (Softaxe STK-TRF).">
+  <button type="button" class="btn btn--primary" (click)="openForm()">New transfer</button>
+</app-page-header>
+@if (error()) { <div class="alert alert--warn">{{ error() }}</div> }
+@if (showForm()) {
+  <section class="panel form-panel">
+    <h2>New stock transfer</h2>
+    <form [formGroup]="form" (ngSubmit)="save()">
+      <div class="form-grid">
+        <label class="field"><span>Date</span><input type="date" formControlName="date" /></label>
+        <label class="field">
+          <span>From warehouse</span>
+          <select formControlName="fromWarehouseId">
+            <option value="">Select…</option>
+            @for (w of warehouses(); track w.id) { <option [ngValue]="w.id">{{ w.code }} — {{ w.name }}</option> }
+          </select>
+        </label>
+        <label class="field">
+          <span>To warehouse</span>
+          <select formControlName="toWarehouseId">
+            <option value="">Select…</option>
+            @for (w of warehouses(); track w.id) { <option [ngValue]="w.id">{{ w.code }} — {{ w.name }}</option> }
+          </select>
+        </label>
+        <label class="field"><span>Remarks</span><input formControlName="remarks" /></label>
+      </div>
+      <div class="lines" formArrayName="lines">
+        <div class="lines__head"><h3>Lines</h3>
+          <button type="button" class="btn btn--ghost btn--sm" (click)="addLine()">Add line</button>
+        </div>
+        @for (l of lines.controls; track $index; let i = $index) {
+          <div class="line-row" [formGroupName]="i">
+            <label class="field">
+              <span>Product</span>
+              <select formControlName="productId">
+                <option value="">Select…</option>
+                @for (p of products(); track p.id) { <option [ngValue]="p.id">{{ p.code }} — {{ p.name }}</option> }
+              </select>
+            </label>
+            <label class="field"><span>Qty</span><input type="number" formControlName="qty" /></label>
+          </div>
+        }
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn--ghost" (click)="showForm.set(false)">Cancel</button>
+        <button type="submit" class="btn btn--primary" [disabled]="saving()">Save</button>
+      </div>
+    </form>
+  </section>
+}
+<section class="panel">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>No</th><th>Date</th><th>From</th><th>To</th><th>Lines</th><th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (r of items(); track r.id) {
+          <tr>
+            <td>{{ r.transferNo }}</td>
+            <td>{{ r.date | date: 'mediumDate' }}</td>
+            <td>{{ r.fromWarehouseName }}</td>
+            <td>{{ r.toWarehouseName }}</td>
+            <td>{{ r.lines?.length || 0 }}</td>
+            <td>{{ r.status }}</td>
+          </tr>
+        } @empty {
+          <tr><td colspan="6" class="empty">No transfers yet.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

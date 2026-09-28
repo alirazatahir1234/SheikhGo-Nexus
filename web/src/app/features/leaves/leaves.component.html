@@ -1,0 +1,57 @@
+<app-page-header title="Leaves" subtitle="Employee leave entries (Softaxe tblleavesEntry).">
+  <button type="button" class="btn btn--primary" (click)="openForm()">New leave</button>
+</app-page-header>
+@if (error()) { <div class="alert alert--warn">{{ error() }}</div> }
+@if (showForm()) {
+  <section class="panel form-panel">
+    <h2>New leave</h2>
+    <form class="form-grid" [formGroup]="form" (ngSubmit)="save()">
+      <label class="field">
+        <span>Employee</span>
+        <select formControlName="employeeId">
+          <option value="">Select…</option>
+          @for (e of employees(); track e.id) { <option [ngValue]="e.id">{{ e.code }} — {{ e.name }}</option> }
+        </select>
+      </label>
+      <label class="field"><span>From</span><input type="date" formControlName="fromDate" /></label>
+      <label class="field"><span>To</span><input type="date" formControlName="toDate" /></label>
+      <label class="field">
+        <span>Type</span>
+        <select formControlName="leaveType">
+          <option>Casual</option><option>Sick</option><option>Annual</option><option>Unpaid</option>
+        </select>
+      </label>
+      <label class="field"><span>Remarks</span><input formControlName="remarks" /></label>
+      <div class="form-actions span-2">
+        <button type="button" class="btn btn--ghost" (click)="showForm.set(false)">Cancel</button>
+        <button type="submit" class="btn btn--primary" [disabled]="saving()">Save</button>
+      </div>
+    </form>
+  </section>
+}
+<section class="panel">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Doc</th><th>Employee</th><th>From</th><th>To</th><th>Type</th><th>Days</th><th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (r of items(); track r.id) {
+          <tr>
+            <td>{{ r.docNo }}</td>
+            <td>{{ r.employeeName }}</td>
+            <td>{{ r.fromDate | date: 'mediumDate' }}</td>
+            <td>{{ r.toDate | date: 'mediumDate' }}</td>
+            <td>{{ r.leaveType }}</td>
+            <td>{{ r.days }}</td>
+            <td>{{ r.status }}</td>
+          </tr>
+        } @empty {
+          <tr><td colspan="7" class="empty">No leave entries.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

@@ -1,0 +1,113 @@
+<section class="prod">
+  <app-page-header title="Production" subtitle="BOM formulas and production batches for feed mills.">
+    <button class="btn btn--ghost" type="button" (click)="tab.set('boms'); showBom.set(true)">+ BOM</button>
+    <button class="btn btn--primary" type="button" (click)="tab.set('orders'); showOrder.set(true)">+ Run batch</button>
+  </app-page-header>
+
+  <div class="tabs">
+    <button type="button" [class.active]="tab()==='orders'" (click)="tab.set('orders')">Orders</button>
+    <button type="button" [class.active]="tab()==='boms'" (click)="tab.set('boms')">BOM formulas</button>
+  </div>
+
+  @if (error()) { <div class="alert alert--danger">{{ error() }}</div> }
+
+  @if (showBom()) {
+    <form class="panel" [formGroup]="bomForm" (ngSubmit)="saveBom()">
+      <h3>New BOM</h3>
+      <div class="grid">
+        <label class="field"><span>Code</span><input formControlName="code" /></label>
+        <label class="field"><span>Name</span><input formControlName="name" /></label>
+        <label class="field">
+          <span>Finished good</span>
+          <select formControlName="finishedProductId">
+            <option value="">Select</option>
+            @for (p of finishedGoods(); track p.id) {
+              <option [value]="p.id">{{ p.code }} — {{ p.name }}</option>
+            }
+          </select>
+        </label>
+        <label class="field"><span>Output qty</span><input type="number" formControlName="outputQty" /></label>
+      </div>
+      <h4>Raw materials</h4>
+      @for (line of rmLines(); track $index; let i = $index) {
+        <div class="grid">
+          <label class="field">
+            <span>Material</span>
+            <select [(ngModel)]="line.rawMaterialId" [ngModelOptions]="{standalone: true}">
+              <option value="">Select</option>
+              @for (p of rawMaterials(); track p.id) {
+                <option [value]="p.id">{{ p.code }} — {{ p.name }}</option>
+              }
+            </select>
+          </label>
+          <label class="field"><span>Qty</span><input type="number" [(ngModel)]="line.qty" [ngModelOptions]="{standalone: true}" /></label>
+        </div>
+      }
+      <button class="btn btn--ghost" type="button" (click)="addRmLine()">+ Line</button>
+      <div class="actions">
+        <button class="btn btn--ghost" type="button" (click)="showBom.set(false)">Cancel</button>
+        <button class="btn btn--primary" type="submit" [disabled]="saving()">Save BOM</button>
+      </div>
+    </form>
+  }
+
+  @if (showOrder()) {
+    <form class="panel grid" [formGroup]="orderForm" (ngSubmit)="runOrder()">
+      <h3>Production batch</h3>
+      <label class="field">
+        <span>BOM</span>
+        <select formControlName="bomId">
+          <option value="">Select</option>
+          @for (b of boms(); track b.id) {
+            <option [value]="b.id">{{ b.code }} — {{ b.name }}</option>
+          }
+        </select>
+      </label>
+      <label class="field"><span>Date</span><input type="date" formControlName="date" /></label>
+      <label class="field"><span>Batch qty</span><input type="number" formControlName="batchQty" /></label>
+      <label class="field"><span>Remarks</span><input formControlName="remarks" /></label>
+      <label class="field check"><input type="checkbox" formControlName="post" /> Post & update stock</label>
+      <div class="actions">
+        <button class="btn btn--ghost" type="button" (click)="showOrder.set(false)">Cancel</button>
+        <button class="btn btn--primary" type="submit" [disabled]="saving()">Run</button>
+      </div>
+    </form>
+  }
+
+  @if (tab()==='orders') {
+    <div class="panel table-wrap">
+      <table>
+        <thead><tr><th>Order</th><th>BOM</th><th>Date</th><th>Batch</th><th>Output</th><th>Status</th></tr></thead>
+        <tbody>
+          @for (o of orders(); track o.id) {
+            <tr>
+              <td>{{ o.orderNo }}</td>
+              <td>{{ o.bomName }}</td>
+              <td>{{ o.date | date:'mediumDate' }}</td>
+              <td>{{ o.batchQty }}</td>
+              <td>{{ o.outputQty }}</td>
+              <td>{{ o.status }}</td>
+            </tr>
+          } @empty { <tr><td colspan="6" class="muted">No production orders yet.</td></tr> }
+        </tbody>
+      </table>
+    </div>
+  } @else {
+    <div class="panel table-wrap">
+      <table>
+        <thead><tr><th>Code</th><th>Name</th><th>Finished</th><th>Output</th><th>Lines</th></tr></thead>
+        <tbody>
+          @for (b of boms(); track b.id) {
+            <tr>
+              <td>{{ b.code }}</td>
+              <td>{{ b.name }}</td>
+              <td>{{ b.finishedProductName }}</td>
+              <td>{{ b.outputQty }}</td>
+              <td>{{ b.lines.length }}</td>
+            </tr>
+          } @empty { <tr><td colspan="5" class="muted">No BOMs yet.</td></tr> }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>

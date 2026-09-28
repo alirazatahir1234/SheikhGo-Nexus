@@ -1,0 +1,79 @@
+<app-page-header title="Receipts & payments" subtitle="Cash/bank receipts from customers and payments to suppliers.">
+  <button type="button" class="btn btn--ghost" (click)="openForm('Payment')">New payment</button>
+  <button type="button" class="btn btn--primary" (click)="openForm('Receipt')">New receipt</button>
+</app-page-header>
+
+@if (error()) {
+  <div class="alert alert--warn">{{ error() }}</div>
+}
+
+@if (showForm()) {
+  <section class="panel form-panel">
+    <h2>{{ form.value.settlementType }}</h2>
+    <form class="form-grid" [formGroup]="form" (ngSubmit)="save()">
+      <label class="field"><span>Date</span><input type="date" formControlName="date" /></label>
+      <label class="field">
+        <span>Type</span>
+        <select formControlName="settlementType">
+          <option value="Receipt">Receipt</option>
+          <option value="Payment">Payment</option>
+        </select>
+      </label>
+      <label class="field">
+        <span>Party</span>
+        <select formControlName="partyId">
+          <option value="">Select…</option>
+          @for (p of filteredParties(); track p.id) {
+            <option [ngValue]="p.id">{{ p.code }} — {{ p.name }}</option>
+          }
+        </select>
+      </label>
+      <label class="field">
+        <span>Mode</span>
+        <select formControlName="mode">
+          <option value="Cash">Cash</option>
+          <option value="Bank">Bank</option>
+        </select>
+      </label>
+      <label class="field"><span>Amount</span><input type="number" formControlName="amount" step="0.01" /></label>
+      <label class="field span-2"><span>Remarks</span><input formControlName="remarks" /></label>
+      <div class="form-actions span-2">
+        <button type="button" class="btn btn--ghost" (click)="showForm.set(false)">Cancel</button>
+        <button type="submit" class="btn btn--primary" [disabled]="saving()">{{ saving() ? 'Posting…' : 'Post' }}</button>
+      </div>
+    </form>
+  </section>
+}
+
+<section class="panel">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Doc #</th>
+          <th>Date</th>
+          <th>Type</th>
+          <th>Mode</th>
+          <th>Party</th>
+          <th class="num">Amount</th>
+          <th>Remarks</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (s of items(); track s.id) {
+          <tr>
+            <td>{{ s.docNo }}</td>
+            <td>{{ s.date | date: 'mediumDate' }}</td>
+            <td>{{ s.settlementType }}</td>
+            <td>{{ s.mode }}</td>
+            <td>{{ s.partyName }}</td>
+            <td class="num">{{ s.amount | currency: 'PKR' : 'symbol' : '1.0-2' }}</td>
+            <td>{{ s.remarks || '—' }}</td>
+          </tr>
+        } @empty {
+          <tr><td colspan="7" class="empty">{{ loading() ? 'Loading…' : 'No receipts or payments yet.' }}</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

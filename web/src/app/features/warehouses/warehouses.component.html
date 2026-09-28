@@ -1,0 +1,53 @@
+<app-page-header title="Warehouses" subtitle="Godowns and store locations.">
+  <button type="button" class="btn btn--primary" (click)="openForm()">Add warehouse</button>
+</app-page-header>
+
+@if (error()) {
+  <div class="alert alert--warn">{{ error() }}</div>
+}
+
+@if (showForm()) {
+  <section class="panel form-panel">
+    <h2>New warehouse</h2>
+    <form class="form-grid" [formGroup]="form" (ngSubmit)="save()">
+      <label class="field"><span>Code</span><input formControlName="code" /></label>
+      <label class="field"><span>Name</span><input formControlName="name" /></label>
+      <label class="field span-2"><span>Location</span><input formControlName="location" /></label>
+      <label class="field checkbox">
+        <input type="checkbox" formControlName="isDefault" />
+        <span>Default godown</span>
+      </label>
+      <div class="form-actions span-2">
+        <button type="button" class="btn btn--ghost" (click)="showForm.set(false)">Cancel</button>
+        <button type="submit" class="btn btn--primary" [disabled]="saving()">{{ saving() ? 'Saving…' : 'Save' }}</button>
+      </div>
+    </form>
+  </section>
+}
+
+<section class="panel">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Code</th>
+          <th>Name</th>
+          <th>Location</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (w of items(); track w.id) {
+          <tr>
+            <td>{{ w.code }}</td>
+            <td>{{ w.name }}</td>
+            <td>{{ w.location || '—' }}</td>
+            <td>{{ w.isDefault ? 'Yes' : '' }}</td>
+          </tr>
+        } @empty {
+          <tr><td colspan="4" class="empty">{{ loading() ? 'Loading…' : 'No warehouses yet.' }}</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

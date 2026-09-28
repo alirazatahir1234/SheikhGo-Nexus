@@ -1,0 +1,117 @@
+<app-page-header title="Payroll" subtitle="Employees and monthly salary sheet (Softaxe tblSALARY).">
+  @if (tab() === 'employees') {
+    <app-search-box placeholder="Search employees…" [value]="search()" (valueChange)="search.set($event)" />
+    <button type="button" class="btn btn--primary" (click)="openForm()">Add employee</button>
+  }
+</app-page-header>
+
+@if (error()) {
+  <div class="alert alert--warn">{{ error() }}</div>
+}
+
+<div class="tabs">
+  <button type="button" class="btn" [class.btn--primary]="tab() === 'employees'" (click)="tab.set('employees')">Employees</button>
+  <button type="button" class="btn" [class.btn--primary]="tab() === 'salary'" (click)="tab.set('salary'); loadSalary()">Salary sheet</button>
+</div>
+
+@if (tab() === 'employees') {
+  @if (showForm()) {
+    <section class="panel form-panel">
+      <h2>New employee</h2>
+      <form class="form-grid" [formGroup]="form" (ngSubmit)="save()">
+        <label class="field"><span>Code</span><input formControlName="code" /></label>
+        <label class="field"><span>Name</span><input formControlName="name" /></label>
+        <label class="field"><span>Designation</span><input formControlName="designation" /></label>
+        <label class="field"><span>Department</span><input formControlName="department" /></label>
+        <label class="field"><span>Join date</span><input type="date" formControlName="joinDate" /></label>
+        <label class="field"><span>Basic salary</span><input type="number" formControlName="basicSalary" /></label>
+        <label class="field"><span>Phone</span><input formControlName="phone" /></label>
+        <div class="form-actions span-2">
+          <button type="button" class="btn btn--ghost" (click)="showForm.set(false)">Cancel</button>
+          <button type="submit" class="btn btn--primary" [disabled]="saving()">{{ saving() ? 'Saving…' : 'Save' }}</button>
+        </div>
+      </form>
+    </section>
+  }
+
+  <section class="panel">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Name</th>
+            <th>Designation</th>
+            <th>Department</th>
+            <th>Joined</th>
+            <th class="num">Basic salary</th>
+            <th>Phone</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (e of filtered(); track e.id) {
+            <tr>
+              <td>{{ e.code }}</td>
+              <td>{{ e.name }}</td>
+              <td>{{ e.designation }}</td>
+              <td>{{ e.department }}</td>
+              <td>{{ e.joinDate | date: 'mediumDate' }}</td>
+              <td class="num">{{ e.basicSalary | currency: 'PKR' : 'symbol' : '1.0-0' }}</td>
+              <td>{{ e.phone || '—' }}</td>
+            </tr>
+          } @empty {
+            <tr><td colspan="7" class="empty">{{ loading() ? 'Loading…' : 'No employees found.' }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+}
+
+@if (tab() === 'salary') {
+  <section class="panel form-panel">
+    <form class="form-grid" [formGroup]="salaryForm" (ngSubmit)="generateSalary()">
+      <label class="field"><span>Year</span><input type="number" formControlName="year" /></label>
+      <label class="field"><span>Month</span><input type="number" formControlName="month" min="1" max="12" /></label>
+      <label class="field"><span>Allowance %</span><input type="number" formControlName="defaultAllowancePercent" /></label>
+      <label class="field"><span>Deduction %</span><input type="number" formControlName="defaultDeductionPercent" /></label>
+      <div class="form-actions span-2">
+        <button type="button" class="btn btn--ghost" (click)="loadSalary()">Refresh</button>
+        <button type="submit" class="btn btn--primary" [disabled]="saving()">Generate sheet</button>
+      </div>
+    </form>
+  </section>
+  <section class="panel">
+    <p>Lines: {{ salarySheet()?.count || 0 }} · Net total: {{ (salarySheet()?.totalNet || 0) | currency: 'PKR' : 'symbol' : '1.0-0' }}</p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Employee</th><th>Dept</th><th class="num">Basic</th><th class="num">Allow</th>
+            <th class="num">Deduct</th><th class="num">Net</th><th>Status</th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (r of salarySheet()?.lines || []; track r.id) {
+            <tr>
+              <td>{{ r.employeeName }}</td>
+              <td>{{ r.department || '—' }}</td>
+              <td class="num">{{ r.basic | currency: 'PKR' : 'symbol' : '1.0-0' }}</td>
+              <td class="num">{{ r.allowances | currency: 'PKR' : 'symbol' : '1.0-0' }}</td>
+              <td class="num">{{ r.deductions | currency: 'PKR' : 'symbol' : '1.0-0' }}</td>
+              <td class="num">{{ r.netSalary | currency: 'PKR' : 'symbol' : '1.0-0' }}</td>
+              <td>{{ r.status }}</td>
+              <td>
+                @if (r.status !== 'Posted') {
+                  <button type="button" class="btn btn--ghost btn--sm" (click)="pay(r.id)">Mark paid</button>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="8" class="empty">No salary lines for this month. Generate to create.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+}

@@ -1,0 +1,95 @@
+<app-page-header title="Purchase" subtitle="Supplier invoices and goods receipts.">
+  <app-search-box placeholder="Search invoices…" [value]="search()" (valueChange)="search.set($event)" />
+  <button type="button" class="btn btn--primary" (click)="openForm()">New invoice</button>
+</app-page-header>
+
+@if (error()) {
+  <div class="alert alert--warn">{{ error() }}</div>
+}
+
+@if (showForm()) {
+  <section class="panel form-panel">
+    <h2>Create purchase invoice</h2>
+    <form [formGroup]="form" (ngSubmit)="save()">
+      <div class="form-grid">
+        <label class="field"><span>Invoice #</span><input formControlName="invoiceNo" /></label>
+        <label class="field"><span>Date</span><input type="date" formControlName="date" /></label>
+        <label class="field">
+          <span>Supplier</span>
+          <select formControlName="partyId">
+            <option [ngValue]="0">Select…</option>
+            @for (p of parties(); track p.id) {
+              <option [ngValue]="p.id">{{ p.code }} — {{ p.name }}</option>
+            }
+          </select>
+        </label>
+        <label class="field"><span>Discount</span><input type="number" formControlName="discount" (input)="applyDefaultTax()" /></label>
+        <label class="field">
+          <span>Tax{{ taxEnabled() ? ' (' + taxPercent() + '%)' : '' }}</span>
+          <input type="number" formControlName="tax" />
+        </label>
+      </div>
+
+      <div class="lines" formArrayName="lines">
+        <div class="lines__head">
+          <h3>Lines</h3>
+          <button type="button" class="btn btn--ghost btn--sm" (click)="addLine()">Add line</button>
+        </div>
+        @for (line of lines.controls; track $index; let i = $index) {
+          <div class="line-row" [formGroupName]="i">
+            <label class="field">
+              <span>Product</span>
+              <select formControlName="productId" (change)="onProductChange(i)">
+                <option [ngValue]="0">Select…</option>
+                @for (p of products(); track p.id) {
+                  <option [ngValue]="p.id">{{ p.code }} — {{ p.name }}</option>
+                }
+              </select>
+            </label>
+            <label class="field"><span>Qty</span><input type="number" formControlName="qty" (input)="recalcLine(i)" /></label>
+            <label class="field"><span>Rate</span><input type="number" formControlName="rate" (input)="recalcLine(i)" /></label>
+            <label class="field"><span>Amount</span><input type="number" formControlName="amount" readonly /></label>
+            <button type="button" class="btn btn--ghost btn--sm" (click)="removeLine(i)">×</button>
+          </div>
+        }
+        <p class="totals">Subtotal {{ subTotal() | currency: 'PKR' : 'symbol' : '1.2-2' }} · Grand {{ grandTotal() | currency: 'PKR' : 'symbol' : '1.2-2' }}</p>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn btn--ghost" (click)="showForm.set(false)">Cancel</button>
+        <button type="submit" class="btn btn--primary" [disabled]="saving()">{{ saving() ? 'Saving…' : 'Save invoice' }}</button>
+      </div>
+    </form>
+  </section>
+}
+
+<section class="panel">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Invoice #</th>
+          <th>Date</th>
+          <th>Supplier</th>
+          <th class="num">Subtotal</th>
+          <th class="num">Grand total</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (inv of filtered(); track inv.id) {
+          <tr>
+            <td>{{ inv.invoiceNo }}</td>
+            <td>{{ inv.date | date: 'mediumDate' }}</td>
+            <td>{{ inv.partyName || ('#' + inv.partyId) }}</td>
+            <td class="num">{{ inv.subTotal | currency: 'PKR' : 'symbol' : '1.0-2' }}</td>
+            <td class="num">{{ inv.grandTotal | currency: 'PKR' : 'symbol' : '1.0-2' }}</td>
+            <td>{{ inv.status }}</td>
+          </tr>
+        } @empty {
+          <tr><td colspan="6" class="empty">{{ loading() ? 'Loading…' : 'No purchase invoices found.' }}</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

@@ -1,0 +1,16 @@
+.farm { display:flex; flex-direction:column; gap:1rem; }
+.layout { display:grid; grid-template-columns:1.2fr 1fr; gap:1rem; }
+@media (max-width: 1000px) { .layout { grid-template-columns:1fr; } }
+.panel { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:1rem; }
+.grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:.75rem; }
+.actions { display:flex; justify-content:flex-end; gap:.75rem; }
+.pad { padding:1rem; }
+.table-wrap { overflow-x:auto; padding:0; }
+table { width:100%; border-collapse:collapse; }
+th,td { padding:.7rem .85rem; border-bottom:1px solid var(--border); text-align:left; font-size:.88rem; }
+th { font-size:.68rem; text-transform:uppercase; color:var(--text-muted); }
+tr.selected { background:rgba(20,184,166,.08); }
+tr { cursor:pointer; }
+.muted { color:var(--text-muted); }
+.tiny { font-size:.75rem; }
+h3 { margin:0; font-family:var(--font-display); }

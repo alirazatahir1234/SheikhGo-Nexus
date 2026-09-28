@@ -1,0 +1,114 @@
+<app-page-header title="Cheques" subtitle="Cheque books and post-dated cheques.">
+  <button type="button" class="btn btn--ghost" (click)="tab.set('books'); showBook.set(true)">+ Book</button>
+  <button type="button" class="btn btn--primary" (click)="tab.set('pdc'); showPdc.set(true)">+ PDC</button>
+</app-page-header>
+@if (error()) { <div class="alert alert--warn">{{ error() }}</div> }
+<div class="tabs">
+  <button type="button" [class.active]="tab()==='pdc'" (click)="tab.set('pdc')">PD cheques</button>
+  <button type="button" [class.active]="tab()==='books'" (click)="tab.set('books')">Cheque books</button>
+</div>
+
+@if (showBook()) {
+  <section class="panel form-panel">
+    <h2>Cheque book</h2>
+    <form class="form-grid" [formGroup]="bookForm" (ngSubmit)="saveBook()">
+      <label class="field"><span>Book #</span><input formControlName="bookNo" /></label>
+      <label class="field"><span>Date</span><input type="date" formControlName="date" /></label>
+      <label class="field"><span>Bank</span><input formControlName="bankName" /></label>
+      <label class="field"><span>From</span><input type="number" formControlName="chequeFrom" /></label>
+      <label class="field"><span>To</span><input type="number" formControlName="chequeTo" /></label>
+      <label class="field"><span>Remarks</span><input formControlName="remarks" /></label>
+      <div class="form-actions span-2">
+        <button type="button" class="btn btn--ghost" (click)="showBook.set(false)">Cancel</button>
+        <button type="submit" class="btn btn--primary" [disabled]="saving()">Save</button>
+      </div>
+    </form>
+  </section>
+}
+
+@if (showPdc()) {
+  <section class="panel form-panel">
+    <h2>Post-dated cheque</h2>
+    <form class="form-grid" [formGroup]="pdcForm" (ngSubmit)="savePdc()">
+      <label class="field"><span>Voucher date</span><input type="date" formControlName="voucherDate" /></label>
+      <label class="field"><span>Cheque date</span><input type="date" formControlName="chequeDate" /></label>
+      <label class="field"><span>Cheque #</span><input formControlName="chequeNo" /></label>
+      <label class="field"><span>Amount</span><input type="number" formControlName="amount" /></label>
+      <label class="field">
+        <span>Direction</span>
+        <select formControlName="direction"><option>Issued</option><option>Received</option></select>
+      </label>
+      <label class="field">
+        <span>Party</span>
+        <select formControlName="partyId">
+          <option value="">Optional…</option>
+          @for (p of parties(); track p.id) { <option [ngValue]="p.id">{{ p.name }}</option> }
+        </select>
+      </label>
+      <label class="field">
+        <span>Cheque book</span>
+        <select formControlName="chequeBookId">
+          <option value="">Optional…</option>
+          @for (b of books(); track b.id) { <option [ngValue]="b.id">{{ b.bookNo }} — {{ b.bankName }}</option> }
+        </select>
+      </label>
+      <label class="field"><span>Remarks</span><input formControlName="remarks" /></label>
+      <div class="form-actions span-2">
+        <button type="button" class="btn btn--ghost" (click)="showPdc.set(false)">Cancel</button>
+        <button type="submit" class="btn btn--primary" [disabled]="saving()">Save</button>
+      </div>
+    </form>
+  </section>
+}
+
+@if (tab() === 'pdc') {
+  <section class="panel">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Doc #</th><th>Chq date</th><th>Chq #</th><th>Party</th><th>Dir</th><th class="num">Amount</th><th>Status</th><th></th></tr>
+        </thead>
+        <tbody>
+          @for (c of pdcs(); track c.id) {
+            <tr>
+              <td>{{ c.docNo }}</td>
+              <td>{{ c.chequeDate | date: 'mediumDate' }}</td>
+              <td>{{ c.chequeNo }}</td>
+              <td>{{ c.partyName || '—' }}</td>
+              <td>{{ c.direction }}</td>
+              <td class="num">{{ c.amount | currency: 'PKR' : 'symbol' : '1.0-0' }}</td>
+              <td>{{ c.status }}</td>
+              <td>
+                @if (c.status === 'Pending') {
+                  <button type="button" class="btn btn--ghost btn--sm" (click)="setStatus(c.id, 'Cleared')">Clear</button>
+                  <button type="button" class="btn btn--ghost btn--sm" (click)="setStatus(c.id, 'Bounced')">Bounce</button>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="8" class="empty">No PD cheques.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+} @else {
+  <section class="panel">
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Book #</th><th>Bank</th><th>From</th><th>To</th><th>Next</th><th>Closed</th></tr></thead>
+        <tbody>
+          @for (b of books(); track b.id) {
+            <tr>
+              <td>{{ b.bookNo }}</td><td>{{ b.bankName }}</td>
+              <td>{{ b.chequeFrom }}</td><td>{{ b.chequeTo }}</td>
+              <td>{{ b.nextChequeNo }}</td><td>{{ b.isClosed ? 'Yes' : 'No' }}</td>
+            </tr>
+          } @empty {
+            <tr><td colspan="6" class="empty">No cheque books.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+}

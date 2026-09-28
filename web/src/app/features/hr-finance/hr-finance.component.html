@@ -1,0 +1,126 @@
+<app-page-header title="HR finance" subtitle="Salary advances, staff loans, and EOBI deductions.">
+  <button type="button" class="btn btn--ghost" (click)="show.set('eobi')">+ EOBI</button>
+  <button type="button" class="btn btn--ghost" (click)="show.set('loan')">+ Loan</button>
+  <button type="button" class="btn btn--primary" (click)="show.set('advance')">+ Advance</button>
+</app-page-header>
+@if (error()) { <div class="alert alert--warn">{{ error() }}</div> }
+<div class="tabs">
+  <button type="button" [class.active]="tab()==='advances'" (click)="tab.set('advances')">Advances</button>
+  <button type="button" [class.active]="tab()==='loans'" (click)="tab.set('loans')">Staff loans</button>
+  <button type="button" [class.active]="tab()==='eobi'" (click)="tab.set('eobi')">EOBI</button>
+</div>
+
+@if (show() === 'advance') {
+  <section class="panel form-panel">
+    <h2>Salary advance</h2>
+    <form class="form-grid" [formGroup]="advanceForm" (ngSubmit)="saveAdvance()">
+      <label class="field"><span>Date</span><input type="date" formControlName="date" /></label>
+      <label class="field">
+        <span>Employee</span>
+        <select formControlName="employeeId">
+          <option value="">Select…</option>
+          @for (e of employees(); track e.id) { <option [ngValue]="e.id">{{ e.code }} — {{ e.name }}</option> }
+        </select>
+      </label>
+      <label class="field"><span>Amount</span><input type="number" formControlName="amount" /></label>
+      <label class="field"><span>Remarks</span><input formControlName="remarks" /></label>
+      <div class="form-actions span-2">
+        <button type="button" class="btn btn--ghost" (click)="show.set(null)">Cancel</button>
+        <button type="submit" class="btn btn--primary" [disabled]="saving()">Save</button>
+      </div>
+    </form>
+  </section>
+}
+@if (show() === 'loan') {
+  <section class="panel form-panel">
+    <h2>Staff loan</h2>
+    <form class="form-grid" [formGroup]="loanForm" (ngSubmit)="saveLoan()">
+      <label class="field"><span>Date</span><input type="date" formControlName="date" /></label>
+      <label class="field">
+        <span>Employee</span>
+        <select formControlName="employeeId">
+          <option value="">Select…</option>
+          @for (e of employees(); track e.id) { <option [ngValue]="e.id">{{ e.code }} — {{ e.name }}</option> }
+        </select>
+      </label>
+      <label class="field"><span>Loan amount</span><input type="number" formControlName="loanAmount" /></label>
+      <label class="field"><span>Months</span><input type="number" formControlName="months" /></label>
+      <label class="field"><span>Installment</span><input type="number" formControlName="installmentAmount" /></label>
+      <label class="field"><span>Remarks</span><input formControlName="remarks" /></label>
+      <div class="form-actions span-2">
+        <button type="button" class="btn btn--ghost" (click)="show.set(null)">Cancel</button>
+        <button type="submit" class="btn btn--primary" [disabled]="saving()">Save</button>
+      </div>
+    </form>
+  </section>
+}
+@if (show() === 'eobi') {
+  <section class="panel form-panel">
+    <h2>EOBI deduction</h2>
+    <form class="form-grid" [formGroup]="eobiForm" (ngSubmit)="saveEobi()">
+      <label class="field"><span>Date</span><input type="date" formControlName="date" /></label>
+      <label class="field">
+        <span>Employee</span>
+        <select formControlName="employeeId">
+          <option value="">Select…</option>
+          @for (e of employees(); track e.id) { <option [ngValue]="e.id">{{ e.code }} — {{ e.name }}</option> }
+        </select>
+      </label>
+      <label class="field"><span>Amount</span><input type="number" formControlName="amount" /></label>
+      <label class="field"><span>Remarks</span><input formControlName="remarks" /></label>
+      <div class="form-actions span-2">
+        <button type="button" class="btn btn--ghost" (click)="show.set(null)">Cancel</button>
+        <button type="submit" class="btn btn--primary" [disabled]="saving()">Save</button>
+      </div>
+    </form>
+  </section>
+}
+
+@if (tab() === 'advances') {
+  <section class="panel"><div class="table-wrap"><table>
+    <thead><tr><th>Doc #</th><th>Date</th><th>Employee</th><th class="num">Amount</th><th>Remarks</th></tr></thead>
+    <tbody>
+      @for (a of advances(); track a.id) {
+        <tr>
+          <td>{{ a.docNo }}</td><td>{{ a.date | date: 'mediumDate' }}</td>
+          <td>{{ a.employeeName }}</td>
+          <td class="num">{{ a.amount | currency: 'PKR' : 'symbol' : '1.0-0' }}</td>
+          <td>{{ a.remarks || '—' }}</td>
+        </tr>
+      } @empty { <tr><td colspan="5" class="empty">No advances.</td></tr> }
+    </tbody>
+  </table></div></section>
+}
+@if (tab() === 'loans') {
+  <section class="panel"><div class="table-wrap"><table>
+    <thead><tr><th>Doc #</th><th>Date</th><th>Employee</th><th class="num">Loan</th><th>Months</th><th class="num">Installment</th><th>Active</th></tr></thead>
+    <tbody>
+      @for (l of loans(); track l.id) {
+        <tr>
+          <td>{{ l.docNo }}</td><td>{{ l.date | date: 'mediumDate' }}</td>
+          <td>{{ l.employeeName }}</td>
+          <td class="num">{{ l.loanAmount | currency: 'PKR' : 'symbol' : '1.0-0' }}</td>
+          <td>{{ l.months }}</td>
+          <td class="num">{{ l.installmentAmount | currency: 'PKR' : 'symbol' : '1.0-0' }}</td>
+          <td>{{ l.isActive ? 'Yes' : 'No' }}</td>
+        </tr>
+      } @empty { <tr><td colspan="7" class="empty">No loans.</td></tr> }
+    </tbody>
+  </table></div></section>
+}
+@if (tab() === 'eobi') {
+  <section class="panel"><div class="table-wrap"><table>
+    <thead><tr><th>Doc #</th><th>Date</th><th>Employee</th><th class="num">Amount</th><th>Active</th><th>Remarks</th></tr></thead>
+    <tbody>
+      @for (e of eobi(); track e.id) {
+        <tr>
+          <td>{{ e.docNo }}</td><td>{{ e.date | date: 'mediumDate' }}</td>
+          <td>{{ e.employeeName }}</td>
+          <td class="num">{{ e.amount | currency: 'PKR' : 'symbol' : '1.0-0' }}</td>
+          <td>{{ e.isActive ? 'Yes' : 'No' }}</td>
+          <td>{{ e.remarks || '—' }}</td>
+        </tr>
+      } @empty { <tr><td colspan="6" class="empty">No EOBI entries.</td></tr> }
+    </tbody>
+  </table></div></section>
+}

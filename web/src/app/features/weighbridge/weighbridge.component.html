@@ -1,0 +1,66 @@
+<app-page-header title="Weighbridge" subtitle="Vehicle in/out weight tickets.">
+  <button type="button" class="btn btn--primary" (click)="showForm.set(true)">New ticket</button>
+</app-page-header>
+@if (error()) { <div class="alert alert--warn">{{ error() }}</div> }
+@if (showForm()) {
+  <section class="panel form-panel">
+    <h2>Weighbridge ticket</h2>
+    <form class="form-grid" [formGroup]="form" (ngSubmit)="save()">
+      <label class="field"><span>Date</span><input type="date" formControlName="date" /></label>
+      <label class="field">
+        <span>Direction</span>
+        <select formControlName="direction"><option>In</option><option>Out</option></select>
+      </label>
+      <label class="field"><span>Vehicle #</span><input formControlName="vehicleNo" /></label>
+      <label class="field">
+        <span>Party</span>
+        <select formControlName="partyId">
+          <option value="">Optional…</option>
+          @for (p of parties(); track p.id) { <option [ngValue]="p.id">{{ p.name }}</option> }
+        </select>
+      </label>
+      <label class="field">
+        <span>Product</span>
+        <select formControlName="productId">
+          <option value="">Optional…</option>
+          @for (p of products(); track p.id) { <option [ngValue]="p.id">{{ p.name }}</option> }
+        </select>
+      </label>
+      <label class="field"><span>First weight</span><input type="number" formControlName="firstWeight" /></label>
+      <label class="field"><span>Second weight</span><input type="number" formControlName="secondWeight" /></label>
+      <label class="field"><span>Remarks</span><input formControlName="remarks" /></label>
+      <div class="form-actions span-2">
+        <button type="button" class="btn btn--ghost" (click)="showForm.set(false)">Cancel</button>
+        <button type="submit" class="btn btn--primary" [disabled]="saving()">Save</button>
+      </div>
+    </form>
+  </section>
+}
+<section class="panel"><div class="table-wrap"><table>
+  <thead>
+    <tr>
+      <th>Ticket #</th><th>Date</th><th>Dir</th><th>Vehicle</th><th>Party</th>
+      <th class="num">1st</th><th class="num">2nd</th><th class="num">Net</th><th>Status</th><th></th>
+    </tr>
+  </thead>
+  <tbody>
+    @for (t of items(); track t.id) {
+      <tr>
+        <td>{{ t.ticketNo }}</td>
+        <td>{{ t.date | date: 'mediumDate' }}</td>
+        <td>{{ t.direction }}</td>
+        <td>{{ t.vehicleNo || '—' }}</td>
+        <td>{{ t.partyName || '—' }}</td>
+        <td class="num">{{ t.firstWeight | number: '1.0-2' }}</td>
+        <td class="num">{{ t.secondWeight | number: '1.0-2' }}</td>
+        <td class="num">{{ t.netWeight | number: '1.0-2' }}</td>
+        <td>{{ t.status }}</td>
+        <td>
+          @if (t.status === 'Open') {
+            <button type="button" class="btn btn--ghost btn--sm" (click)="complete(t.id)">Complete</button>
+          }
+        </td>
+      </tr>
+    } @empty { <tr><td colspan="10" class="empty">No tickets yet.</td></tr> }
+  </tbody>
+</table></div></section>

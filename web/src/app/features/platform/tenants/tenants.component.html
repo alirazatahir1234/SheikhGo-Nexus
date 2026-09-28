@@ -1,0 +1,92 @@
+<section class="tenants">
+  <app-page-header title="Companies (Tenants)" subtitle="Provision Softaxe client companies — SheikhGo-style multi-tenant platform.">
+    @if (isPlatformAdmin()) {
+      <button class="btn btn--primary" type="button" (click)="openForm()">+ Provision company</button>
+    }
+  </app-page-header>
+
+  @if (error()) {
+    <div class="alert alert--danger">{{ error() }}</div>
+  }
+  @if (success()) {
+    <div class="alert alert--ok">{{ success() }}</div>
+  }
+
+  @if (showForm()) {
+    <form class="panel form-grid" [formGroup]="form" (ngSubmit)="provision()">
+      <h3>New company</h3>
+      <label class="field"><span>Company name</span><input formControlName="name" /></label>
+      <label class="field"><span>Code</span><input formControlName="code" placeholder="e.g. KISSAN" /></label>
+      <label class="field">
+        <span>Industry</span>
+        <select formControlName="industry">
+          @for (i of industries; track i.value) {
+            <option [ngValue]="i.value">{{ i.label }}</option>
+          }
+        </select>
+      </label>
+      <label class="field"><span>Admin full name</span><input formControlName="adminFullName" /></label>
+      <label class="field"><span>Admin email</span><input formControlName="adminEmail" /></label>
+      <label class="field"><span>Admin password</span><input type="password" formControlName="adminPassword" /></label>
+      <label class="field"><span>City</span><input formControlName="city" /></label>
+      <label class="field"><span>Country</span><input formControlName="country" /></label>
+      <label class="field"><span>Currency</span><input formControlName="currency" /></label>
+      <label class="field"><span>Phone</span><input formControlName="phone" /></label>
+      <label class="field"><span>NTN</span><input formControlName="ntn" /></label>
+      <div class="form-actions">
+        <button class="btn btn--ghost" type="button" (click)="showForm.set(false)">Cancel</button>
+        <button class="btn btn--primary" type="submit" [disabled]="saving()">
+          {{ saving() ? 'Provisioning…' : 'Provision' }}
+        </button>
+      </div>
+    </form>
+  }
+
+  @if (loading()) {
+    <p class="muted">Loading tenants…</p>
+  } @else {
+    <div class="panel table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Company</th>
+            <th>Industry</th>
+            <th>City</th>
+            <th>Users</th>
+            <th>Status</th>
+            <th>Created</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (t of tenants(); track t.id) {
+            <tr>
+              <td><code>{{ t.code }}</code></td>
+              <td>
+                <strong>{{ t.companyName || t.name }}</strong>
+                <div class="muted tiny">{{ t.modules.length || 0 }} modules</div>
+              </td>
+              <td>{{ industryLabel(t.industry) }}</td>
+              <td>{{ t.city || '—' }}</td>
+              <td>{{ t.userCount }}</td>
+              <td>
+                <span class="pill" [class.pill--ok]="t.isActive" [class.pill--off]="!t.isActive">
+                  {{ t.status }}
+                </span>
+              </td>
+              <td>{{ t.createdAt | date: 'mediumDate' }}</td>
+              <td>
+                <button class="btn btn--ghost btn--sm" type="button" (click)="toggleActive(t)">
+                  {{ t.isActive ? 'Suspend' : 'Activate' }}
+                </button>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="8" class="muted">No tenants yet.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>

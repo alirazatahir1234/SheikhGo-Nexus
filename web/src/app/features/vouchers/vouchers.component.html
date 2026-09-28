@@ -1,0 +1,92 @@
+<app-page-header title="Vouchers" subtitle="Journal, cash, and bank entries.">
+  <app-search-box placeholder="Search vouchers…" [value]="search()" (valueChange)="search.set($event)" />
+  <button type="button" class="btn btn--primary" (click)="openForm()">New voucher</button>
+</app-page-header>
+
+@if (error()) {
+  <div class="alert alert--warn">{{ error() }}</div>
+}
+
+@if (showForm()) {
+  <section class="panel form-panel">
+    <h2>Create voucher</h2>
+    <form [formGroup]="form" (ngSubmit)="save()">
+      <div class="form-grid">
+        <label class="field"><span>Voucher #</span><input formControlName="voucherNo" /></label>
+        <label class="field">
+          <span>Type</span>
+          <select formControlName="voucherType">
+            @for (t of voucherTypes; track t) {
+              <option [value]="t">{{ t }}</option>
+            }
+          </select>
+        </label>
+        <label class="field"><span>Date</span><input type="date" formControlName="date" /></label>
+        <label class="field span-2"><span>Narration</span><input formControlName="narration" /></label>
+      </div>
+
+      <div class="lines" formArrayName="lines">
+        <div class="lines__head">
+          <h3>Lines</h3>
+          <button type="button" class="btn btn--ghost btn--sm" (click)="addLine()">Add line</button>
+        </div>
+        @for (line of lines.controls; track $index; let i = $index) {
+          <div class="line-row" [formGroupName]="i">
+            <label class="field">
+              <span>Account</span>
+              <select formControlName="accountId">
+                <option [ngValue]="0">Select…</option>
+                @for (a of accounts(); track a.id) {
+                  <option [ngValue]="a.id">{{ a.code }} — {{ a.name }}</option>
+                }
+              </select>
+            </label>
+            <label class="field"><span>Debit</span><input type="number" formControlName="debit" /></label>
+            <label class="field"><span>Credit</span><input type="number" formControlName="credit" /></label>
+            <label class="field"><span>Remarks</span><input formControlName="remarks" /></label>
+            <button type="button" class="btn btn--ghost btn--sm" (click)="removeLine(i)">×</button>
+          </div>
+        }
+        <p class="totals">Debit {{ totalDebit() | currency: 'PKR' : 'symbol' : '1.2-2' }} · Credit {{ totalCredit() | currency: 'PKR' : 'symbol' : '1.2-2' }}</p>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn btn--ghost" (click)="showForm.set(false)">Cancel</button>
+        <button type="submit" class="btn btn--primary" [disabled]="saving()">{{ saving() ? 'Saving…' : 'Save voucher' }}</button>
+      </div>
+    </form>
+  </section>
+}
+
+<section class="panel">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Voucher #</th>
+          <th>Type</th>
+          <th>Date</th>
+          <th>Narration</th>
+          <th class="num">Debit</th>
+          <th class="num">Credit</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (v of filtered(); track v.id) {
+          <tr>
+            <td>{{ v.voucherNo }}</td>
+            <td><span class="badge">{{ v.voucherType }}</span></td>
+            <td>{{ v.date | date: 'mediumDate' }}</td>
+            <td>{{ v.narration }}</td>
+            <td class="num">{{ v.totalDebit | currency: 'PKR' : 'symbol' : '1.0-2' }}</td>
+            <td class="num">{{ v.totalCredit | currency: 'PKR' : 'symbol' : '1.0-2' }}</td>
+            <td>{{ v.status }}</td>
+          </tr>
+        } @empty {
+          <tr><td colspan="7" class="empty">{{ loading() ? 'Loading…' : 'No vouchers found.' }}</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

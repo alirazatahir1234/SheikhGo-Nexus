@@ -1,0 +1,112 @@
+<app-page-header title="Lab / QC" subtitle="Raw material lab tests and arrival results.">
+  <button type="button" class="btn btn--ghost" (click)="tab.set('tests'); showTest.set(true)">+ Test type</button>
+  <button type="button" class="btn btn--primary" (click)="tab.set('results'); showResult.set(true)">+ Lab result</button>
+</app-page-header>
+
+@if (error()) { <div class="alert alert--warn">{{ error() }}</div> }
+
+<div class="tabs">
+  <button type="button" [class.active]="tab()==='results'" (click)="tab.set('results')">Results</button>
+  <button type="button" [class.active]="tab()==='tests'" (click)="tab.set('tests')">Test types</button>
+</div>
+
+@if (showResult()) {
+  <section class="panel form-panel">
+    <h2>New lab result</h2>
+    <form class="form-grid" [formGroup]="resultForm" (ngSubmit)="saveResult()">
+      <label class="field"><span>Date</span><input type="date" formControlName="date" /></label>
+      <label class="field"><span>Vehicle</span><input formControlName="vehicleNo" /></label>
+      <label class="field">
+        <span>Party</span>
+        <select formControlName="partyId">
+          <option value="">Optional…</option>
+          @for (p of parties(); track p.id) { <option [ngValue]="p.id">{{ p.name }}</option> }
+        </select>
+      </label>
+      <label class="field">
+        <span>Product</span>
+        <select formControlName="productId">
+          <option value="">Optional…</option>
+          @for (p of products(); track p.id) { <option [ngValue]="p.id">{{ p.name }}</option> }
+        </select>
+      </label>
+      <label class="field">
+        <span>Test</span>
+        <select formControlName="labTestTypeId">
+          <option value="">Select…</option>
+          @for (t of tests(); track t.id) { <option [ngValue]="t.id">{{ t.name }}</option> }
+        </select>
+      </label>
+      <label class="field"><span>Bags</span><input type="number" formControlName="bags" /></label>
+      <label class="field"><span>%</span><input type="number" formControlName="percentage" /></label>
+      <label class="field"><span>Party ded (kg)</span><input type="number" formControlName="partyDeductionKg" /></label>
+      <label class="field"><span>Stock ded (kg)</span><input type="number" formControlName="stockDeductionKg" /></label>
+      <label class="field span-2"><span>Remarks</span><input formControlName="remarks" /></label>
+      <div class="form-actions span-2">
+        <button type="button" class="btn btn--ghost" (click)="showResult.set(false)">Cancel</button>
+        <button type="submit" class="btn btn--primary" [disabled]="saving()">Save</button>
+      </div>
+    </form>
+  </section>
+}
+
+@if (showTest()) {
+  <section class="panel form-panel">
+    <h2>Lab test type</h2>
+    <form class="form-grid" [formGroup]="testForm" (ngSubmit)="saveTest()">
+      <label class="field"><span>Code</span><input formControlName="code" /></label>
+      <label class="field"><span>Name</span><input formControlName="name" /></label>
+      <label class="field"><span>Unit</span><input formControlName="unit" /></label>
+      <div class="form-actions span-2">
+        <button type="button" class="btn btn--ghost" (click)="showTest.set(false)">Cancel</button>
+        <button type="submit" class="btn btn--primary" [disabled]="saving()">Save</button>
+      </div>
+    </form>
+  </section>
+}
+
+@if (tab() === 'results') {
+  <section class="panel">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Result #</th><th>Date</th><th>Test</th><th>Product</th><th>Vehicle</th>
+            <th class="num">%</th><th class="num">Party ded</th><th class="num">Stock ded</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (r of results(); track r.id) {
+            <tr>
+              <td>{{ r.resultNo }}</td>
+              <td>{{ r.date | date: 'mediumDate' }}</td>
+              <td>{{ r.testName || '—' }}</td>
+              <td>{{ r.productName || '—' }}</td>
+              <td>{{ r.vehicleNo || '—' }}</td>
+              <td class="num">{{ r.percentage | number: '1.0-2' }}</td>
+              <td class="num">{{ r.partyDeductionKg | number: '1.0-2' }}</td>
+              <td class="num">{{ r.stockDeductionKg | number: '1.0-2' }}</td>
+            </tr>
+          } @empty {
+            <tr><td colspan="8" class="empty">No lab results yet.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+} @else {
+  <section class="panel">
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Code</th><th>Name</th><th>Unit</th><th>Active</th></tr></thead>
+        <tbody>
+          @for (t of tests(); track t.id) {
+            <tr><td>{{ t.code }}</td><td>{{ t.name }}</td><td>{{ t.unit }}</td><td>{{ t.isActive ? 'Yes' : 'No' }}</td></tr>
+          } @empty {
+            <tr><td colspan="4" class="empty">No test types.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+}

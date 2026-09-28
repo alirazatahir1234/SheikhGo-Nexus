@@ -1,0 +1,78 @@
+<app-page-header title="Returns" subtitle="Sale and purchase returns (Softaxe SR / PR).">
+  <button type="button" class="btn btn--primary" (click)="openForm()">New {{ tab() }} return</button>
+</app-page-header>
+@if (error()) { <div class="alert alert--warn">{{ error() }}</div> }
+
+<div class="tabs">
+  <button type="button" class="btn" [class.btn--primary]="tab() === 'sale'" (click)="tab.set('sale')">Sale returns</button>
+  <button type="button" class="btn" [class.btn--primary]="tab() === 'purchase'" (click)="tab.set('purchase')">Purchase returns</button>
+</div>
+
+@if (showForm()) {
+  <section class="panel form-panel">
+    <h2>New {{ tab() }} return</h2>
+    <form [formGroup]="form" (ngSubmit)="save()">
+      <div class="form-grid">
+        <label class="field"><span>Date</span><input type="date" formControlName="date" /></label>
+        <label class="field">
+          <span>Party</span>
+          <select formControlName="partyId">
+            <option value="">Select…</option>
+            @for (p of parties(); track p.id) { <option [ngValue]="p.id">{{ p.code }} — {{ p.name }}</option> }
+          </select>
+        </label>
+        <label class="field"><span>Discount</span><input type="number" formControlName="discount" /></label>
+        <label class="field"><span>Tax</span><input type="number" formControlName="tax" /></label>
+        <label class="field"><span>Remarks</span><input formControlName="remarks" /></label>
+        <label class="field check"><input type="checkbox" formControlName="post" /> Post & update stock</label>
+      </div>
+      <div class="lines" formArrayName="lines">
+        <div class="lines__head"><h3>Lines</h3>
+          <button type="button" class="btn btn--ghost btn--sm" (click)="addLine()">Add line</button>
+        </div>
+        @for (l of lines.controls; track $index; let i = $index) {
+          <div class="line-row" [formGroupName]="i">
+            <label class="field">
+              <span>Product</span>
+              <select formControlName="productId">
+                <option value="">Select…</option>
+                @for (p of products(); track p.id) { <option [ngValue]="p.id">{{ p.code }} — {{ p.name }}</option> }
+              </select>
+            </label>
+            <label class="field"><span>Qty</span><input type="number" formControlName="qty" /></label>
+            <label class="field"><span>Rate</span><input type="number" formControlName="rate" /></label>
+          </div>
+        }
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn--ghost" (click)="showForm.set(false)">Cancel</button>
+        <button type="submit" class="btn btn--primary" [disabled]="saving()">Save</button>
+      </div>
+    </form>
+  </section>
+}
+
+<section class="panel">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>No</th><th>Date</th><th>Party</th><th class="num">Total</th><th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (r of (tab() === 'sale' ? saleReturns() : purchaseReturns()); track r.id) {
+          <tr>
+            <td>{{ r.returnNo }}</td>
+            <td>{{ r.date | date: 'mediumDate' }}</td>
+            <td>{{ r.partyName }}</td>
+            <td class="num">{{ r.grandTotal | currency: 'PKR' : 'symbol' : '1.0-0' }}</td>
+            <td>{{ r.status }}</td>
+          </tr>
+        } @empty {
+          <tr><td colspan="5" class="empty">No returns yet.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

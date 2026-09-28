@@ -1,0 +1,131 @@
+<section class="farm">
+  <app-page-header title="Farm / Flocks" subtitle="Poultry flock cycles — placement, feed, mortality, expenses.">
+    <button class="btn btn--ghost" type="button" (click)="showFlock.set(true)">+ Flock</button>
+    <button class="btn btn--ghost" type="button" [disabled]="!selectedId()" (click)="showShare.set(true)">+ Shareholder</button>
+    <button class="btn btn--primary" type="button" [disabled]="!selectedId()" (click)="showEvent.set(true)">+ Event</button>
+  </app-page-header>
+
+  @if (error()) { <div class="alert alert--danger">{{ error() }}</div> }
+
+  @if (showFlock()) {
+    <form class="panel grid" [formGroup]="flockForm" (ngSubmit)="saveFlock()">
+      <h3>New flock</h3>
+      <label class="field"><span>Code</span><input formControlName="code" /></label>
+      <label class="field"><span>Name</span><input formControlName="name" /></label>
+      <label class="field">
+        <span>Bird type</span>
+        <select formControlName="birdType">
+          <option>Broiler</option><option>Layer</option><option>Breeder</option>
+        </select>
+      </label>
+      <label class="field"><span>Placement</span><input type="date" formControlName="placementDate" /></label>
+      <label class="field"><span>Placed qty</span><input type="number" formControlName="placedQty" /></label>
+      <label class="field"><span>Shed</span><input formControlName="shed" /></label>
+      <div class="actions">
+        <button class="btn btn--ghost" type="button" (click)="showFlock.set(false)">Cancel</button>
+        <button class="btn btn--primary" type="submit" [disabled]="saving()">Save</button>
+      </div>
+    </form>
+  }
+
+  @if (showShare()) {
+    <form class="panel grid" [formGroup]="shareForm" (ngSubmit)="saveShare()">
+      <h3>Shareholder</h3>
+      <label class="field"><span>Name</span><input formControlName="holderName" /></label>
+      <label class="field"><span>Party code</span><input formControlName="partyCode" /></label>
+      <label class="field"><span>Share %</span><input type="number" formControlName="sharePercent" /></label>
+      <label class="field"><span>Type</span><input formControlName="shareType" /></label>
+      <div class="actions">
+        <button class="btn btn--ghost" type="button" (click)="showShare.set(false)">Cancel</button>
+        <button class="btn btn--primary" type="submit" [disabled]="saving()">Save</button>
+      </div>
+    </form>
+  }
+
+  @if (showEvent()) {
+    <form class="panel grid" [formGroup]="eventForm" (ngSubmit)="saveEvent()">
+      <h3>Flock event</h3>
+      <label class="field"><span>Date</span><input type="date" formControlName="date" /></label>
+      <label class="field">
+        <span>Type</span>
+        <select formControlName="eventType">
+          <option>Feed</option><option>Mortality</option><option>Medicine</option><option>Expense</option>
+        </select>
+      </label>
+      <label class="field"><span>Qty</span><input type="number" formControlName="qty" /></label>
+      <label class="field"><span>Amount</span><input type="number" formControlName="amount" /></label>
+      <label class="field">
+        <span>Product (feed)</span>
+        <select formControlName="productId">
+          <option value="">Optional</option>
+          @for (p of products(); track p.id) {
+            <option [value]="p.id">{{ p.code }} — {{ p.name }}</option>
+          }
+        </select>
+      </label>
+      <label class="field"><span>Remarks</span><input formControlName="remarks" /></label>
+      <div class="actions">
+        <button class="btn btn--ghost" type="button" (click)="showEvent.set(false)">Cancel</button>
+        <button class="btn btn--primary" type="submit" [disabled]="saving()">Save event</button>
+      </div>
+    </form>
+  }
+
+  <div class="layout">
+    <div class="panel table-wrap">
+      <table>
+        <thead><tr><th>Code</th><th>Flock</th><th>Birds</th><th>Mortality</th><th>Feed kg</th><th>Expense</th><th>Status</th></tr></thead>
+        <tbody>
+          @for (f of flocks(); track f.id) {
+            <tr [class.selected]="selectedId()===f.id" (click)="select(f.id)">
+              <td>{{ f.code }}</td>
+              <td>{{ f.name }}<div class="muted tiny">{{ f.birdType }} · {{ f.shed || '—' }}</div></td>
+              <td>{{ f.currentQty }} / {{ f.placedQty }}</td>
+              <td>{{ f.mortalityQty }}</td>
+              <td>{{ f.feedConsumedKg }}</td>
+              <td>{{ f.totalExpense | currency:'PKR':'symbol':'1.0-0' }}</td>
+              <td>{{ f.status }}</td>
+            </tr>
+          } @empty { <tr><td colspan="7" class="muted">No flocks yet.</td></tr> }
+        </tbody>
+      </table>
+      @if (selectedId()) {
+        <div class="actions pad">
+          <button class="btn btn--ghost" type="button" (click)="closeSelected()">Close flock</button>
+        </div>
+      }
+    </div>
+
+    <div class="panel table-wrap">
+      <h3 class="pad">Events</h3>
+      <table>
+        <thead><tr><th>Date</th><th>Type</th><th>Qty</th><th>Amount</th><th>Remarks</th></tr></thead>
+        <tbody>
+          @for (e of events(); track e.id) {
+            <tr>
+              <td>{{ e.date | date:'mediumDate' }}</td>
+              <td>{{ e.eventType }}</td>
+              <td>{{ e.qty }}</td>
+              <td>{{ e.amount | currency:'PKR':'symbol':'1.0-0' }}</td>
+              <td>{{ e.remarks || '—' }}</td>
+            </tr>
+          } @empty { <tr><td colspan="5" class="muted">Select a flock.</td></tr> }
+        </tbody>
+      </table>
+      <h3 class="pad">Shareholders</h3>
+      <table>
+        <thead><tr><th>Name</th><th>Code</th><th>%</th><th>Type</th></tr></thead>
+        <tbody>
+          @for (s of shareholders(); track s.id) {
+            <tr>
+              <td>{{ s.holderName }}</td>
+              <td>{{ s.partyCode || '—' }}</td>
+              <td>{{ s.sharePercent }}</td>
+              <td>{{ s.shareType }}</td>
+            </tr>
+          } @empty { <tr><td colspan="4" class="muted">No shareholders.</td></tr> }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>

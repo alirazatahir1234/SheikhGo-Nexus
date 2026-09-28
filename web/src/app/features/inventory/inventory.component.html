@@ -1,0 +1,108 @@
+<app-page-header title="Inventory" subtitle="Stock levels, reorder alerts, and quantity adjustments.">
+  <app-search-box placeholder="Search stock…" [value]="search()" (valueChange)="search.set($event)" />
+  <button type="button" class="btn btn--primary" (click)="openForm()">New adjustment</button>
+</app-page-header>
+
+@if (error()) {
+  <div class="alert alert--warn">{{ error() }}</div>
+}
+
+<div class="tabs">
+  <button type="button" [class.active]="tab() === 'stock'" (click)="tab.set('stock')">Stock</button>
+  <button type="button" [class.active]="tab() === 'adjustments'" (click)="tab.set('adjustments')">Adjustments</button>
+</div>
+
+@if (showForm()) {
+  <section class="panel form-panel">
+    <h2>Stock adjustment</h2>
+    <form class="form-grid" [formGroup]="form" (ngSubmit)="save()">
+      <label class="field"><span>Date</span><input type="date" formControlName="date" /></label>
+      <label class="field">
+        <span>Product</span>
+        <select formControlName="productId">
+          <option value="">Select…</option>
+          @for (p of products(); track p.id) {
+            <option [ngValue]="p.id">{{ p.code }} — {{ p.name }} (qty {{ p.stockQty }})</option>
+          }
+        </select>
+      </label>
+      <label class="field"><span>Qty change (+/−)</span><input type="number" formControlName="qtyChange" step="0.01" /></label>
+      <label class="field"><span>Reason</span><input formControlName="reason" /></label>
+      <label class="field span-2"><span>Remarks</span><input formControlName="remarks" /></label>
+      <div class="form-actions span-2">
+        <button type="button" class="btn btn--ghost" (click)="showForm.set(false)">Cancel</button>
+        <button type="submit" class="btn btn--primary" [disabled]="saving()">
+          {{ saving() ? 'Posting…' : 'Post adjustment' }}
+        </button>
+      </div>
+    </form>
+  </section>
+}
+
+@if (tab() === 'stock') {
+  <section class="panel">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Product</th>
+            <th>Category</th>
+            <th>Unit</th>
+            <th class="num">Stock qty</th>
+            <th class="num">Reorder</th>
+            <th class="num">Avg cost</th>
+            <th class="num">Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (s of filtered(); track s.productId) {
+            <tr [class.low-stock]="s.stockQty <= s.reorderLevel">
+              <td>{{ s.code }}</td>
+              <td>{{ s.name }}</td>
+              <td>{{ s.category }}</td>
+              <td>{{ s.unit }}</td>
+              <td class="num">{{ s.stockQty | number: '1.0-2' }}</td>
+              <td class="num">{{ s.reorderLevel | number: '1.0-2' }}</td>
+              <td class="num">{{ (s.avgCost ?? 0) | currency: 'PKR' : 'symbol' : '1.0-2' }}</td>
+              <td class="num">{{ (s.stockValue ?? 0) | currency: 'PKR' : 'symbol' : '1.0-0' }}</td>
+            </tr>
+          } @empty {
+            <tr><td colspan="8" class="empty">{{ loading() ? 'Loading…' : 'No stock records found.' }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+} @else {
+  <section class="panel">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Adj #</th>
+            <th>Date</th>
+            <th>Product</th>
+            <th class="num">Qty change</th>
+            <th>Reason</th>
+            <th>Remarks</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (a of adjustments(); track a.id) {
+            <tr>
+              <td>{{ a.adjustmentNo }}</td>
+              <td>{{ a.date | date: 'mediumDate' }}</td>
+              <td>{{ a.productName }}</td>
+              <td class="num">{{ a.qtyChange | number: '1.0-2' }}</td>
+              <td>{{ a.reason }}</td>
+              <td>{{ a.remarks || '—' }}</td>
+            </tr>
+          } @empty {
+            <tr><td colspan="6" class="empty">No adjustments yet.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+}

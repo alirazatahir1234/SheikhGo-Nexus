@@ -1,0 +1,111 @@
+<app-page-header title="Sales force" subtitle="Areas, salesmen, and monthly targets.">
+  <button type="button" class="btn btn--ghost" (click)="show.set('area')">+ Area</button>
+  <button type="button" class="btn btn--ghost" (click)="show.set('target')">+ Target</button>
+  <button type="button" class="btn btn--primary" (click)="show.set('salesman')">+ Salesman</button>
+</app-page-header>
+@if (error()) { <div class="alert alert--warn">{{ error() }}</div> }
+<div class="tabs">
+  <button type="button" [class.active]="tab()==='salesmen'" (click)="tab.set('salesmen')">Salesmen</button>
+  <button type="button" [class.active]="tab()==='areas'" (click)="tab.set('areas')">Areas</button>
+  <button type="button" [class.active]="tab()==='targets'" (click)="tab.set('targets')">Targets</button>
+</div>
+
+@if (show() === 'area') {
+  <section class="panel form-panel">
+    <h2>Area</h2>
+    <form class="form-grid" [formGroup]="areaForm" (ngSubmit)="saveArea()">
+      <label class="field"><span>Code</span><input formControlName="code" /></label>
+      <label class="field"><span>Name</span><input formControlName="name" /></label>
+      <div class="form-actions span-2">
+        <button type="button" class="btn btn--ghost" (click)="show.set(null)">Cancel</button>
+        <button type="submit" class="btn btn--primary" [disabled]="saving()">Save</button>
+      </div>
+    </form>
+  </section>
+}
+@if (show() === 'salesman') {
+  <section class="panel form-panel">
+    <h2>Salesman</h2>
+    <form class="form-grid" [formGroup]="salesmanForm" (ngSubmit)="saveSalesman()">
+      <label class="field"><span>Code</span><input formControlName="code" /></label>
+      <label class="field"><span>Name</span><input formControlName="name" /></label>
+      <label class="field">
+        <span>Area</span>
+        <select formControlName="salesAreaId">
+          <option value="">Optional…</option>
+          @for (a of areas(); track a.id) { <option [ngValue]="a.id">{{ a.name }}</option> }
+        </select>
+      </label>
+      <label class="field"><span>Phone</span><input formControlName="phone" /></label>
+      <div class="form-actions span-2">
+        <button type="button" class="btn btn--ghost" (click)="show.set(null)">Cancel</button>
+        <button type="submit" class="btn btn--primary" [disabled]="saving()">Save</button>
+      </div>
+    </form>
+  </section>
+}
+@if (show() === 'target') {
+  <section class="panel form-panel">
+    <h2>Target</h2>
+    <form class="form-grid" [formGroup]="targetForm" (ngSubmit)="saveTarget()">
+      <label class="field">
+        <span>Salesman</span>
+        <select formControlName="salesmanId">
+          <option value="">Optional…</option>
+          @for (s of salesmen(); track s.id) { <option [ngValue]="s.id">{{ s.name }}</option> }
+        </select>
+      </label>
+      <label class="field">
+        <span>Area</span>
+        <select formControlName="salesAreaId">
+          <option value="">Optional…</option>
+          @for (a of areas(); track a.id) { <option [ngValue]="a.id">{{ a.name }}</option> }
+        </select>
+      </label>
+      <label class="field"><span>Year</span><input type="number" formControlName="year" /></label>
+      <label class="field"><span>Month</span><input type="number" formControlName="month" min="1" max="12" /></label>
+      <label class="field"><span>Target</span><input type="number" formControlName="targetAmount" /></label>
+      <label class="field"><span>Achieved</span><input type="number" formControlName="achievedAmount" /></label>
+      <div class="form-actions span-2">
+        <button type="button" class="btn btn--ghost" (click)="show.set(null)">Cancel</button>
+        <button type="submit" class="btn btn--primary" [disabled]="saving()">Save</button>
+      </div>
+    </form>
+  </section>
+}
+
+@if (tab() === 'salesmen') {
+  <section class="panel"><div class="table-wrap"><table>
+    <thead><tr><th>Code</th><th>Name</th><th>Area</th><th>Phone</th></tr></thead>
+    <tbody>
+      @for (s of salesmen(); track s.id) {
+        <tr><td>{{ s.code }}</td><td>{{ s.name }}</td><td>{{ s.areaName || '—' }}</td><td>{{ s.phone || '—' }}</td></tr>
+      } @empty { <tr><td colspan="4" class="empty">No salesmen.</td></tr> }
+    </tbody>
+  </table></div></section>
+}
+@if (tab() === 'areas') {
+  <section class="panel"><div class="table-wrap"><table>
+    <thead><tr><th>Code</th><th>Name</th><th>Active</th></tr></thead>
+    <tbody>
+      @for (a of areas(); track a.id) {
+        <tr><td>{{ a.code }}</td><td>{{ a.name }}</td><td>{{ a.isActive ? 'Yes' : 'No' }}</td></tr>
+      } @empty { <tr><td colspan="3" class="empty">No areas.</td></tr> }
+    </tbody>
+  </table></div></section>
+}
+@if (tab() === 'targets') {
+  <section class="panel"><div class="table-wrap"><table>
+    <thead><tr><th>Year</th><th>Month</th><th>Salesman</th><th>Area</th><th class="num">Target</th><th class="num">Achieved</th></tr></thead>
+    <tbody>
+      @for (t of targets(); track t.id) {
+        <tr>
+          <td>{{ t.year }}</td><td>{{ t.month }}</td>
+          <td>{{ t.salesmanName || '—' }}</td><td>{{ t.areaName || '—' }}</td>
+          <td class="num">{{ t.targetAmount | currency: 'PKR' : 'symbol' : '1.0-0' }}</td>
+          <td class="num">{{ t.achievedAmount | currency: 'PKR' : 'symbol' : '1.0-0' }}</td>
+        </tr>
+      } @empty { <tr><td colspan="6" class="empty">No targets.</td></tr> }
+    </tbody>
+  </table></div></section>
+}

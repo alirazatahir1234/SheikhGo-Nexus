@@ -1,0 +1,53 @@
+<app-page-header title="Budgets" subtitle="Monthly account budgets.">
+  <button type="button" class="btn btn--primary" (click)="openForm()">New budget</button>
+</app-page-header>
+@if (error()) { <div class="alert alert--warn">{{ error() }}</div> }
+@if (showForm()) {
+  <section class="panel form-panel">
+    <h2>New budget</h2>
+    <form [formGroup]="form" (ngSubmit)="save()">
+      <div class="form-grid">
+        <label class="field"><span>Date</span><input type="date" formControlName="date" /></label>
+        <label class="field"><span>Year</span><input type="number" formControlName="year" /></label>
+        <label class="field"><span>Month</span><input type="number" formControlName="month" min="1" max="12" /></label>
+        <label class="field"><span>Remarks</span><input formControlName="remarks" /></label>
+      </div>
+      <div class="lines" formArrayName="lines">
+        <div class="lines__head"><h3>Lines</h3>
+          <button type="button" class="btn btn--ghost btn--sm" (click)="addLine()">Add</button>
+        </div>
+        @for (l of lines.controls; track $index; let i = $index) {
+          <div class="line-row" [formGroupName]="i">
+            <label class="field"><span>Account</span>
+              <select formControlName="accountId"><option value="">Optional…</option>
+                @for (a of accounts(); track a.id) { <option [ngValue]="a.id">{{ a.code }} — {{ a.name }}</option> }
+              </select>
+            </label>
+            <label class="field"><span>Description</span><input formControlName="description" /></label>
+            <label class="field"><span>Qty</span><input type="number" formControlName="qty" /></label>
+            <label class="field"><span>Amount</span><input type="number" formControlName="amount" /></label>
+          </div>
+        }
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn--ghost" (click)="showForm.set(false)">Cancel</button>
+        <button type="submit" class="btn btn--primary" [disabled]="saving()">Save</button>
+      </div>
+    </form>
+  </section>
+}
+<section class="panel"><div class="table-wrap"><table>
+  <thead><tr><th>No</th><th>Date</th><th>Period</th><th>Status</th><th class="num">Total</th><th></th></tr></thead>
+  <tbody>
+    @for (b of items(); track b.id) {
+      <tr>
+        <td>{{ b.budgetNo }}</td>
+        <td>{{ b.date | date:'mediumDate' }}</td>
+        <td>{{ b.month }}/{{ b.year }}</td>
+        <td>{{ b.status }}</td>
+        <td class="num">{{ b.totalAmount | currency:'PKR':'symbol':'1.0-0' }}</td>
+        <td>@if (b.status==='Draft') { <button type="button" class="btn btn--ghost btn--sm" (click)="approve(b.id)">Approve</button> }</td>
+      </tr>
+    } @empty { <tr><td colspan="6" class="empty">No budgets.</td></tr> }
+  </tbody>
+</table></div></section>

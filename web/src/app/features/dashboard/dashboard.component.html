@@ -1,0 +1,55 @@
+<app-page-header
+  title="Dashboard"
+  subtitle="Today’s trading pulse across sales, purchases, and ledgers."
+/>
+
+@if (error()) {
+  <div class="alert alert--warn">{{ error() }}</div>
+}
+
+@if (summary(); as data) {
+  <section class="kpi-grid">
+    <app-kpi-card label="Sales today" [value]="data.salesToday" hint="Invoiced revenue" />
+    <app-kpi-card label="Purchases today" [value]="data.purchasesToday" hint="Stock intake" />
+    <app-kpi-card label="Receivables" [value]="data.receivables" hint="Customer balances" />
+    <app-kpi-card label="Payables" [value]="data.payables" hint="Supplier balances" />
+  </section>
+
+  <section class="panel">
+    <div class="panel__head">
+      <h2>Recent vouchers</h2>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Voucher #</th>
+            <th>Type</th>
+            <th>Date</th>
+            <th>Narration</th>
+            <th class="num">Amount</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (v of data.recentVouchers; track v.id) {
+            <tr>
+              <td>{{ v.voucherNo }}</td>
+              <td><span class="badge">{{ v.voucherType }}</span></td>
+              <td>{{ v.date | date: 'mediumDate' }}</td>
+              <td>{{ v.narration }}</td>
+              <td class="num">{{ v.totalDebit | currency: 'PKR' : 'symbol' : '1.0-0' }}</td>
+              <td>{{ v.status }}</td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6" class="empty">No recent vouchers yet.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+} @else if (loading()) {
+  <p class="muted">Loading dashboard…</p>
+}

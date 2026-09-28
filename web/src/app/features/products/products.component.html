@@ -1,0 +1,66 @@
+<app-page-header title="Products" subtitle="Feed, grain, and finished goods catalog.">
+  <app-search-box placeholder="Search products…" [value]="search()" (valueChange)="search.set($event)" />
+  <button type="button" class="btn btn--primary" (click)="openCreate()">Add product</button>
+</app-page-header>
+
+@if (error()) {
+  <div class="alert alert--warn">{{ error() }}</div>
+}
+
+@if (showForm()) {
+  <section class="panel form-panel">
+    <h2>{{ editingId() ? 'Edit product' : 'New product' }}</h2>
+    <form class="form-grid" [formGroup]="form" (ngSubmit)="save()">
+      <label class="field"><span>Code</span><input formControlName="code" /></label>
+      <label class="field"><span>Name</span><input formControlName="name" /></label>
+      <label class="field"><span>Category</span><input formControlName="category" /></label>
+      <label class="field"><span>Unit</span><input formControlName="unit" /></label>
+      <label class="field"><span>Sale price</span><input type="number" formControlName="salePrice" /></label>
+      <label class="field"><span>Purchase price</span><input type="number" formControlName="purchasePrice" /></label>
+      <label class="field"><span>Stock qty</span><input type="number" formControlName="stockQty" /></label>
+      <label class="field"><span>Reorder level</span><input type="number" formControlName="reorderLevel" /></label>
+      <div class="form-actions span-2">
+        <button type="button" class="btn btn--ghost" (click)="showForm.set(false)">Cancel</button>
+        <button type="submit" class="btn btn--primary" [disabled]="saving()">{{ saving() ? 'Saving…' : 'Save' }}</button>
+      </div>
+    </form>
+  </section>
+}
+
+<section class="panel">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Code</th>
+          <th>Name</th>
+          <th>Category</th>
+          <th>Unit</th>
+          <th class="num">Sale</th>
+          <th class="num">Purchase</th>
+          <th class="num">Stock</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (p of filtered(); track p.id) {
+          <tr>
+            <td>{{ p.code }}</td>
+            <td>{{ p.name }}</td>
+            <td>{{ p.category }}</td>
+            <td>{{ p.unit }}</td>
+            <td class="num">{{ p.salePrice | currency: 'PKR' : 'symbol' : '1.0-2' }}</td>
+            <td class="num">{{ p.purchasePrice | currency: 'PKR' : 'symbol' : '1.0-2' }}</td>
+            <td class="num">{{ p.stockQty | number: '1.0-2' }}</td>
+            <td class="actions">
+              <button type="button" class="btn btn--ghost btn--sm" (click)="openEdit(p)">Edit</button>
+              <button type="button" class="btn btn--danger btn--sm" (click)="remove(p)">Delete</button>
+            </td>
+          </tr>
+        } @empty {
+          <tr><td colspan="8" class="empty">{{ loading() ? 'Loading…' : 'No products found.' }}</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>
