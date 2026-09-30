@@ -1,91 +1,275 @@
-<app-page-header
-  title="Dashboard"
-  subtitle="SheikhGo Nexus — procurement, inventory, and payables at a glance."
-/>
+<section class="dash-hero">
+  <div class="dash-hero__text">
+    <h1>Executive Dashboard</h1>
+    <p>{{ welcomeLine() }}</p>
+  </div>
+  <form class="dash-hero__filters" [formGroup]="rangeForm" (ngSubmit)="refresh()">
+    <label class="date-shell">
+      <span>From</span>
+      <input type="date" formControlName="from" (change)="clearPreset()" />
+    </label>
+    <label class="date-shell">
+      <span>To</span>
+      <input type="date" formControlName="to" (change)="clearPreset()" />
+    </label>
+    <div class="presets" role="group" aria-label="Date presets">
+      <button type="button" class="preset" [class.preset--active]="activePreset() === 'today'" (click)="applyPreset('today')">Today</button>
+      <button type="button" class="preset" [class.preset--active]="activePreset() === 'month'" (click)="applyPreset('month')">This Month</button>
+      <button type="button" class="preset" [class.preset--active]="activePreset() === 'fy'" (click)="applyPreset('fy')">FY</button>
+    </div>
+    <button
+      class="btn btn--ghost refresh-btn"
+      type="submit"
+      [attr.title]="lastUpdated() ? 'Updated ' + (lastUpdated() | date: 'HH:mm') : 'Refresh dashboard'"
+      [attr.aria-label]="lastUpdated() ? 'Refresh dashboard. Last updated ' + (lastUpdated() | date: 'HH:mm') : 'Refresh dashboard'"
+    >
+      <span>Refresh</span>
+      @if (lastUpdated(); as ts) {
+        <small>Updated {{ ts | date: 'HH:mm' }}</small>
+      }
+    </button>
+  </form>
+</section>
+
+<div class="sr-live" aria-live="polite">{{ statusLive() }}</div>
 
 @if (error()) {
   <div class="alert alert--warn">{{ error() }}</div>
 }
+@if (execError()) {
+  <div class="alert alert--warn">{{ execError() }}</div>
+}
 
-@if (summary(); as data) {
-  <section class="kpi-grid">
-    <app-kpi-card label="Purchases today" [value]="data.purchasesToday" hint="Posted purchase invoices" />
-    <app-kpi-card label="Inventory" [value]="data.inventoryValue ?? 0" hint="Stock at purchase cost" />
-    <app-kpi-card label="Payables" [value]="data.payables" hint="Supplier balances" />
-    <app-kpi-card label="Receivables" [value]="data.receivables" hint="Coming in Sales phase" />
+@if (loading()) {
+  <p class="muted">Loading dashboard…</p>
+} @else {
+  <section class="kpi-grid" aria-label="Primary KPIs">
+    @for (k of primaryKpis(); track k.label) {
+      <app-kpi-card
+        [label]="k.label"
+        [value]="k.value"
+        [hint]="k.hint"
+        [compareHint]="k.compareHint"
+        [delta]="k.delta"
+        [trend]="k.trend"
+        [sparkline]="k.sparkline"
+        [accent]="k.accent"
+        [style.--kpi-accent]="k.accent"
+      />
+    }
   </section>
 
-  <div class="dash-split">
-    <section class="panel">
-      <div class="panel__head">
-        <h2>Pending approvals</h2>
-      </div>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Document</th>
-              <th>Type</th>
-              <th>Status</th>
-              <th class="num">Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (p of data.pendingApprovals ?? []; track p.id) {
-              <tr>
-                <td>
-                  <strong>{{ p.documentNo }}</strong>
-                  <div class="muted">{{ p.partyName }}</div>
-                </td>
-                <td><span class="badge">{{ p.documentKind }}</span></td>
-                <td>{{ p.status }}</td>
-                <td class="num">{{ p.amount | currency: 'PKR' : 'symbol' : '1.0-0' }}</td>
-              </tr>
-            } @empty {
-              <tr>
-                <td colspan="4" class="empty">No documents awaiting action.</td>
-              </tr>
-            }
-          </tbody>
-        </table>
+  @if (metricGroups().length) {
+    <section class="metric-glance" aria-label="At a glance">
+      <h2 class="metric-glance__title">At a glance</h2>
+      <div class="metric-strip">
+        @for (m of metricGroups()[0].tiles; track m.key) {
+          <a class="metric-tile" [routerLink]="m.route || '/reports'">
+            <span class="metric-tile__label">{{ m.label }}</span>
+            <strong class="metric-tile__value">
+              @if (m.currency) {
+                {{ moneyFmt(m.value) }}
+              } @else {
+                {{ qtyFmt(m.value, m.unit) }}
+              }
+            </strong>
+          </a>
+        }
       </div>
     </section>
+  }
 
-    <section class="panel">
-      <div class="panel__head">
-        <h2>Recent transactions</h2>
-      </div>
+  @if (chartsLoading()) {
+    <p class="muted charts-loading">Loading charts…</p>
+  }
+
+  <section class="chart-grid">
+    <article class="panel chart-panel" [class.chart-panel--empty]="!salesPurchasesPanel().chart">
+      <div class="panel__head"><h2>Sales vs Purchases</h2></div>
+      @if (salesPurchasesPanel().chart; as chart) {
+        <div class="chart-body">
+          <app-dash-chart type="line" [data]="chart" [options]="multiLegendOptions" />
+        </div>
+      } @else {
+        <div class="empty-panel">
+          <p>{{ salesPurchasesPanel().emptyMessage }}</p>
+          @if (salesPurchasesPanel().emptyFigure) {
+            <strong>{{ salesPurchasesPanel().emptyFigure }}</strong>
+          }
+        </div>
+      }
+    </article>
+
+    <article class="panel chart-panel" [class.chart-panel--empty]="!agingPanel().chart">
+      <div class="panel__head"><h2>Receivables Aging</h2></div>
+      @if (agingPanel().chart; as chart) {
+        <div class="chart-body">
+          <app-dash-chart type="bar" [data]="chart" [options]="noLegendOptions" />
+        </div>
+      } @else {
+        <div class="empty-panel">
+          <p>{{ agingPanel().emptyMessage }}</p>
+          @if (agingPanel().emptyFigure) {
+            <strong>{{ agingPanel().emptyFigure }}</strong>
+          }
+        </div>
+      }
+    </article>
+
+    <article class="panel chart-panel" [class.chart-panel--empty]="!cashPanel().chart">
+      <div class="panel__head"><h2>Cash Position</h2></div>
+      @if (cashPanel().chart; as chart) {
+        <div class="chart-body">
+          <app-dash-chart type="line" [data]="chart" [options]="noLegendOptions" />
+        </div>
+      } @else {
+        <div class="empty-panel">
+          <p>{{ cashPanel().emptyMessage }}</p>
+          @if (cashPanel().emptyFigure) {
+            <strong>{{ cashPanel().emptyFigure }}</strong>
+          }
+        </div>
+      }
+    </article>
+
+    <article class="panel chart-panel" [class.chart-panel--empty]="!warehousePanel().chart">
+      <div class="panel__head"><h2>Stock Value by Warehouse</h2></div>
+      @if (warehousePanel().chart; as chart) {
+        <div class="chart-body">
+          <app-dash-chart type="bar" [data]="chart" [options]="horizontalBarOptions" />
+        </div>
+      } @else {
+        <div class="empty-panel">
+          <p>{{ warehousePanel().emptyMessage }}</p>
+          @if (warehousePanel().emptyFigure) {
+            <strong>{{ warehousePanel().emptyFigure }}</strong>
+          }
+        </div>
+      }
+    </article>
+
+    <article class="panel chart-panel chart-panel--table">
+      <div class="panel__head"><h2>Top 5 Customers</h2></div>
       <div class="table-wrap">
-        <table>
+        <table class="dash-table">
           <thead>
             <tr>
-              <th>Document</th>
-              <th>Type</th>
-              <th>Date</th>
-              <th>Status</th>
+              <th scope="col">Customer</th>
+              <th scope="col" class="num">Amount</th>
             </tr>
           </thead>
           <tbody>
-            @for (d of data.recentDocuments ?? []; track d.id + d.documentKind) {
+            @for (c of topCustomers(); track c.name) {
               <tr>
-                <td>
-                  <strong>{{ d.documentNo }}</strong>
-                  <div class="muted">{{ d.partyName }}</div>
-                </td>
-                <td><span class="badge">{{ d.documentKind }}</span></td>
-                <td>{{ d.date | date: 'mediumDate' }}</td>
-                <td>{{ d.status }}</td>
+                <td class="doc-cell">{{ c.name }}</td>
+                <td class="num">{{ moneyFmt(c.amount) }}</td>
               </tr>
             } @empty {
-              <tr>
-                <td colspan="4" class="empty">No recent procurement documents yet.</td>
-              </tr>
+              <tr><td colspan="2" class="empty">No customer sales in range.</td></tr>
             }
           </tbody>
         </table>
       </div>
-    </section>
-  </div>
-} @else if (loading()) {
-  <p class="muted">Loading dashboard…</p>
+    </article>
+
+    <article class="panel chart-panel" [class.chart-panel--empty]="!pricePanel().chart">
+      <div class="panel__head"><h2>Purchase Price by Product</h2></div>
+      @if (pricePanel().chart; as chart) {
+        <div class="chart-body">
+          <app-dash-chart type="line" [data]="chart" [options]="noLegendOptions" />
+        </div>
+      } @else {
+        <div class="empty-panel">
+          <p>{{ pricePanel().emptyMessage }}</p>
+          @if (pricePanel().emptyFigure) {
+            <strong>{{ pricePanel().emptyFigure }}</strong>
+          }
+        </div>
+      }
+    </article>
+  </section>
+
+  <section class="bottom-grid">
+    <article class="panel">
+      <div class="panel__head">
+        <h2>Pending Approvals</h2>
+        @if ((summary()?.pendingApprovals?.length ?? 0) > 0) {
+          <span class="count-pill">{{ summary()?.pendingApprovals?.length }}</span>
+        }
+      </div>
+      @if (actionItems().length) {
+        <ul class="action-list">
+          @for (a of actionItems(); track a.label) {
+            <li>
+              <div>
+                <strong>{{ a.label }}</strong>
+                <p>{{ a.detail }}</p>
+              </div>
+              <a [routerLink]="a.route" class="action-link">Open →</a>
+            </li>
+          }
+        </ul>
+      }
+      <div class="table-wrap">
+        <table class="dash-table">
+          <thead>
+            <tr>
+              <th scope="col">Document</th>
+              <th scope="col">Status</th>
+              <th scope="col" class="num">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (p of summary()?.pendingApprovals ?? []; track p.id) {
+              <tr>
+                <td class="doc-cell" [title]="(p.documentNo || '') + (p.partyName ? ' — ' + p.partyName : '')">
+                  <span class="doc">{{ p.documentNo }}</span>
+                  @if (p.partyName) {
+                    <span class="muted party"> · {{ p.partyName }}</span>
+                  }
+                </td>
+                <td><span [class]="statusClass(p.status)">{{ p.status }}</span></td>
+                <td class="num">{{ moneyFmt(p.amount) }}</td>
+              </tr>
+            } @empty {
+              <tr><td colspan="3" class="empty">No documents awaiting action.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </article>
+
+    <article class="panel panel--transactions">
+      <div class="panel__head"><h2>Recent Transactions</h2></div>
+      <div class="table-wrap">
+        <table class="dash-table">
+          <thead>
+            <tr>
+              <th scope="col">Document</th>
+              <th scope="col">Date</th>
+              <th scope="col">Status</th>
+              <th scope="col" class="num">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (d of summary()?.recentDocuments ?? []; track d.id + d.documentKind) {
+              <tr>
+                <td class="doc-cell" [title]="(d.documentNo || '') + (d.partyName ? ' — ' + d.partyName : '')">
+                  <span class="doc">{{ d.documentNo }}</span>
+                  @if (d.partyName) {
+                    <span class="muted party"> · {{ d.partyName }}</span>
+                  }
+                </td>
+                <td class="doc">{{ d.date | date: 'dd MMM' }}</td>
+                <td><span [class]="statusClass(d.status)">{{ d.status }}</span></td>
+                <td class="num">{{ moneyFmt(d.amount) }}</td>
+              </tr>
+            } @empty {
+              <tr><td colspan="4" class="empty">No recent procurement documents yet.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </article>
+  </section>
 }

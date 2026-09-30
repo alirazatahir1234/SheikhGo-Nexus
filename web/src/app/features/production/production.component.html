@@ -1,12 +1,20 @@
 <section class="prod">
-  <app-page-header title="Production" subtitle="BOM formulas and production batches for feed mills.">
-    <button class="btn btn--ghost" type="button" (click)="tab.set('boms'); showBom.set(true)">+ BOM</button>
-    <button class="btn btn--primary" type="button" (click)="tab.set('orders'); showOrder.set(true)">+ Run batch</button>
+  <app-page-header title="Production" subtitle="BOMs, manufacturing orders, material consumption and finished-good output.">
+    <button class="btn btn--ghost" type="button" (click)="goTab('boms'); showBom.set(true)">+ BOM</button>
+    <button class="btn btn--primary" type="button" (click)="goTab('orders'); showOrder.set(true)">+ Manufacturing order</button>
   </app-page-header>
 
   <div class="tabs">
-    <button type="button" [class.active]="tab()==='orders'" (click)="tab.set('orders')">Orders</button>
-    <button type="button" [class.active]="tab()==='boms'" (click)="tab.set('boms')">BOM formulas</button>
+    <a routerLink="/production/dashboard" routerLinkActive="active">Dashboard</a>
+    <a routerLink="/production/boms" routerLinkActive="active">BOMs</a>
+    <a routerLink="/production/orders" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Orders</a>
+    <a
+      [routerLink]="selected() ? ['/production/orders', selected()!.id] : '/production/orders'"
+      routerLinkActive="active"
+      [class.disabled]="!selected()"
+      (click)="!selected() && $event.preventDefault()"
+    >Order detail</a>
+    <a routerLink="/production/costing" routerLinkActive="active">Costing</a>
   </div>
 
   @if (error()) { <div class="alert alert--danger">{{ error() }}</div> }
@@ -26,21 +34,22 @@
             }
           </select>
         </label>
-        <label class="field"><span>Output qty</span><input type="number" formControlName="outputQty" /></label>
+        <label class="field"><span>Version</span><input type="number" formControlName="version" /></label>
+        <label class="field"><span>Scrap %</span><input type="number" formControlName="scrapPercent" /></label>
       </div>
-      <h4>Raw materials</h4>
-      @for (line of rmLines(); track $index; let i = $index) {
+      <h4>Components (qty per 1 FG)</h4>
+      @for (line of rmLines(); track $index) {
         <div class="grid">
           <label class="field">
-            <span>Material</span>
-            <select [(ngModel)]="line.rawMaterialId" [ngModelOptions]="{standalone: true}">
+            <span>Raw material</span>
+            <select [(ngModel)]="line.componentProductId" [ngModelOptions]="{standalone: true}">
               <option value="">Select</option>
               @for (p of rawMaterials(); track p.id) {
                 <option [value]="p.id">{{ p.code }} — {{ p.name }}</option>
               }
             </select>
           </label>
-          <label class="field"><span>Qty</span><input type="number" [(ngModel)]="line.qty" [ngModelOptions]="{standalone: true}" /></label>
+          <label class="field"><span>Qty per</span><input type="number" [(ngModel)]="line.qtyPer" [ngModelOptions]="{standalone: true}" /></label>
         </div>
       }
       <button class="btn btn--ghost" type="button" (click)="addRmLine()">+ Line</button>
@@ -52,62 +61,204 @@
   }
 
   @if (showOrder()) {
-    <form class="panel grid" [formGroup]="orderForm" (ngSubmit)="runOrder()">
-      <h3>Production batch</h3>
+    <form class="panel grid" [formGroup]="orderForm" (ngSubmit)="createOrder()">
+      <h3>Manufacturing order</h3>
       <label class="field">
         <span>BOM</span>
         <select formControlName="bomId">
           <option value="">Select</option>
           @for (b of boms(); track b.id) {
-            <option [value]="b.id">{{ b.code }} — {{ b.name }}</option>
+            <option [value]="b.id">{{ b.code }} v{{ b.version }} — {{ b.name }}</option>
           }
         </select>
       </label>
-      <label class="field"><span>Date</span><input type="date" formControlName="date" /></label>
-      <label class="field"><span>Batch qty</span><input type="number" formControlName="batchQty" /></label>
+      <label class="field">
+        <span>Warehouse</span>
+        <select formControlName="warehouseId">
+          <option value="">Select</option>
+          @for (w of warehouses(); track w.id) {
+            <option [value]="w.id">{{ w.code }} — {{ w.name }}</option>
+          }
+        </select>
+      </label>
+      <label class="field"><span>Order date</span><input type="date" formControlName="orderDate" /></label>
+      <label class="field"><span>Qty ordered</span><input type="number" formControlName="qtyOrdered" /></label>
+      <label class="field"><span>Labor cost</span><input type="number" formControlName="laborCost" /></label>
+      <label class="field"><span>Overhead</span><input type="number" formControlName="overheadCost" /></label>
       <label class="field"><span>Remarks</span><input formControlName="remarks" /></label>
-      <label class="field check"><input type="checkbox" formControlName="post" /> Post & update stock</label>
       <div class="actions">
         <button class="btn btn--ghost" type="button" (click)="showOrder.set(false)">Cancel</button>
-        <button class="btn btn--primary" type="submit" [disabled]="saving()">Run</button>
+        <button class="btn btn--primary" type="submit" [disabled]="saving()">Create</button>
       </div>
     </form>
+  }
+
+  @if (tab()==='dashboard') {
+    <div class="stats">
+      <div class="panel"><span class="muted">Active BOMs</span><strong>{{ activeBomCount() }}</strong></div>
+      <div class="panel"><span class="muted">Open orders</span><strong>{{ openOrderCount() }}</strong></div>
+      <div class="panel"><span class="muted">Completed</span><strong>{{ completedCount() }}</strong></div>
+    </div>
   }
 
   @if (tab()==='orders') {
     <div class="panel table-wrap">
       <table>
-        <thead><tr><th>Order</th><th>BOM</th><th>Date</th><th>Batch</th><th>Output</th><th>Status</th></tr></thead>
+        <thead><tr><th>Order</th><th>BOM</th><th>FG</th><th>Date</th><th>Qty</th><th>Status</th><th>Doc</th><th></th></tr></thead>
         <tbody>
           @for (o of orders(); track o.id) {
             <tr>
               <td>{{ o.orderNo }}</td>
-              <td>{{ o.bomName }}</td>
-              <td>{{ o.date | date:'mediumDate' }}</td>
-              <td>{{ o.batchQty }}</td>
-              <td>{{ o.outputQty }}</td>
+              <td>{{ o.bomCode }}</td>
+              <td>{{ o.finishedProductName }}</td>
+              <td>{{ o.orderDate | date:'mediumDate' }}</td>
+              <td>{{ o.qtyOrdered | number:'1.0-2' }}</td>
               <td>{{ o.status }}</td>
+              <td>{{ statusLabel(docStatus(o)) }}</td>
+              <td><button class="btn btn--ghost" type="button" (click)="openDetail(o)">Open</button></td>
             </tr>
-          } @empty { <tr><td colspan="6" class="muted">No production orders yet.</td></tr> }
+          } @empty { <tr><td colspan="8" class="muted">No production orders yet.</td></tr> }
         </tbody>
       </table>
     </div>
-  } @else {
+  }
+
+  @if (tab()==='boms') {
     <div class="panel table-wrap">
       <table>
-        <thead><tr><th>Code</th><th>Name</th><th>Finished</th><th>Output</th><th>Lines</th></tr></thead>
+        <thead><tr><th>Code</th><th>Name</th><th>Finished</th><th>Ver</th><th>Lines</th><th>Active</th></tr></thead>
         <tbody>
           @for (b of boms(); track b.id) {
             <tr>
               <td>{{ b.code }}</td>
               <td>{{ b.name }}</td>
               <td>{{ b.finishedProductName }}</td>
-              <td>{{ b.outputQty }}</td>
+              <td>{{ b.version }}</td>
               <td>{{ b.lines.length }}</td>
+              <td>{{ b.isActive ? 'Yes' : 'No' }}</td>
             </tr>
-          } @empty { <tr><td colspan="5" class="muted">No BOMs yet.</td></tr> }
+          } @empty { <tr><td colspan="6" class="muted">No BOMs yet.</td></tr> }
         </tbody>
       </table>
     </div>
+  }
+
+  @if (tab()==='detail') {
+    @if (selected(); as o) {
+      <div class="panel">
+        <div class="detail-head">
+          <div>
+            <h3>{{ o.orderNo }} · {{ o.finishedProductName }}</h3>
+            <p class="muted">{{ o.bomCode }} · WH {{ o.warehouseName }} · Qty {{ o.qtyOrdered | number:'1.0-2' }}</p>
+          </div>
+          <app-document-status-stepper [status]="docStatus(o)" />
+        </div>
+        <p><strong>MO status:</strong> {{ o.status }}</p>
+        <div class="run-actions">
+          <button class="btn btn--ghost" type="button" (click)="act('submit')" [disabled]="saving()">Submit</button>
+          <button class="btn btn--ghost" type="button" (click)="act('approve')" [disabled]="saving()">Approve</button>
+          <button class="btn btn--ghost" type="button" (click)="act('release')" [disabled]="saving()">Release</button>
+          <button class="btn btn--ghost" type="button" (click)="act('start')" [disabled]="saving()">Start</button>
+          <button class="btn btn--primary" type="button" (click)="act('complete')" [disabled]="saving()">Complete / Post</button>
+          <button class="btn btn--ghost" type="button" (click)="act('close')" [disabled]="saving()">Close</button>
+          <button class="btn btn--ghost" type="button" (click)="act('cancel')" [disabled]="saving()">Cancel</button>
+        </div>
+
+        <h4>Components (RM)</h4>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Product</th><th>Planned</th><th>Actual</th><th>Unit cost</th><th>Total</th></tr></thead>
+            <tbody>
+              @for (c of o.components; track c.productId) {
+                <tr>
+                  <td>{{ c.productCode }} — {{ c.productName }}</td>
+                  <td>{{ c.plannedQty | number:'1.0-4' }}</td>
+                  <td>{{ c.actualQty | number:'1.0-4' }}</td>
+                  <td>{{ c.unitCost | currency:'PKR':'symbol-narrow':'1.2-4' }}</td>
+                  <td>{{ c.totalCost | currency:'PKR':'symbol-narrow':'1.2-4' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <h4>Outputs (FG)</h4>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Product</th><th>Qty</th><th>Unit cost</th><th>Total</th><th>By-product</th></tr></thead>
+            <tbody>
+              @for (out of o.outputs; track out.productId) {
+                <tr>
+                  <td>{{ out.productCode }} — {{ out.productName }}</td>
+                  <td>{{ out.qty | number:'1.0-4' }}</td>
+                  <td>{{ out.unitCost | currency:'PKR':'symbol-narrow':'1.2-4' }}</td>
+                  <td>{{ out.totalCost | currency:'PKR':'symbol-narrow':'1.2-4' }}</td>
+                  <td>{{ out.isByProduct ? 'Yes' : 'No' }}</td>
+                </tr>
+              } @empty { <tr><td colspan="5" class="muted">No output until complete.</td></tr> }
+            </tbody>
+          </table>
+        </div>
+
+        <h4>Variances</h4>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Kind</th><th>Product</th><th>Qty</th><th>Narration</th></tr></thead>
+            <tbody>
+              @for (v of o.variances; track v.id) {
+                <tr>
+                  <td>{{ v.kind }}</td>
+                  <td>{{ v.productCode }} — {{ v.productName }}</td>
+                  <td>{{ v.qty | number:'1.0-4' }}</td>
+                  <td>{{ v.narration }}</td>
+                </tr>
+              } @empty { <tr><td colspan="4" class="muted">None</td></tr> }
+            </tbody>
+          </table>
+        </div>
+
+        @if (o.status !== 'Completed' && o.status !== 'Closed' && o.status !== 'Cancelled') {
+          <form class="grid variance-form" [formGroup]="varianceForm" (ngSubmit)="addVariance()">
+            <label class="field">
+              <span>Kind</span>
+              <select formControlName="kind">
+                <option value="Wastage">Wastage</option>
+                <option value="ByProduct">ByProduct</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Product</span>
+              <select formControlName="productId">
+                <option value="">Select</option>
+                @for (p of products(); track p.id) {
+                  <option [value]="p.id">{{ p.code }} — {{ p.name }}</option>
+                }
+              </select>
+            </label>
+            <label class="field"><span>Qty</span><input type="number" formControlName="qty" /></label>
+            <label class="field"><span>Narration</span><input formControlName="narration" /></label>
+            <button class="btn btn--ghost" type="submit" [disabled]="saving()">Add variance</button>
+          </form>
+        }
+      </div>
+    } @else {
+      <p class="muted">Select an order from the Orders tab.</p>
+    }
+  }
+
+  @if (tab()==='costing') {
+    @if (costing(); as c) {
+      <div class="panel stats">
+        <div><span class="muted">Order</span><strong>{{ c.orderNo }}</strong></div>
+        <div><span class="muted">Material</span><strong>{{ c.materialCost | currency:'PKR':'symbol-narrow':'1.2-2' }}</strong></div>
+        <div><span class="muted">Labor</span><strong>{{ c.laborCost | currency:'PKR':'symbol-narrow':'1.2-2' }}</strong></div>
+        <div><span class="muted">Overhead</span><strong>{{ c.overheadCost | currency:'PKR':'symbol-narrow':'1.2-2' }}</strong></div>
+        <div><span class="muted">Total</span><strong>{{ c.totalCost | currency:'PKR':'symbol-narrow':'1.2-2' }}</strong></div>
+        <div><span class="muted">Unit cost</span><strong>{{ c.unitCost | currency:'PKR':'symbol-narrow':'1.2-4' }}</strong></div>
+        <div><span class="muted">Qty completed</span><strong>{{ c.qtyCompleted | number:'1.0-2' }}</strong></div>
+      </div>
+    } @else {
+      <p class="muted">Open an order detail to load costing.</p>
+    }
   }
 </section>

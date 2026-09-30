@@ -1,7 +1,7 @@
 using System.Security.Claims;
-using SoftaxeERP.Application.Interfaces;
+using SheikhGoNexusERP.Application.Interfaces;
 
-namespace SoftaxeERP.Api.Middleware;
+namespace SheikhGoNexusERP.Api.Middleware;
 
 public class TenantMiddleware
 {
@@ -19,7 +19,10 @@ public class TenantMiddleware
             if (Guid.TryParse(tenantClaim, out var tid))
             {
                 Guid? uid = Guid.TryParse(userClaim, out var u) ? u : null;
-                tenant.Set(tid, uid, clientIp);
+                Guid? companyId = Guid.TryParse(context.User.FindFirst("company_id")?.Value, out var c) ? c : null;
+                Guid? branchId = Guid.TryParse(context.User.FindFirst("branch_id")?.Value, out var b) ? b : null;
+                Guid? fyId = Guid.TryParse(context.User.FindFirst("financial_year_id")?.Value, out var f) ? f : null;
+                tenant.Set(tid, uid, clientIp, companyId, branchId, fyId);
             }
         }
         await _next(context);

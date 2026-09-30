@@ -1,6 +1,6 @@
-@SoftaxeERP.Api_HostAddress = http://localhost:5140
+@SheikhGoNexusErp_HostAddress = http://localhost:5080
 
-GET {{SoftaxeERP.Api_HostAddress}}/weatherforecast/
+GET {{SheikhGoNexusErp_HostAddress}}/swagger/
 Accept: application/json
 
 ###

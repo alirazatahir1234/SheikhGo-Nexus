@@ -1,23 +1,33 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CurrencyPipe, DatePipe } from '@angular/common';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
 import { ExtendedModulesService } from '../../core/services/extended-modules.service';
 import { PartiesService } from '../../core/services/parties.service';
 import { Party } from '../../core/models/erp.models';
+import { bindTabFromRoute, navigateModuleTab } from '../../core/nav/route-tabs';
+
+type ChequesTab = 'pdc' | 'books';
+
+const CHEQUES_TAB_ROUTE: Record<ChequesTab, string> = {
+  pdc: 'pdc',
+  books: 'books',
+};
 
 @Component({
   selector: 'app-cheques',
   standalone: true,
-  imports: [ReactiveFormsModule, PageHeaderComponent, CurrencyPipe, DatePipe],
+  imports: [ReactiveFormsModule, PageHeaderComponent, CurrencyPipe, DatePipe, RouterLink, RouterLinkActive],
   templateUrl: './cheques.component.html',
   styleUrl: './cheques.component.scss',
 })
 export class ChequesComponent implements OnInit {
+  private readonly router = inject(Router);
   readonly books = signal<any[]>([]);
   readonly pdcs = signal<any[]>([]);
   readonly parties = signal<Party[]>([]);
-  readonly tab = signal<'pdc' | 'books'>('pdc');
+  readonly tab = signal<ChequesTab>('pdc');
   readonly showBook = signal(false);
   readonly showPdc = signal(false);
   readonly saving = signal(false);
@@ -51,8 +61,23 @@ export class ChequesComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    bindTabFromRoute<ChequesTab>((tab) => this.tab.set(tab));
     this.partiesApi.getAll().subscribe({ next: (p) => this.parties.set(p) });
     this.reload();
+  }
+
+  setTab(tab: ChequesTab): void {
+    navigateModuleTab(this.router, 'cheques', CHEQUES_TAB_ROUTE[tab]);
+  }
+
+  openBookForm(): void {
+    navigateModuleTab(this.router, 'cheques', 'books');
+    this.showBook.set(true);
+  }
+
+  openPdcForm(): void {
+    navigateModuleTab(this.router, 'cheques', 'pdc');
+    this.showPdc.set(true);
   }
 
   reload(): void {

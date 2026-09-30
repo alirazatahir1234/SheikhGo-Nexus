@@ -4,8 +4,8 @@
 </app-page-header>
 @if (error()) { <div class="alert alert--warn">{{ error() }}</div> }
 <div class="tabs">
-  <button type="button" [class.active]="tab()==='brands'" (click)="tab.set('brands')">Brands</button>
-  <button type="button" [class.active]="tab()==='conversions'" (click)="tab.set('conversions')">Conversions</button>
+  <a routerLink="/brands/list" routerLinkActive="active">Brands</a>
+  <a routerLink="/brands/conversions" routerLinkActive="active">Conversions</a>
 </div>
 @if (show()==='brand') {
   <section class="panel form-panel"><h2>Brand</h2>

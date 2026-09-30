@@ -5,11 +5,11 @@ using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
-using SoftaxeERP.Application.DTOs;
-using SoftaxeERP.Application.Interfaces;
-using SoftaxeERP.Infrastructure.Persistence;
+using SheikhGoNexusERP.Application.DTOs;
+using SheikhGoNexusERP.Application.Interfaces;
+using SheikhGoNexusERP.Infrastructure.Persistence;
 
-namespace SoftaxeERP.Infrastructure.Services;
+namespace SheikhGoNexusERP.Infrastructure.Services;
 
 public class AuthService : IAuthService
 {
@@ -70,7 +70,7 @@ public class AuthService : IAuthService
             token,
             new UserDto(user.Id, user.Email, user.FullName, role, user.IsPlatformAdmin),
             company is null
-                ? new CompanyDto(user.TenantId, "SheikhGo Nexus", "NX", null, null, "Pakistan", null, null, "PKR", null, Domain.Enums.IndustryType.FeedMill)
+                ? new CompanyDto(user.TenantId, "SheikhGo-Nexus-ERP", "NX", null, null, "Pakistan", null, null, "PKR", null, Domain.Enums.IndustryType.FeedMill)
                 : new CompanyDto(company.Id, company.Name, company.ShortName, company.Address, company.City,
                     company.Country, company.Phone, company.Email, company.Currency, company.Ntn, company.Industry,
                     company.DefaultSaleTaxPercent, company.DefaultPurchaseTaxPercent),

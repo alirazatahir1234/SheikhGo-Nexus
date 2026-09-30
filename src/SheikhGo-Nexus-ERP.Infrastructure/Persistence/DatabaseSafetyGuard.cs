@@ -2,7 +2,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 
-namespace SoftaxeERP.Infrastructure.Persistence;
+namespace SheikhGoNexusERP.Infrastructure.Persistence;
 
 /// <summary>
 /// Multi-layer guard: Softaxe live deny-list + Development allowlist for SheikhGo_Nexus_Dev.

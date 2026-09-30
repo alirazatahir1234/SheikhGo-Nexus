@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\SoftaxeERP.Domain\SoftaxeERP.Domain.csproj" />
+    <ProjectReference Include="..\SheikhGo-Nexus-ERP.Domain\SheikhGo-Nexus-ERP.Domain.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -13,6 +13,9 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <AssemblyName>SheikhGo-Nexus-ERP.Application</AssemblyName>
+    <RootNamespace>SheikhGoNexusERP.Application</RootNamespace>
+    <Product>SheikhGo-Nexus-ERP</Product>
   </PropertyGroup>
 
 </Project>

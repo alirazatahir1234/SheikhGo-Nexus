@@ -1,97 +1,177 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { DatePipe, DecimalPipe } from '@angular/common';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
-import { ExtendedModulesService } from '../../core/services/extended-modules.service';
-import { PartiesService } from '../../core/services/parties.service';
+import { LabApiService, LabSample, LabTestResult, LabTestType } from '../../core/services/lab-api.service';
 import { ProductsService } from '../../core/services/products.service';
-import { Party, Product } from '../../core/models/erp.models';
+import { WarehousesService, Warehouse } from '../../core/services/warehouses.service';
+import { Product } from '../../core/models/erp.models';
+import { bindTabFromRoute, navigateModuleTab } from '../../core/nav/route-tabs';
+
+type LabTab = 'dashboard' | 'types' | 'samples' | 'results';
+
+const LAB_TAB_ROUTE: Record<LabTab, string> = {
+  dashboard: 'dashboard',
+  types: 'types',
+  samples: 'samples',
+  results: 'results',
+};
 
 @Component({
   selector: 'app-lab',
   standalone: true,
-  imports: [ReactiveFormsModule, PageHeaderComponent, DatePipe, DecimalPipe],
+  imports: [ReactiveFormsModule, PageHeaderComponent, DatePipe, DecimalPipe, RouterLink, RouterLinkActive],
   templateUrl: './lab.component.html',
   styleUrl: './lab.component.scss',
 })
 export class LabComponent implements OnInit {
-  readonly tests = signal<any[]>([]);
-  readonly results = signal<any[]>([]);
-  readonly parties = signal<Party[]>([]);
+  private readonly router = inject(Router);
+  readonly tab = signal<LabTab>('dashboard');
+  readonly types = signal<LabTestType[]>([]);
+  readonly samples = signal<LabSample[]>([]);
+  readonly results = signal<LabTestResult[]>([]);
   readonly products = signal<Product[]>([]);
-  readonly tab = signal<'results' | 'tests'>('results');
-  readonly showResult = signal(false);
-  readonly showTest = signal(false);
-  readonly saving = signal(false);
+  readonly warehouses = signal<Warehouse[]>([]);
+  readonly loading = signal(true);
   readonly error = signal('');
+  readonly saving = signal(false);
+  readonly today = new Date().toISOString().slice(0, 10);
+
+  readonly typeForm;
+  readonly sampleForm;
   readonly resultForm;
-  readonly testForm;
 
   constructor(
-    private readonly api: ExtendedModulesService,
-    private readonly partiesApi: PartiesService,
+    private readonly api: LabApiService,
     private readonly productsApi: ProductsService,
+    private readonly warehousesApi: WarehousesService,
     private readonly fb: FormBuilder,
   ) {
-    this.resultForm = this.fb.nonNullable.group({
-      date: [new Date().toISOString().slice(0, 10), Validators.required],
-      partyId: [''],
+    this.typeForm = this.fb.nonNullable.group({
+      code: ['MOISTURE', Validators.required],
+      name: ['Moisture', Validators.required],
+      unit: ['%'],
+      maxValue: [14],
+      isActive: [true],
+    });
+    this.sampleForm = this.fb.nonNullable.group({
+      sampleDate: [this.today],
       productId: [''],
-      labTestTypeId: [''],
-      vehicleNo: [''],
-      bags: [0],
-      percentage: [0],
-      partyDeductionKg: [0],
-      stockDeductionKg: [0],
+      warehouseId: [''],
+      sourceType: ['Inventory'],
       remarks: [''],
     });
-    this.testForm = this.fb.nonNullable.group({
-      code: ['', Validators.required],
-      name: ['', Validators.required],
-      unit: ['%'],
-      isActive: [true],
+    this.resultForm = this.fb.nonNullable.group({
+      sampleId: ['', Validators.required],
+      testTypeId: ['', Validators.required],
+      value: [12.4, Validators.required],
+      narration: [''],
     });
   }
 
   ngOnInit(): void {
-    this.partiesApi.getAll().subscribe({ next: (p) => this.parties.set(p) });
+    bindTabFromRoute<LabTab>((tab) => this.tab.set(tab));
     this.productsApi.getAll().subscribe({ next: (p) => this.products.set(p) });
+    this.warehousesApi.getAll().subscribe({
+      next: (w) => {
+        this.warehouses.set(w);
+        const main = w.find((x) => x.code === 'MAIN') ?? w[0];
+        if (main) this.sampleForm.patchValue({ warehouseId: main.id });
+      },
+    });
     this.reload();
   }
 
+  setTab(tab: LabTab): void {
+    navigateModuleTab(this.router, 'lab', LAB_TAB_ROUTE[tab]);
+  }
+
   reload(): void {
-    this.api.getLabTests().subscribe({ next: (t) => this.tests.set(t) });
-    this.api.getLabResults().subscribe({
-      next: (r) => this.results.set(r),
-      error: () => this.error.set('Could not load lab results'),
+    this.loading.set(true);
+    this.api.getTestTypes().subscribe({
+      next: (t) => {
+        this.types.set(t);
+        if (t[0]) this.resultForm.patchValue({ testTypeId: t[0].id });
+      },
+    });
+    this.api.getSamples().subscribe({ next: (s) => this.samples.set(s) });
+    this.api.getResults().subscribe({
+      next: (r) => {
+        this.results.set(r);
+        this.loading.set(false);
+      },
+      error: () => {
+        this.loading.set(false);
+        this.error.set('Could not load lab results');
+      },
     });
   }
 
-  saveTest(): void {
-    if (this.testForm.invalid) return;
+  saveType(): void {
+    if (this.typeForm.invalid) return;
     this.saving.set(true);
-    this.api.upsertLabTest(this.testForm.getRawValue()).subscribe({
-      next: () => { this.saving.set(false); this.showTest.set(false); this.reload(); },
-      error: () => { this.saving.set(false); this.error.set('Failed to save test type'); },
+    this.api.upsertTestType(this.typeForm.getRawValue()).subscribe({
+      next: () => {
+        this.saving.set(false);
+        this.reload();
+      },
+      error: (e) => {
+        this.saving.set(false);
+        this.error.set(e?.error?.message || 'Save type failed');
+      },
     });
   }
 
-  saveResult(): void {
+  createSample(): void {
+    this.saving.set(true);
+    const v = this.sampleForm.getRawValue();
+    this.api
+      .createSample({
+        ...v,
+        productId: v.productId || null,
+        warehouseId: v.warehouseId || null,
+      })
+      .subscribe({
+        next: (s) => {
+          this.saving.set(false);
+          this.resultForm.patchValue({ sampleId: s.id });
+          this.reload();
+          navigateModuleTab(this.router, 'lab', 'results');
+        },
+        error: (e) => {
+          this.saving.set(false);
+          this.error.set(e?.error?.message || 'Sample failed');
+        },
+      });
+  }
+
+  createResult(): void {
     if (this.resultForm.invalid) return;
     this.saving.set(true);
-    const raw = this.resultForm.getRawValue();
-    this.api.createLabResult({
-      ...raw,
-      partyId: raw.partyId || null,
-      productId: raw.productId || null,
-      labTestTypeId: raw.labTestTypeId || null,
-    }).subscribe({
-      next: (r) => {
-        this.results.update((list) => [r, ...list]);
+    this.api.createResult(this.resultForm.getRawValue()).subscribe({
+      next: () => {
         this.saving.set(false);
-        this.showResult.set(false);
+        this.reload();
       },
-      error: () => { this.saving.set(false); this.error.set('Failed to save lab result'); },
+      error: (e) => {
+        this.saving.set(false);
+        this.error.set(e?.error?.message || 'Result failed');
+      },
+    });
+  }
+
+  approve(id: string): void {
+    this.saving.set(true);
+    this.api.approveResult(id).subscribe({
+      next: () => {
+        this.saving.set(false);
+        this.reload();
+      },
+      error: (e) => {
+        this.saving.set(false);
+        this.error.set(e?.error?.message || 'Approve failed');
+      },
     });
   }
 }

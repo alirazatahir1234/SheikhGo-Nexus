@@ -4,10 +4,10 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using SoftaxeERP.Api.Middleware;
-using SoftaxeERP.Application.Interfaces;
-using SoftaxeERP.Infrastructure;
-using SoftaxeERP.Infrastructure.Persistence;
+using SheikhGoNexusERP.Api.Middleware;
+using SheikhGoNexusERP.Application.Interfaces;
+using SheikhGoNexusERP.Infrastructure;
+using SheikhGoNexusERP.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,7 +21,7 @@ builder.Services.AddControllers()
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "SheikhGo Nexus API", Version = "v1" });
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "SheikhGo-Nexus-ERP API", Version = "v1" });
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Description = "JWT Authorization header using the Bearer scheme.",

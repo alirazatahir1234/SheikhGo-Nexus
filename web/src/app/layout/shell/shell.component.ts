@@ -1,53 +1,91 @@
-import { Component, inject, signal } from '@angular/core';
-import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
+import { Component, inject, signal, viewChild } from '@angular/core';
+import { RouterOutlet, Router, NavigationEnd, RouterLink } from '@angular/router';
 import { filter, map, startWith } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { TopbarComponent } from '../topbar/topbar.component';
+import { CommandPaletteComponent } from '../command-palette/command-palette.component';
+import { NavService } from '../../core/nav/nav.service';
 
 @Component({
   selector: 'app-shell',
   standalone: true,
-  imports: [RouterOutlet, SidebarComponent, TopbarComponent],
+  imports: [RouterOutlet, RouterLink, SidebarComponent, TopbarComponent, CommandPaletteComponent],
   template: `
+    <a class="skip-link" href="#main-content">Skip to content</a>
     <div class="shell" [class.shell--collapsed]="collapsed()">
-      <app-sidebar [collapsed]="collapsed()" />
+      <app-sidebar class="shell__sidebar" [collapsed]="collapsed()" />
       <div class="shell__main">
-        <app-topbar (toggleSidebar)="collapsed.set(!collapsed())" />
+        <app-topbar (toggleSidebar)="collapsed.set(!collapsed())" (openSearch)="openPalette()" />
         <div class="shell__breadcrumb">
-          <span>SheikhGo Nexus</span>
-          <span class="sep">/</span>
-          <span class="current">{{ crumb() }}</span>
+          @for (c of crumbs(); track $index; let last = $last) {
+            @if (!last && c.route) {
+              <a [routerLink]="c.route">{{ c.label }}</a>
+              <span class="sep">/</span>
+            } @else if (!last) {
+              <span>{{ c.label }}</span>
+              <span class="sep">/</span>
+            } @else {
+              <span class="current">{{ c.label }}</span>
+            }
+          }
         </div>
-        <main class="shell__content">
+        <main id="main-content" class="shell__content" tabindex="-1">
           <router-outlet />
         </main>
       </div>
     </div>
+    <app-command-palette />
   `,
   styles: [
     `
+      :host {
+        display: block;
+      }
       .shell {
         display: grid;
-        grid-template-columns: var(--sidebar-width) 1fr;
-        min-height: 100vh;
+        grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+        min-height: 100dvh;
         background:
           radial-gradient(circle at top right, rgba(20, 184, 166, 0.08), transparent 28%),
-          linear-gradient(180deg, var(--canvas) 0%, #e8eef1 100%);
+          linear-gradient(180deg, var(--canvas) 0%, color-mix(in srgb, var(--canvas) 88%, #c5d4db) 100%);
         transition: grid-template-columns 0.2s ease;
       }
       .shell--collapsed {
-        grid-template-columns: 4.5rem 1fr;
+        grid-template-columns: 4.5rem minmax(0, 1fr);
+      }
+      :host ::ng-deep .shell__sidebar,
+      :host ::ng-deep app-sidebar {
+        position: sticky;
+        top: 0;
+        height: 100dvh;
+        align-self: start;
+        overflow: hidden;
       }
       .shell__main {
         min-width: 0;
         display: flex;
         flex-direction: column;
+        min-height: 100dvh;
       }
       .shell__breadcrumb {
         padding: 0.65rem 1.5rem 0;
         font-size: 0.8rem;
         color: var(--text-muted);
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.15rem;
+        max-width: var(--content-max);
+        width: 100%;
+        margin-inline: auto;
+      }
+      .shell__breadcrumb a {
+        color: var(--text-muted);
+        text-decoration: none;
+      }
+      .shell__breadcrumb a:hover {
+        color: var(--slate-800);
       }
       .shell__breadcrumb .sep {
         margin: 0 0.35rem;
@@ -56,18 +94,20 @@ import { TopbarComponent } from '../topbar/topbar.component';
       .shell__breadcrumb .current {
         color: var(--slate-800);
         font-weight: 600;
-        text-transform: capitalize;
       }
       .shell__content {
         padding: 1rem 1.5rem 1.5rem;
         flex: 1;
+        max-width: var(--content-max);
+        width: 100%;
+        margin-inline: auto;
       }
       @media (max-width: 900px) {
         .shell,
         .shell--collapsed {
           grid-template-columns: 1fr;
         }
-        app-sidebar {
+        :host ::ng-deep app-sidebar {
           display: none;
         }
       }
@@ -76,17 +116,20 @@ import { TopbarComponent } from '../topbar/topbar.component';
 })
 export class ShellComponent {
   private readonly router = inject(Router);
+  private readonly nav = inject(NavService);
+  private readonly palette = viewChild(CommandPaletteComponent);
   readonly collapsed = signal(false);
 
-  readonly crumb = toSignal(
+  readonly crumbs = toSignal(
     this.router.events.pipe(
       filter((e): e is NavigationEnd => e instanceof NavigationEnd),
-      map((e) => {
-        const parts = e.urlAfterRedirects.split('/').filter(Boolean);
-        return parts[parts.length - 1]?.replace(/-/g, ' ') || 'Dashboard';
-      }),
-      startWith('Dashboard'),
+      map((e) => this.nav.breadcrumbsForUrl(e.urlAfterRedirects)),
+      startWith(this.nav.breadcrumbsForUrl(this.router.url)),
     ),
-    { initialValue: 'Dashboard' },
+    { initialValue: this.nav.breadcrumbsForUrl('/dashboard') },
   );
+
+  openPalette(): void {
+    this.palette()?.openPalette();
+  }
 }

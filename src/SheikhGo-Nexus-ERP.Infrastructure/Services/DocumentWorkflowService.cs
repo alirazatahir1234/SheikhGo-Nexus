@@ -1,11 +1,11 @@
 using Microsoft.EntityFrameworkCore;
-using SoftaxeERP.Application.DTOs;
-using SoftaxeERP.Application.Interfaces;
-using SoftaxeERP.Domain.Entities;
-using SoftaxeERP.Domain.Enums;
-using SoftaxeERP.Infrastructure.Persistence;
+using SheikhGoNexusERP.Application.DTOs;
+using SheikhGoNexusERP.Application.Interfaces;
+using SheikhGoNexusERP.Domain.Entities;
+using SheikhGoNexusERP.Domain.Enums;
+using SheikhGoNexusERP.Infrastructure.Persistence;
 
-namespace SoftaxeERP.Infrastructure.Services;
+namespace SheikhGoNexusERP.Infrastructure.Services;
 
 /// <summary>
 /// Shared document engine: Draft → Submitted → (Verified?) → (Approved?) → Posted (or Cancelled).
@@ -16,7 +16,9 @@ public class DocumentWorkflowService(
     AppDbContext db,
     IAuditService audit,
     IPermissionService permissions,
-    ITenantContext tenant) : IDocumentWorkflowService
+    ITenantContext tenant,
+    IAccountingPostingService accounting,
+    IInventoryPostingService inventory) : IDocumentWorkflowService
 {
     public async Task<PurchaseOrderDto?> TransitionOrderAsync(Guid id, string action, string? remarks = null, CancellationToken ct = default)
     {
@@ -48,7 +50,7 @@ public class DocumentWorkflowService(
         var pi = await db.PurchaseInvoices.FirstOrDefaultAsync(x => x.Id == id, ct);
         if (pi is null) return null;
 
-        await EnsureActionPermissionAsync("PurchaseInvoice", action, ct);
+        await EnsureActionPermissionAsync("Procurement", "PurchaseInvoice", action, ct);
         var wasPosted = pi.Status == DocumentStatus.Posted;
         await TransitionCoreAsync(pi, pi.DocumentId, nameof(PurchaseInvoice), "PI", pi.InvoiceNo, action, remarks, ct);
 
@@ -58,7 +60,85 @@ public class DocumentWorkflowService(
         return await MapInvoiceAsync(id, ct);
     }
 
-    private async Task EnsureActionPermissionAsync(string docKind, string action, CancellationToken ct)
+    public async Task<SalesOrderDto?> TransitionSalesOrderAsync(Guid id, string action, string? remarks = null, CancellationToken ct = default)
+    {
+        var so = await db.SalesOrders.FirstOrDefaultAsync(x => x.Id == id, ct);
+        if (so is null) return null;
+
+        await EnsureActionPermissionAsync("Sales", "Order", action, ct);
+        await TransitionCoreAsync(so, so.DocumentId, nameof(SalesOrder), "SO", so.OrderNo, action, remarks, ct);
+        return await MapSalesOrderAsync(id, ct);
+    }
+
+    public async Task<DeliveryOrderDto?> TransitionDeliveryOrderAsync(Guid id, string action, string? remarks = null, CancellationToken ct = default)
+    {
+        var delivery = await db.DeliveryOrders.Include(x => x.Lines).FirstOrDefaultAsync(x => x.Id == id, ct);
+        if (delivery is null) return null;
+
+        await EnsureActionPermissionAsync("Sales", "Delivery", action, ct);
+        var wasPosted = delivery.Status == DocumentStatus.Posted;
+        await TransitionCoreAsync(delivery, delivery.DocumentId, nameof(DeliveryOrder), "DO", delivery.DeliveryNo, action, remarks, ct);
+
+        if (!wasPosted && delivery.Status == DocumentStatus.Posted)
+            await ApplyDeliveryOrderPostingAsync(delivery, ct);
+
+        return await MapDeliveryAsync(id, ct);
+    }
+
+    public async Task<SalesInvoiceDocDto?> TransitionSalesInvoiceAsync(Guid id, string action, string? remarks = null, CancellationToken ct = default)
+    {
+        var invoice = await db.SalesInvoices.FirstOrDefaultAsync(x => x.Id == id, ct);
+        if (invoice is null) return null;
+
+        await EnsureActionPermissionAsync("Sales", "Invoice", action, ct);
+        var wasPosted = invoice.Status == DocumentStatus.Posted;
+        await TransitionCoreAsync(invoice, invoice.DocumentId, nameof(SalesInvoice), "SI", invoice.InvoiceNo, action, remarks, ct);
+
+        if (!wasPosted && invoice.Status == DocumentStatus.Posted)
+            await ApplySalesInvoicePostingAsync(invoice, ct);
+
+        return await MapSalesInvoiceAsync(id, ct);
+    }
+
+    public async Task<CustomerPaymentDto?> TransitionCustomerPaymentAsync(Guid id, string action, string? remarks = null, CancellationToken ct = default)
+    {
+        var payment = await db.CustomerPayments.Include(x => x.Applications).FirstOrDefaultAsync(x => x.Id == id, ct);
+        if (payment is null) return null;
+
+        await EnsureActionPermissionAsync("Sales", "Payment", action, ct);
+        var wasPosted = payment.Status == DocumentStatus.Posted;
+        await TransitionCoreAsync(payment, payment.DocumentId, nameof(CustomerPayment), "CP", payment.PaymentNo, action, remarks, ct);
+
+        if (!wasPosted && payment.Status == DocumentStatus.Posted)
+            await ApplyCustomerPaymentPostingAsync(payment, ct);
+
+        return await MapPaymentAsync(id, ct);
+    }
+
+    public async Task<SupplierPaymentDto?> TransitionSupplierPaymentAsync(Guid id, string action, string? remarks = null, CancellationToken ct = default)
+    {
+        var payment = await db.SupplierPayments.Include(x => x.Applications).FirstOrDefaultAsync(x => x.Id == id, ct);
+        if (payment is null) return null;
+
+        await permissions.EnsureAsync(
+            action.Trim().ToLowerInvariant() switch
+            {
+                "submit" => "Finance.SupplierPayment.Create",
+                "post" => "Finance.SupplierPayment.Post",
+                "cancel" => "Finance.SupplierPayment.Create",
+                _ => "Finance.SupplierPayment.Post"
+            }, ct);
+
+        var wasPosted = payment.Status == DocumentStatus.Posted;
+        await TransitionCoreAsync(payment, payment.DocumentId, nameof(SupplierPayment), "SPAY", payment.PaymentNo, action, remarks, ct);
+
+        if (!wasPosted && payment.Status == DocumentStatus.Posted)
+            await accounting.PostSupplierPaymentAsync(payment, ct);
+
+        return await MapSupplierPaymentAsync(id, ct);
+    }
+
+    private async Task EnsureActionPermissionAsync(string module, string docKind, string action, CancellationToken ct)
     {
         var key = action.Trim().ToLowerInvariant();
         var suffix = key switch
@@ -70,8 +150,11 @@ public class DocumentWorkflowService(
             "cancel" => "Edit",
             _ => throw new InvalidOperationException($"Unknown workflow action '{action}'.")
         };
-        await permissions.EnsureAsync($"Procurement.{docKind}.{suffix}", ct);
+        await permissions.EnsureAsync($"{module}.{docKind}.{suffix}", ct);
     }
+
+    private async Task EnsureActionPermissionAsync(string docKind, string action, CancellationToken ct) =>
+        await EnsureActionPermissionAsync("Procurement", docKind, action, ct);
 
     private async Task TransitionCoreAsync(
         dynamic documentEntity,
@@ -138,6 +221,7 @@ public class DocumentWorkflowService(
         DocumentStatus? next = (actionKey, old) switch
         {
             ("submit", DocumentStatus.Draft) => DocumentStatus.Submitted,
+            ("submit", DocumentStatus.Calculated) => DocumentStatus.Submitted,
 
             ("verify", DocumentStatus.Submitted) when requiresVerification => DocumentStatus.Verified,
 
@@ -170,33 +254,39 @@ public class DocumentWorkflowService(
                     throw new InvalidOperationException($"GRN quantity exceeds remaining PO quantity for product {line.ProductId}.");
                 poLine.ReceivedQty += line.Qty;
             }
-
-            var stock = await db.WarehouseStocks
-                .FirstOrDefaultAsync(x => x.ProductId == line.ProductId && x.WarehouseId == grn.WarehouseId, ct);
-            if (stock is null)
-            {
-                stock = new WarehouseStock { ProductId = line.ProductId, WarehouseId = grn.WarehouseId };
-                db.WarehouseStocks.Add(stock);
-            }
-            stock.Quantity += line.Qty;
         }
-
         await db.SaveChangesAsync(ct);
-        await audit.WriteAsync(nameof(GoodsReceipt), grn.Id, "PostedEffects", null, "WarehouseStock increased", ct);
+        await inventory.PostGoodsReceiptAsync(grn, ct);
+        await audit.WriteAsync(nameof(GoodsReceipt), grn.Id, "PostedEffects", null, "Inventory ledger + stock", ct);
     }
 
-    private async Task ApplyPurchaseInvoicePostingAsync(PurchaseInvoice pi, CancellationToken ct)
+    private async Task ApplyPurchaseInvoicePostingAsync(PurchaseInvoice pi, CancellationToken ct) =>
+        await accounting.PostPurchaseInvoiceAsync(pi, ct);
+
+    private async Task ApplyDeliveryOrderPostingAsync(DeliveryOrder delivery, CancellationToken ct)
     {
-        var balance = await db.PayableBalances.FirstOrDefaultAsync(x => x.PartyId == pi.PartyId, ct);
-        if (balance is null)
+        foreach (var line in delivery.Lines)
         {
-            balance = new PayableBalance { PartyId = pi.PartyId };
-            db.PayableBalances.Add(balance);
+            if (line.SalesOrderLineId is Guid soLineId)
+            {
+                var soLine = await db.SalesOrderLines.FirstAsync(x => x.Id == soLineId, ct);
+                var remaining = soLine.Qty - soLine.DeliveredQty;
+                if (line.Qty > remaining)
+                    throw new InvalidOperationException($"Delivery quantity exceeds remaining SO quantity for product {line.ProductId}.");
+                soLine.DeliveredQty += line.Qty;
+            }
         }
-        balance.Balance += pi.GrandTotal;
         await db.SaveChangesAsync(ct);
-        await audit.WriteAsync(nameof(PurchaseInvoice), pi.Id, "PostedEffects", null, $"Payable +{pi.GrandTotal}", ct);
+        await inventory.PostDeliveryIssueAsync(delivery, ct);
+        await audit.WriteAsync(nameof(DeliveryOrder), delivery.Id, "PostedEffects", null, "Inventory ledger + stock", ct);
+        await accounting.PostDeliveryCogsAsync(delivery, ct);
     }
+
+    private async Task ApplySalesInvoicePostingAsync(SalesInvoice invoice, CancellationToken ct) =>
+        await accounting.PostSalesInvoiceAsync(invoice, ct);
+
+    private async Task ApplyCustomerPaymentPostingAsync(CustomerPayment payment, CancellationToken ct) =>
+        await accounting.PostCustomerPaymentAsync(payment, ct);
 
     private async Task<PurchaseOrderDto?> MapOrderAsync(Guid id, CancellationToken ct)
     {
@@ -240,6 +330,80 @@ public class DocumentWorkflowService(
         var entity = await db.PurchaseInvoices.AsNoTracking().FirstAsync(x => x.Id == id, ct);
         var workflow = await DocumentWorkflowActorsResolver.ResolveAsync(
             db, nameof(PurchaseInvoice), id, entity.DocumentId, entity.CreatedBy, entity.CreatedAt, ct);
+        return dto with { Workflow = workflow };
+    }
+
+    private async Task<SalesOrderDto?> MapSalesOrderAsync(Guid id, CancellationToken ct)
+    {
+        var dto = await db.SalesOrders.Include(x => x.Party).Include(x => x.Lines).ThenInclude(l => l.Product)
+            .Where(x => x.Id == id)
+            .Select(x => new SalesOrderDto(x.Id, x.OrderNo, x.OrderDate, x.PartyId, x.Party!.Name, x.WarehouseId, x.Status,
+                x.SubTotal, x.Tax, x.GrandTotal, x.Remarks,
+                x.Lines.Select(l => new InvoiceLineDto(l.Id, l.ProductId, l.Product!.Name, l.Qty, l.Rate, l.Amount)).ToList(), null))
+            .FirstOrDefaultAsync(ct);
+        if (dto is null) return null;
+        var entity = await db.SalesOrders.AsNoTracking().FirstAsync(x => x.Id == id, ct);
+        var workflow = await DocumentWorkflowActorsResolver.ResolveAsync(
+            db, nameof(SalesOrder), id, entity.DocumentId, entity.CreatedBy, entity.CreatedAt, ct);
+        return dto with { Workflow = workflow };
+    }
+
+    private async Task<DeliveryOrderDto?> MapDeliveryAsync(Guid id, CancellationToken ct)
+    {
+        var dto = await db.DeliveryOrders.Include(x => x.Party).Include(x => x.Lines).ThenInclude(l => l.Product)
+            .Where(x => x.Id == id)
+            .Select(x => new DeliveryOrderDto(x.Id, x.DeliveryNo, x.DeliveryDate, x.PartyId, x.Party!.Name, x.WarehouseId,
+                x.SalesOrderId, x.Status, x.Remarks,
+                x.Lines.Select(l => new InvoiceLineDto(l.Id, l.ProductId, l.Product!.Name, l.Qty, l.Rate, l.Amount)).ToList(), null))
+            .FirstOrDefaultAsync(ct);
+        if (dto is null) return null;
+        var entity = await db.DeliveryOrders.AsNoTracking().FirstAsync(x => x.Id == id, ct);
+        var workflow = await DocumentWorkflowActorsResolver.ResolveAsync(
+            db, nameof(DeliveryOrder), id, entity.DocumentId, entity.CreatedBy, entity.CreatedAt, ct);
+        return dto with { Workflow = workflow };
+    }
+
+    private async Task<SalesInvoiceDocDto?> MapSalesInvoiceAsync(Guid id, CancellationToken ct)
+    {
+        var dto = await db.SalesInvoices.Include(x => x.Party).Include(x => x.Lines).ThenInclude(l => l.Product)
+            .Where(x => x.Id == id)
+            .Select(x => new SalesInvoiceDocDto(x.Id, x.InvoiceNo, x.InvoiceDate, x.PartyId, x.Party!.Name,
+                x.DeliveryOrderId, x.SalesOrderId, x.Status,
+                x.SubTotal, x.Discount, x.Tax, x.GrandTotal, x.PaidAmount, x.Remarks,
+                x.Lines.Select(l => new InvoiceLineDto(l.Id, l.ProductId, l.Product!.Name, l.Qty, l.Rate, l.Amount)).ToList(), null))
+            .FirstOrDefaultAsync(ct);
+        if (dto is null) return null;
+        var entity = await db.SalesInvoices.AsNoTracking().FirstAsync(x => x.Id == id, ct);
+        var workflow = await DocumentWorkflowActorsResolver.ResolveAsync(
+            db, nameof(SalesInvoice), id, entity.DocumentId, entity.CreatedBy, entity.CreatedAt, ct);
+        return dto with { Workflow = workflow };
+    }
+
+    private async Task<CustomerPaymentDto?> MapPaymentAsync(Guid id, CancellationToken ct)
+    {
+        var dto = await db.CustomerPayments.Include(x => x.Party).Include(x => x.Applications).ThenInclude(a => a.SalesInvoice)
+            .Where(x => x.Id == id)
+            .Select(x => new CustomerPaymentDto(x.Id, x.PaymentNo, x.PaymentDate, x.PartyId, x.Party!.Name, x.Amount, x.Status, x.Remarks,
+                x.Applications.Select(a => new PaymentApplicationDto(a.Id, a.SalesInvoiceId, a.SalesInvoice!.InvoiceNo, a.AmountApplied)).ToList(), null))
+            .FirstOrDefaultAsync(ct);
+        if (dto is null) return null;
+        var entity = await db.CustomerPayments.AsNoTracking().FirstAsync(x => x.Id == id, ct);
+        var workflow = await DocumentWorkflowActorsResolver.ResolveAsync(
+            db, nameof(CustomerPayment), id, entity.DocumentId, entity.CreatedBy, entity.CreatedAt, ct);
+        return dto with { Workflow = workflow };
+    }
+
+    private async Task<SupplierPaymentDto?> MapSupplierPaymentAsync(Guid id, CancellationToken ct)
+    {
+        var dto = await db.SupplierPayments.Include(x => x.Party).Include(x => x.Applications).ThenInclude(a => a.PurchaseInvoice)
+            .Where(x => x.Id == id)
+            .Select(x => new SupplierPaymentDto(x.Id, x.PaymentNo, x.PaymentDate, x.PartyId, x.Party!.Name, x.CashBankAccountId, x.Amount, x.Status, x.Remarks,
+                x.Applications.Select(a => new SupplierPaymentApplicationDto(a.Id, a.PurchaseInvoiceId, a.PurchaseInvoice!.InvoiceNo, a.AmountApplied)).ToList(), null))
+            .FirstOrDefaultAsync(ct);
+        if (dto is null) return null;
+        var entity = await db.SupplierPayments.AsNoTracking().FirstAsync(x => x.Id == id, ct);
+        var workflow = await DocumentWorkflowActorsResolver.ResolveAsync(
+            db, nameof(SupplierPayment), id, entity.DocumentId, entity.CreatedBy, entity.CreatedAt, ct);
         return dto with { Workflow = workflow };
     }
 }

@@ -1,11 +1,11 @@
 using Microsoft.EntityFrameworkCore;
-using SoftaxeERP.Application.DTOs;
-using SoftaxeERP.Application.Interfaces;
-using SoftaxeERP.Domain.Entities;
-using SoftaxeERP.Domain.Enums;
-using SoftaxeERP.Infrastructure.Persistence;
+using SheikhGoNexusERP.Application.DTOs;
+using SheikhGoNexusERP.Application.Interfaces;
+using SheikhGoNexusERP.Domain.Entities;
+using SheikhGoNexusERP.Domain.Enums;
+using SheikhGoNexusERP.Infrastructure.Persistence;
 
-namespace SoftaxeERP.Infrastructure.Services;
+namespace SheikhGoNexusERP.Infrastructure.Services;
 
 internal static class Deferred
 {
@@ -241,57 +241,6 @@ public class SaleService : ISaleService
         throw Deferred.Mutate();
 }
 
-public class EmployeeService : IEmployeeService
-{
-    public Task<IReadOnlyList<EmployeeDto>> GetAllAsync(CancellationToken ct = default) =>
-        Task.FromResult<IReadOnlyList<EmployeeDto>>(Array.Empty<EmployeeDto>());
-
-    public Task<EmployeeDto> CreateAsync(EmployeeUpsertDto dto, CancellationToken ct = default) =>
-        throw Deferred.Mutate();
-}
-
-public class ProductionService : IProductionService
-{
-    public Task<IReadOnlyList<BomDto>> GetBomsAsync(CancellationToken ct = default) =>
-        Task.FromResult<IReadOnlyList<BomDto>>(Array.Empty<BomDto>());
-
-    public Task<BomDto> CreateBomAsync(BomUpsertDto dto, CancellationToken ct = default) =>
-        throw Deferred.Mutate();
-
-    public Task<IReadOnlyList<ProductionOrderDto>> GetOrdersAsync(CancellationToken ct = default) =>
-        Task.FromResult<IReadOnlyList<ProductionOrderDto>>(Array.Empty<ProductionOrderDto>());
-
-    public Task<ProductionOrderDto> CreateOrderAsync(ProductionCreateDto dto, CancellationToken ct = default) =>
-        throw Deferred.Mutate();
-}
-
-public class FarmService : IFarmService
-{
-    public Task<IReadOnlyList<FarmFlockDto>> GetFlocksAsync(CancellationToken ct = default) =>
-        Task.FromResult<IReadOnlyList<FarmFlockDto>>(Array.Empty<FarmFlockDto>());
-
-    public Task<FarmFlockDto> CreateFlockAsync(FarmFlockCreateDto dto, CancellationToken ct = default) =>
-        throw Deferred.Mutate();
-
-    public Task<FarmEventDto> AddEventAsync(Guid flockId, FarmEventCreateDto dto, CancellationToken ct = default) =>
-        throw Deferred.Mutate();
-
-    public Task<IReadOnlyList<FarmEventDto>> GetEventsAsync(Guid flockId, CancellationToken ct = default) =>
-        Task.FromResult<IReadOnlyList<FarmEventDto>>(Array.Empty<FarmEventDto>());
-
-    public Task<bool> CloseFlockAsync(Guid flockId, CancellationToken ct = default) =>
-        throw Deferred.Mutate();
-}
-
-public class StockAdjustmentService : IStockAdjustmentService
-{
-    public Task<IReadOnlyList<StockAdjustmentDto>> GetAllAsync(CancellationToken ct = default) =>
-        Task.FromResult<IReadOnlyList<StockAdjustmentDto>>(Array.Empty<StockAdjustmentDto>());
-
-    public Task<StockAdjustmentDto> CreateAsync(StockAdjustmentCreateDto dto, CancellationToken ct = default) =>
-        throw Deferred.Mutate();
-}
-
 public class PartySettlementService : IPartySettlementService
 {
     public Task<IReadOnlyList<PartySettlementDto>> GetAllAsync(CancellationToken ct = default) =>
@@ -310,21 +259,6 @@ public class PurchaseContractService : IPurchaseContractService
         throw Deferred.Mutate();
 
     public Task<bool> CloseAsync(Guid id, CancellationToken ct = default) =>
-        throw Deferred.Mutate();
-}
-
-public class LabService : ILabService
-{
-    public Task<IReadOnlyList<LabTestTypeDto>> GetTestTypesAsync(CancellationToken ct = default) =>
-        Task.FromResult<IReadOnlyList<LabTestTypeDto>>(Array.Empty<LabTestTypeDto>());
-
-    public Task<LabTestTypeDto> UpsertTestTypeAsync(LabTestTypeUpsertDto dto, CancellationToken ct = default) =>
-        throw Deferred.Mutate();
-
-    public Task<IReadOnlyList<LabResultDto>> GetResultsAsync(CancellationToken ct = default) =>
-        Task.FromResult<IReadOnlyList<LabResultDto>>(Array.Empty<LabResultDto>());
-
-    public Task<LabResultDto> CreateResultAsync(LabResultCreateDto dto, CancellationToken ct = default) =>
         throw Deferred.Mutate();
 }
 
@@ -415,27 +349,6 @@ public class HrFinanceService : IHrFinanceService
         throw Deferred.Mutate();
 }
 
-public class WeighbridgeService : IWeighbridgeService
-{
-    public Task<IReadOnlyList<WeighbridgeTicketDto>> GetAllAsync(CancellationToken ct = default) =>
-        Task.FromResult<IReadOnlyList<WeighbridgeTicketDto>>(Array.Empty<WeighbridgeTicketDto>());
-
-    public Task<WeighbridgeTicketDto> CreateAsync(WeighbridgeTicketCreateDto dto, CancellationToken ct = default) =>
-        throw Deferred.Mutate();
-
-    public Task<WeighbridgeTicketDto?> CompleteAsync(Guid id, WeighbridgeCompleteDto dto, CancellationToken ct = default) =>
-        throw Deferred.Mutate();
-}
-
-public class PosService : IPosService
-{
-    public Task<IReadOnlyList<PosSaleDto>> GetAllAsync(CancellationToken ct = default) =>
-        Task.FromResult<IReadOnlyList<PosSaleDto>>(Array.Empty<PosSaleDto>());
-
-    public Task<PosSaleDto> CreateAsync(PosSaleCreateDto dto, CancellationToken ct = default) =>
-        throw Deferred.Mutate();
-}
-
 public class ProductConversionService : IProductConversionService
 {
     public Task<IReadOnlyList<ProductConversionDto>> GetAllAsync(CancellationToken ct = default) =>
@@ -457,21 +370,6 @@ public class BudgetService : IBudgetService
         throw Deferred.Mutate();
 }
 
-public class AttendanceService : IAttendanceService
-{
-    public Task<IReadOnlyList<AttendanceDto>> GetAttendanceAsync(CancellationToken ct = default) =>
-        Task.FromResult<IReadOnlyList<AttendanceDto>>(Array.Empty<AttendanceDto>());
-
-    public Task<AttendanceDto> CreateAttendanceAsync(AttendanceCreateDto dto, CancellationToken ct = default) =>
-        throw Deferred.Mutate();
-
-    public Task<IReadOnlyList<OvertimeDto>> GetOvertimeAsync(CancellationToken ct = default) =>
-        Task.FromResult<IReadOnlyList<OvertimeDto>>(Array.Empty<OvertimeDto>());
-
-    public Task<OvertimeDto> CreateOvertimeAsync(OvertimeCreateDto dto, CancellationToken ct = default) =>
-        throw Deferred.Mutate();
-}
-
 public class DayCloseService : IDayCloseService
 {
     public Task<IReadOnlyList<DayCloseDto>> GetAllAsync(CancellationToken ct = default) =>
@@ -482,15 +380,6 @@ public class DayCloseService : IDayCloseService
 
     public Task<bool> IsDateClosedAsync(DateTime date, CancellationToken ct = default) =>
         Task.FromResult(false);
-}
-
-public class StockTransferService : IStockTransferService
-{
-    public Task<IReadOnlyList<StockTransferDto>> GetAllAsync(CancellationToken ct = default) =>
-        Task.FromResult<IReadOnlyList<StockTransferDto>>(Array.Empty<StockTransferDto>());
-
-    public Task<StockTransferDto> CreateAsync(StockTransferCreateDto dto, CancellationToken ct = default) =>
-        throw Deferred.Mutate();
 }
 
 public class TradeReturnService : ITradeReturnService
@@ -508,38 +397,5 @@ public class TradeReturnService : ITradeReturnService
         throw Deferred.Mutate();
 }
 
-public class LeaveService : ILeaveService
-{
-    public Task<IReadOnlyList<LeaveDto>> GetAllAsync(CancellationToken ct = default) =>
-        Task.FromResult<IReadOnlyList<LeaveDto>>(Array.Empty<LeaveDto>());
-
-    public Task<LeaveDto> CreateAsync(LeaveCreateDto dto, CancellationToken ct = default) =>
-        throw Deferred.Mutate();
-}
-
-public class SalarySheetService : ISalarySheetService
-{
-    public Task<SalarySheetDto> GetAsync(int year, int month, CancellationToken ct = default) =>
-        Task.FromResult(new SalarySheetDto(year, month, 0, 0, Array.Empty<SalarySheetLineDto>()));
-
-    public Task<SalarySheetDto> GenerateAsync(SalaryGenerateDto dto, CancellationToken ct = default) =>
-        throw Deferred.Mutate();
-
-    public Task<SalarySheetLineDto?> MarkPaidAsync(Guid id, CancellationToken ct = default) =>
-        throw Deferred.Mutate();
-}
-
-public class ReportService : IReportService
-{
-    public Task<LedgerReportDto> GetLedgerAsync(Guid accountId, DateTime from, DateTime to, CancellationToken ct = default) =>
-        Task.FromResult(new LedgerReportDto(accountId, "", "", from.Date, to.Date, 0, 0, Array.Empty<LedgerLineDto>()));
-
-    public Task<TrialBalanceReportDto> GetTrialBalanceAsync(DateTime asOf, CancellationToken ct = default) =>
-        Task.FromResult(new TrialBalanceReportDto(asOf.Date, 0, 0, Array.Empty<TrialBalanceLineDto>()));
-
-    public Task<AgingReportDto> GetReceivablesAgingAsync(DateTime? asOf = null, CancellationToken ct = default) =>
-        Task.FromResult(new AgingReportDto("AR", (asOf ?? DateTime.UtcNow).Date, 0, Array.Empty<AgingBucketDto>()));
-
-    public Task<AgingReportDto> GetPayablesAgingAsync(DateTime? asOf = null, CancellationToken ct = default) =>
-        Task.FromResult(new AgingReportDto("AP", (asOf ?? DateTime.UtcNow).Date, 0, Array.Empty<AgingBucketDto>()));
-}
+// LeaveService / SalarySheetService / EmployeeService / AttendanceService → HrServices.cs (Phase 5)
+// ReportService moved to FinanceReportService.cs (Phase 3 GL reports)

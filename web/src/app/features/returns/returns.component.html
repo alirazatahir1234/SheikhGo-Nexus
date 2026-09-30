@@ -4,8 +4,8 @@
 @if (error()) { <div class="alert alert--warn">{{ error() }}</div> }
 
 <div class="tabs">
-  <button type="button" class="btn" [class.btn--primary]="tab() === 'sale'" (click)="tab.set('sale')">Sale returns</button>
-  <button type="button" class="btn" [class.btn--primary]="tab() === 'purchase'" (click)="tab.set('purchase')">Purchase returns</button>
+  <a routerLink="/returns/sale" routerLinkActive="active" class="btn" [class.btn--primary]="tab() === 'sale'">Sale returns</a>
+  <a routerLink="/returns/purchase" routerLinkActive="active" class="btn" [class.btn--primary]="tab() === 'purchase'">Purchase returns</a>
 </div>
 
 @if (showForm()) {

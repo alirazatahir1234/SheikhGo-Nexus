@@ -1,6 +1,6 @@
-# Softaxe ERP → SheikhGo Nexus
+# SheikhGo-Nexus-ERP
 
-Modern multi-tenant ERP inspired by Softaxe. Product database is **SheikhGo Nexus**, not Softaxe live.
+Modern multi-tenant ERP (SheikhGo-Nexus-ERP). Softaxe is **read-only** business reference only.
 
 ## Dual-DB rule (mandatory)
 
@@ -35,7 +35,7 @@ Development allowlist: connection `Database` must be `SheikhGo_Nexus_Dev` (enfor
 
 ## Phase 1 (complete) — Nexus Core + Document Engine UI
 
-- **Shell:** SheikhGo Nexus login, domain sidebar, company/branch/FY session context, breadcrumb
+- **Shell:** SheikhGo-Nexus-ERP login, domain sidebar, company/branch/FY session context, breadcrumb
 - **Session:** Login returns companies, default branch, current FY, and permission codes; topbar switcher persists `nexus_*` keys
 - **RBAC:** API `PermissionService` enforces workflow; Angular `permissionGuard` + sidebar/action gating; `Procurement.*.Verify` seeded and enforced separately from Approve
 - **Administration APIs + UI:** Companies, Branches, Users/Roles/Permissions, Financial Years / Fiscal Periods, Audit Log (incl. IP), Document Types
@@ -65,7 +65,7 @@ GET  /api/purchases/audit/{entityName}/{id}
 
 ### Explicit non-goals (still deferred)
 
-Sales slice, full GL/cash/bank, Farm/POS/HR entities in DbContext, SoftaxeERP project rename.
+Sales slice, full GL/cash/bank, Farm/POS/HR entities in DbContext.
 
 ## Demo login
 
@@ -80,8 +80,8 @@ Password: Admin@123
 docker start sheikh-sqlserver
 # CREATE DATABASE SheikhGo_Nexus_Dev;  # if needed
 
-cd src/SoftaxeERP.Api
-dotnet ef database update --project ../SoftaxeERP.Infrastructure
+cd src/SheikhGo-Nexus-ERP.Api
+dotnet ef database update --project ../SheikhGo-Nexus-ERP.Infrastructure
 dotnet run --launch-profile http
 # → http://localhost:5080/swagger
 
@@ -92,6 +92,55 @@ npm start -- --host 127.0.0.1 --port 4200
 ```
 
 `Database:ApplyMigrations` defaults to true in Development; set false in Production and run migrations in CI/CD.
+
+## Phase 9 (complete) — BI + Advanced Reporting
+
+- **SoT:** posted docs + `JournalEntryLines` + `InventoryTransactions` / `WarehouseStocks` (Qty × AverageCost). No Softaxe report SPs / cubes.
+- **API:** `/api/dashboard/executive`, `/api/reports/finance|sales|procurement|inventory|hr|production|farm|quality|operations|pos/**`, export `format=csv|xlsx|pdf`
+- **RBAC:** `Reports.*.View` (+ aliases `Finance.Reports.View` / `Inventory.Reports.View`)
+- **UI:** `/reports` BI shell (domain nav, filters, export/print); dashboard executive KPIs with drill-downs
+- **Limits:** no salesperson analytics; cash flow = operational cash/bank summary (not IAS 7); no scheduled delivery
+- **Verify:** `python3 scripts/phase9-acceptance.py` (API on `:5080`)
+
+## Phase 10A (complete) — Nexus Intelligence Foundation (read-only)
+
+- **Gateway:** `/api/ai/chat`, `/api/ai/query`, `/api/ai/conversations`
+- **Tools:** sales, AR, inventory valuation, purchases, AP, TB, P&L, BS via existing report services (no SQL from LLM)
+- **Providers:** `Ai:Provider` = `Null` | `Ollama` | `OpenAI` (default Null)
+- **RBAC:** `Ai.Chat.View` + `Ai.Chat.Query` plus domain `Reports.*`
+- **UI:** `/ai` assistant chat
+- **Verify:** `python3 scripts/phase10a-acceptance.py`
+- **Not in 10A:** write actions, agents, Softaxe, HR salary tools
+
+## Phase 10B (complete) — AI Actions + Human Approval
+
+- **Rule:** AI prepares drafts only; **Confirm & Create** calls existing Nexus create APIs with `Post: false`
+- **Actions:** PO, SO, Stock Transfer, Customer Payment, Supplier Payment, Journal Entry
+- **APIs:** `PATCH/POST /api/ai/actions/{id}`, `/confirm`, `/cancel` + chat `kind=DraftAction`
+- **RBAC:** `Ai.Action.Propose` + `Ai.Action.Confirm` + domain `*.Create` (no elevation)
+- **UI:** `/ai` action card (edit qty/rate/amount, Confirm, Cancel)
+- **Verify:** `python3 scripts/phase10b-acceptance.py`
+- **Not in 10B:** autonomous agents, auto-post/approve, Softaxe
+
+## Phase 10C (complete) — AI Agents + Controlled Automation
+
+- **First agent:** Inventory Replenishment (low stock → suppliers → PO drafts → Confirm All)
+- **Trail:** `ai.AgentRuns` / `ai.AgentSteps`; writes still via 10B `AiPendingAction` (`Post: false`)
+- **APIs:** `GET/POST /api/ai/agents/{id}`, `/confirm`, `/cancel` + chat `Kind=AgentWaitingConfirm`
+- **RBAC:** `Ai.Agent.Run` / `Confirm` / `Cancel` + inventory report view + `Procurement.PurchaseOrder.Create`
+- **UI:** `/ai` agent plan card (steps, proposed POs, Confirm All)
+- **Verify:** `python3 scripts/phase10c-acceptance.py`
+- **Not in 10C:** other agents, predictive (10D), auto-post/approve, Softaxe
+
+## Phase 10D (complete) — Predictive Intelligence (Inventory Demand & Stock-out)
+
+- **Engine:** deterministic SMA over demand `QtyOut` + PO/GRN lead-time proxies (no LLM numbers)
+- **Surfaces:** `GET /api/reports/inventory/demand-forecast`, AI chat intent `InventoryDemandForecast`, Reports UI **Demand forecast**
+- **Audit:** `ai.Predictions` + audit action `AiPrediction`
+- **RBAC:** `Reports.Predictive.View` or inventory report view (+ `Ai.Chat.Query` for chat)
+- **Rule:** recommendations only — never creates/posts POs; user may separately ask 10C replenishment
+- **Verify:** `python3 scripts/phase10d-acceptance.py`
+- **Not in 10D:** cash-flow / AR / sales revenue / production forecasts; auto 10C; Softaxe; trained ML
 
 ## Architecture notes
 

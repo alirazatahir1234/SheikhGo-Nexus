@@ -1,11 +1,11 @@
 using Microsoft.EntityFrameworkCore;
-using SoftaxeERP.Application.DTOs;
-using SoftaxeERP.Application.Interfaces;
-using SoftaxeERP.Domain.Entities;
-using SoftaxeERP.Domain.Enums;
-using SoftaxeERP.Infrastructure.Persistence;
+using SheikhGoNexusERP.Application.DTOs;
+using SheikhGoNexusERP.Application.Interfaces;
+using SheikhGoNexusERP.Domain.Entities;
+using SheikhGoNexusERP.Domain.Enums;
+using SheikhGoNexusERP.Infrastructure.Persistence;
 
-namespace SoftaxeERP.Infrastructure.Services;
+namespace SheikhGoNexusERP.Infrastructure.Services;
 
 public static class DocumentNumbering
 {
@@ -44,20 +44,31 @@ public static class DocumentNumbering
 public class DashboardService : IDashboardService
 {
     private readonly AppDbContext _db;
-    public DashboardService(AppDbContext db) => _db = db;
+    private readonly IPermissionService _permissions;
+    private readonly IReportService _reports;
+    public DashboardService(AppDbContext db, IPermissionService permissions, IReportService reports)
+    {
+        _db = db;
+        _permissions = permissions;
+        _reports = reports;
+    }
 
     public async Task<DashboardSummaryDto> GetSummaryAsync(CancellationToken ct = default)
     {
         var payables = await _db.PayableBalances.SumAsync(x => (decimal?)x.Balance, ct) ?? 0;
+        var receivables = await _db.ReceivableBalances.SumAsync(x => (decimal?)x.Balance, ct) ?? 0;
         var today = DateTime.UtcNow.Date;
         var purchases = await _db.PurchaseInvoices
+            .Where(x => x.InvoiceDate == today && x.Status == DocumentStatus.Posted)
+            .SumAsync(x => (decimal?)x.GrandTotal, ct) ?? 0;
+        var sales = await _db.SalesInvoices
             .Where(x => x.InvoiceDate == today && x.Status == DocumentStatus.Posted)
             .SumAsync(x => (decimal?)x.GrandTotal, ct) ?? 0;
 
         var inventoryValue = await (
             from s in _db.WarehouseStocks
             join p in _db.Products on s.ProductId equals p.Id
-            select (decimal?)(s.Quantity * p.PurchasePrice)
+            select (decimal?)(s.Quantity * p.AverageCost)
         ).SumAsync(ct) ?? 0;
 
         var pendingStatuses = new[] { DocumentStatus.Submitted, DocumentStatus.Verified };
@@ -117,7 +128,136 @@ public class DashboardService : IDashboardService
             .Take(12)
             .ToList();
 
-        return new DashboardSummaryDto(0, purchases, inventoryValue, 0, payables, Array.Empty<VoucherListDto>(), pending, recent);
+        return new DashboardSummaryDto(sales, purchases, inventoryValue, receivables, payables, Array.Empty<VoucherListDto>(), pending, recent);
+    }
+
+    public async Task<ExecutiveDashboardDto> GetExecutiveAsync(DateTime? from = null, DateTime? to = null, CancellationToken ct = default)
+    {
+        var f = (from ?? new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1)).Date;
+        var t = (to ?? DateTime.UtcNow.Date).Date;
+        var sections = new List<ReportSectionDto>();
+
+        async Task<bool> Can(string code) =>
+            await _permissions.HasAsync(code, ct) || await _permissions.HasAsync("Reports.Executive.View", ct);
+
+        if (await Can("Reports.Sales.View") || await Can("Reports.Executive.View"))
+        {
+            var sales = await _db.SalesInvoices.Where(x => x.Status == DocumentStatus.Posted && x.InvoiceDate >= f && x.InvoiceDate <= t)
+                .SumAsync(x => (decimal?)x.GrandTotal, ct) ?? 0;
+            var collections = await _db.CustomerPayments.Where(x => x.Status == DocumentStatus.Posted && x.PaymentDate >= f && x.PaymentDate <= t)
+                .SumAsync(x => (decimal?)x.Amount, ct) ?? 0;
+            var ar = await _db.ReceivableBalances.SumAsync(x => (decimal?)x.Balance, ct) ?? 0;
+            sections.Add(new ReportSectionDto("sales", "Sales",
+            [
+                new("sales", "Sales (invoices)", sales, null, "/reports?domain=sales"),
+                new("collections", "Collections", collections, null, "/reports?domain=sales&tab=collections"),
+                new("ar", "Receivables", ar, null, "/reports?domain=finance&tab=ar")
+            ]));
+        }
+
+        if (await Can("Reports.Procurement.View") || await Can("Reports.Executive.View"))
+        {
+            var purchases = await _db.PurchaseInvoices.Where(x => x.Status == DocumentStatus.Posted && x.InvoiceDate >= f && x.InvoiceDate <= t)
+                .SumAsync(x => (decimal?)x.GrandTotal, ct) ?? 0;
+            var ap = await _db.PayableBalances.SumAsync(x => (decimal?)x.Balance, ct) ?? 0;
+            sections.Add(new ReportSectionDto("procurement", "Procurement",
+            [
+                new("purchases", "Purchases", purchases, null, "/reports?domain=procurement"),
+                new("ap", "Payables", ap, null, "/reports?domain=finance&tab=ap")
+            ]));
+        }
+
+        if (await Can("Reports.Inventory.View") || await Can("Reports.Executive.View") || await _permissions.HasAsync("Inventory.Reports.View", ct))
+        {
+            var inv = await (
+                from s in _db.WarehouseStocks
+                join p in _db.Products on s.ProductId equals p.Id
+                select (decimal?)(s.Quantity * p.AverageCost)
+            ).SumAsync(ct) ?? 0;
+            var low = await _db.WarehouseStocks.Include(x => x.Product)
+                .CountAsync(x => x.Quantity <= x.Product!.ReorderLevel, ct);
+            sections.Add(new ReportSectionDto("inventory", "Inventory",
+            [
+                new("value", "Stock value", inv, null, "/reports?domain=inventory"),
+                new("low", "Low stock SKUs", low, "count", "/reports?domain=inventory")
+            ]));
+        }
+
+        if (await Can("Reports.Finance.View") || await Can("Reports.Executive.View") || await _permissions.HasAsync("Finance.Reports.View", ct))
+        {
+            var pl = await _reports.GetProfitLossAsync(f, t, ct);
+            var cash = await _db.CashBankAccounts.CountAsync(ct);
+            sections.Add(new ReportSectionDto("finance", "Finance",
+            [
+                new("revenue", "Revenue", pl.Revenue, null, "/reports?domain=finance&tab=pl"),
+                new("expenses", "Expenses", pl.Expenses + pl.CostOfSales, null, "/reports?domain=finance&tab=pl"),
+                new("profit", "Net profit", pl.NetProfit, null, "/reports?domain=finance&tab=pl"),
+                new("cashbanks", "Cash/Bank accounts", cash, "count", "/finance")
+            ]));
+        }
+
+        if (await Can("Reports.HR.View") || await Can("Reports.Executive.View"))
+        {
+            var emps = await _db.Employees.CountAsync(x => x.IsActive, ct);
+            var payroll = await _db.PayrollRuns.Where(x => x.Status == DocumentStatus.Posted && x.RunDate >= f && x.RunDate <= t)
+                .SumAsync(x => (decimal?)x.NetTotal, ct) ?? 0;
+            sections.Add(new ReportSectionDto("hr", "HR",
+            [
+                new("employees", "Active employees", emps, "count", "/reports?domain=hr"),
+                new("payroll", "Payroll net", payroll, null, "/reports?domain=hr&tab=payroll")
+            ]));
+        }
+
+        if (await Can("Reports.Production.View") || await Can("Reports.Executive.View"))
+        {
+            var produced = await _db.ProductionOrders.Where(x => x.OrderDate >= f && x.OrderDate <= t)
+                .SumAsync(x => (decimal?)x.QtyCompleted, ct) ?? 0;
+            var cost = await _db.ProductionOrders.Where(x => x.OrderDate >= f && x.OrderDate <= t)
+                .SumAsync(x => (decimal?)x.TotalCost, ct) ?? 0;
+            sections.Add(new ReportSectionDto("production", "Production",
+            [
+                new("qty", "Produced qty", produced, null, "/reports?domain=production"),
+                new("cost", "Production cost", cost, null, "/reports?domain=production")
+            ]));
+        }
+
+        if (await Can("Reports.Farm.View") || await Can("Reports.Executive.View"))
+        {
+            var flocks = await _db.Flocks.CountAsync(x => x.Status == FlockStatus.Active, ct);
+            var mortality = await _db.MortalityRecords.Where(x => x.Date >= f && x.Date <= t).SumAsync(x => (int?)x.Qty, ct) ?? 0;
+            sections.Add(new ReportSectionDto("farm", "Farm",
+            [
+                new("flocks", "Active flocks", flocks, "count", "/reports?domain=farm"),
+                new("mortality", "Mortality qty", mortality, "count", "/reports?domain=farm")
+            ]));
+        }
+
+        if (await Can("Reports.Operations.View") || await Can("Reports.Executive.View"))
+        {
+            var net = await _db.Weighments.Where(x => x.Status == WeighmentStatus.Completed && x.CreatedAt.Date >= f && x.CreatedAt.Date <= t)
+                .SumAsync(x => (decimal?)(x.NetWeight ?? 0), ct) ?? 0;
+            var tickets = await _db.Weighments.CountAsync(x => x.CreatedAt.Date >= f && x.CreatedAt.Date <= t, ct);
+            sections.Add(new ReportSectionDto("operations", "Operations",
+            [
+                new("weighments", "Weighments", tickets, "count", "/reports?domain=operations"),
+                new("netWeight", "Net weight", net, "kg", "/reports?domain=operations")
+            ]));
+        }
+
+        if (await Can("Reports.POS.View") || await Can("Reports.Executive.View"))
+        {
+            var pos = await _db.PosSales.Where(x => x.Status == DocumentStatus.Posted && x.SaleDate >= f && x.SaleDate <= t)
+                .SumAsync(x => (decimal?)x.GrandTotal, ct) ?? 0;
+            var variance = await _db.PosShifts.Where(x => x.Status == PosShiftStatus.Closed && x.ClosedAt != null && x.ClosedAt.Value.Date >= f && x.ClosedAt.Value.Date <= t)
+                .SumAsync(x => (decimal?)(x.Variance ?? 0), ct) ?? 0;
+            sections.Add(new ReportSectionDto("pos", "POS",
+            [
+                new("sales", "POS sales", pos, null, "/reports?domain=pos"),
+                new("variance", "Cash variance", variance, null, "/reports?domain=pos&tab=shifts")
+            ]));
+        }
+
+        return new ExecutiveDashboardDto(f, t, sections);
     }
 }
 
@@ -157,7 +297,9 @@ public class PartyService : IPartyService
             q = q.Where(x => x.Name.Contains(search) || x.Code.Contains(search));
         return await q.OrderBy(x => x.Name)
             .Select(x => new PartyDto(x.Id, x.Code, x.Name, x.PartyType, x.Phone, x.Email, x.City, x.Address,
-                x.SupplierProfile != null ? x.SupplierProfile.CreditLimit : 0, 0, x.IsActive))
+                x.CustomerProfile != null ? x.CustomerProfile.CreditLimit
+                    : x.SupplierProfile != null ? x.SupplierProfile.CreditLimit : 0,
+                0, x.IsActive))
             .ToListAsync(ct);
     }
 
@@ -176,13 +318,23 @@ public class PartyService : IPartyService
                 Party = p, CreditLimit = dto.CreditLimit, PaymentTerms = "Net 30"
             });
         }
+        if (dto.PartyType is PartyType.Customer or PartyType.Both)
+        {
+            _db.CustomerProfiles.Add(new CustomerProfile
+            {
+                Party = p, CreditLimit = dto.CreditLimit, PaymentTerms = "Net 30"
+            });
+        }
         await _db.SaveChangesAsync(ct);
         return new PartyDto(p.Id, p.Code, p.Name, p.PartyType, p.Phone, p.Email, p.City, p.Address, dto.CreditLimit, 0, true);
     }
 
     public async Task<PartyDto?> UpdateAsync(Guid id, PartyUpsertDto dto, CancellationToken ct = default)
     {
-        var p = await _db.Parties.Include(x => x.SupplierProfile).FirstOrDefaultAsync(x => x.Id == id, ct);
+        var p = await _db.Parties
+            .Include(x => x.SupplierProfile)
+            .Include(x => x.CustomerProfile)
+            .FirstOrDefaultAsync(x => x.Id == id, ct);
         if (p is null) return null;
         p.Code = dto.Code; p.Name = dto.Name; p.PartyType = dto.PartyType;
         p.Phone = dto.Phone; p.Email = dto.Email; p.City = dto.City; p.Address = dto.Address;
@@ -192,6 +344,13 @@ public class PartyService : IPartyService
                 _db.SupplierProfiles.Add(new SupplierProfile { PartyId = p.Id, CreditLimit = dto.CreditLimit });
             else
                 p.SupplierProfile.CreditLimit = dto.CreditLimit;
+        }
+        if (dto.PartyType is PartyType.Customer or PartyType.Both)
+        {
+            if (p.CustomerProfile is null)
+                _db.CustomerProfiles.Add(new CustomerProfile { PartyId = p.Id, CreditLimit = dto.CreditLimit });
+            else
+                p.CustomerProfile.CreditLimit = dto.CreditLimit;
         }
         await _db.SaveChangesAsync(ct);
         return new PartyDto(p.Id, p.Code, p.Name, p.PartyType, p.Phone, p.Email, p.City, p.Address, dto.CreditLimit, 0, p.IsActive);
@@ -221,7 +380,7 @@ public class ProductService : IProductService
             x.Id, x.Code, x.Name, x.Category != null ? x.Category.Name : null,
             x.UnitOfMeasure != null ? x.UnitOfMeasure.Code : "BAG",
             x.SalePrice, x.PurchasePrice, x.Stocks.Sum(s => s.Quantity),
-            x.ReorderLevel, x.IsActive, x.IsRawMaterial, x.IsFinishedGood)).ToListAsync(ct);
+            x.ReorderLevel, x.IsActive, x.IsRawMaterial, x.IsFinishedGood, x.AverageCost)).ToListAsync(ct);
     }
 
     public async Task<ProductDto> CreateAsync(ProductUpsertDto dto, CancellationToken ct = default)
@@ -243,11 +402,12 @@ public class ProductService : IProductService
         {
             Code = dto.Code, Name = dto.Name, CategoryId = cat?.Id, UnitOfMeasureId = uom.Id,
             SalePrice = dto.SalePrice, PurchasePrice = dto.PurchasePrice,
+            AverageCost = dto.PurchasePrice,
             ReorderLevel = dto.ReorderLevel, IsRawMaterial = dto.IsRawMaterial, IsFinishedGood = dto.IsFinishedGood
         };
         _db.Products.Add(p);
         await _db.SaveChangesAsync(ct);
-        return new ProductDto(p.Id, p.Code, p.Name, cat?.Name, uom.Code, p.SalePrice, p.PurchasePrice, 0, p.ReorderLevel, true, p.IsRawMaterial, p.IsFinishedGood);
+        return new ProductDto(p.Id, p.Code, p.Name, cat?.Name, uom.Code, p.SalePrice, p.PurchasePrice, 0, p.ReorderLevel, true, p.IsRawMaterial, p.IsFinishedGood, p.AverageCost);
     }
 
     public async Task<ProductDto?> UpdateAsync(Guid id, ProductUpsertDto dto, CancellationToken ct = default)
@@ -259,7 +419,7 @@ public class ProductService : IProductService
         p.ReorderLevel = dto.ReorderLevel; p.IsRawMaterial = dto.IsRawMaterial; p.IsFinishedGood = dto.IsFinishedGood;
         await _db.SaveChangesAsync(ct);
         return new ProductDto(p.Id, p.Code, p.Name, p.Category?.Name, p.UnitOfMeasure?.Code ?? dto.Unit,
-            p.SalePrice, p.PurchasePrice, p.Stocks.Sum(s => s.Quantity), p.ReorderLevel, p.IsActive, p.IsRawMaterial, p.IsFinishedGood);
+            p.SalePrice, p.PurchasePrice, p.Stocks.Sum(s => s.Quantity), p.ReorderLevel, p.IsActive, p.IsRawMaterial, p.IsFinishedGood, p.AverageCost);
     }
 
     public async Task<bool> DeleteAsync(Guid id, CancellationToken ct = default)
@@ -269,22 +429,6 @@ public class ProductService : IProductService
         p.IsDeleted = true;
         await _db.SaveChangesAsync(ct);
         return true;
-    }
-}
-
-public class InventoryService : IInventoryService
-{
-    private readonly AppDbContext _db;
-    public InventoryService(AppDbContext db) => _db = db;
-
-    public async Task<IReadOnlyList<StockDto>> GetStockAsync(CancellationToken ct = default)
-    {
-        return await _db.Products.Include(x => x.UnitOfMeasure).Include(x => x.Stocks)
-            .Select(x => new StockDto(
-                x.Id, x.Code, x.Name, x.UnitOfMeasure != null ? x.UnitOfMeasure.Code : "BAG",
-                x.Stocks.Sum(s => s.Quantity), x.ReorderLevel,
-                x.Stocks.Sum(s => s.Quantity) <= x.ReorderLevel))
-            .ToListAsync(ct);
     }
 }
 

@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
-using SoftaxeERP.Application.Interfaces;
-using SoftaxeERP.Infrastructure.Persistence;
+using SheikhGoNexusERP.Application.Interfaces;
+using SheikhGoNexusERP.Infrastructure.Persistence;
 
-namespace SoftaxeERP.Infrastructure.Services;
+namespace SheikhGoNexusERP.Infrastructure.Services;
 
 public class PermissionService(AppDbContext db, ITenantContext tenant) : IPermissionService
 {

@@ -1,6 +1,12 @@
-<app-page-header title="Inventory" subtitle="Stock levels, reorder alerts, and quantity adjustments.">
-  <app-search-box placeholder="Search stock…" [value]="search()" (valueChange)="search.set($event)" />
-  <button type="button" class="btn btn--primary" (click)="openForm()">New adjustment</button>
+<app-page-header title="Inventory" subtitle="Multi-warehouse · Ledger · Transfers · Adjustments · Counts (Weighted Avg)">
+  <app-search-box placeholder="Search…" [value]="search()" (valueChange)="search.set($event)" />
+  @if (tab() === 'transfers' || tab() === 'adjustments' || tab() === 'counts') {
+    <button type="button" class="btn btn--primary" (click)="openForm()">
+      @if (tab() === 'transfers') { New transfer }
+      @else if (tab() === 'adjustments') { New adjustment }
+      @else { New count }
+    </button>
+  }
 </app-page-header>
 
 @if (error()) {
@@ -8,101 +14,205 @@
 }
 
 <div class="tabs">
-  <button type="button" [class.active]="tab() === 'stock'" (click)="tab.set('stock')">Stock</button>
-  <button type="button" [class.active]="tab() === 'adjustments'" (click)="tab.set('adjustments')">Adjustments</button>
+  <a routerLink="/inventory/dashboard" routerLinkActive="active">Dashboard</a>
+  <a routerLink="/inventory/stock" routerLinkActive="active">Stock Balance</a>
+  <a routerLink="/inventory/ledger" routerLinkActive="active">Stock Ledger</a>
+  <a routerLink="/inventory/transfers" routerLinkActive="active">Transfers</a>
+  <a routerLink="/inventory/adjustments" routerLinkActive="active">Adjustments</a>
+  <a routerLink="/inventory/counts" routerLinkActive="active">Stock Counts</a>
+  <a routerLink="/inventory/valuation" routerLinkActive="active">Valuation</a>
 </div>
 
-@if (showForm()) {
+@if (showForm() && tab() === 'transfers') {
   <section class="panel form-panel">
-    <h2>Stock adjustment</h2>
-    <form class="form-grid" [formGroup]="form" (ngSubmit)="save()">
-      <label class="field"><span>Date</span><input type="date" formControlName="date" /></label>
-      <label class="field">
-        <span>Product</span>
-        <select formControlName="productId">
-          <option value="">Select…</option>
-          @for (p of products(); track p.id) {
-            <option [ngValue]="p.id">{{ p.code }} — {{ p.name }} (qty {{ p.stockQty }})</option>
-          }
-        </select>
-      </label>
-      <label class="field"><span>Qty change (+/−)</span><input type="number" formControlName="qtyChange" step="0.01" /></label>
-      <label class="field"><span>Reason</span><input formControlName="reason" /></label>
-      <label class="field span-2"><span>Remarks</span><input formControlName="remarks" /></label>
-      <div class="form-actions span-2">
+    <h2>Stock transfer</h2>
+    <form [formGroup]="transferForm" (ngSubmit)="saveTransfer()">
+      <div class="form-grid">
+        <label class="field"><span>Date</span><input type="date" formControlName="date" /></label>
+        <label class="field">
+          <span>From</span>
+          <select formControlName="fromWarehouseId">
+            @for (w of warehouses(); track w.id) { <option [ngValue]="w.id">{{ w.code }} — {{ w.name }}</option> }
+          </select>
+        </label>
+        <label class="field">
+          <span>To</span>
+          <select formControlName="toWarehouseId">
+            @for (w of warehouses(); track w.id) { <option [ngValue]="w.id">{{ w.code }} — {{ w.name }}</option> }
+          </select>
+        </label>
+        <label class="field">
+          <span>Product</span>
+          <select formControlName="productId">
+            @for (p of products(); track p.id) { <option [ngValue]="p.id">{{ p.code }} — {{ p.name }}</option> }
+          </select>
+        </label>
+        <label class="field"><span>Qty</span><input type="number" formControlName="qty" /></label>
+        <label class="field span-2"><span>Remarks</span><input formControlName="remarks" /></label>
+      </div>
+      <div class="form-actions">
         <button type="button" class="btn btn--ghost" (click)="showForm.set(false)">Cancel</button>
-        <button type="submit" class="btn btn--primary" [disabled]="saving()">
-          {{ saving() ? 'Posting…' : 'Post adjustment' }}
-        </button>
+        <button type="submit" class="btn btn--primary" [disabled]="saving()">{{ saving() ? 'Posting…' : 'Post transfer' }}</button>
       </div>
     </form>
   </section>
 }
 
-@if (tab() === 'stock') {
-  <section class="panel">
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Code</th>
-            <th>Product</th>
-            <th>Category</th>
-            <th>Unit</th>
-            <th class="num">Stock qty</th>
-            <th class="num">Reorder</th>
-            <th class="num">Avg cost</th>
-            <th class="num">Value</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (s of filtered(); track s.productId) {
-            <tr [class.low-stock]="s.stockQty <= s.reorderLevel">
-              <td>{{ s.code }}</td>
-              <td>{{ s.name }}</td>
-              <td>{{ s.category }}</td>
-              <td>{{ s.unit }}</td>
-              <td class="num">{{ s.stockQty | number: '1.0-2' }}</td>
-              <td class="num">{{ s.reorderLevel | number: '1.0-2' }}</td>
-              <td class="num">{{ (s.avgCost ?? 0) | currency: 'PKR' : 'symbol' : '1.0-2' }}</td>
-              <td class="num">{{ (s.stockValue ?? 0) | currency: 'PKR' : 'symbol' : '1.0-0' }}</td>
-            </tr>
-          } @empty {
-            <tr><td colspan="8" class="empty">{{ loading() ? 'Loading…' : 'No stock records found.' }}</td></tr>
-          }
-        </tbody>
-      </table>
-    </div>
-  </section>
-} @else {
-  <section class="panel">
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Adj #</th>
-            <th>Date</th>
-            <th>Product</th>
-            <th class="num">Qty change</th>
-            <th>Reason</th>
-            <th>Remarks</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (a of adjustments(); track a.id) {
-            <tr>
-              <td>{{ a.adjustmentNo }}</td>
-              <td>{{ a.date | date: 'mediumDate' }}</td>
-              <td>{{ a.productName }}</td>
-              <td class="num">{{ a.qtyChange | number: '1.0-2' }}</td>
-              <td>{{ a.reason }}</td>
-              <td>{{ a.remarks || '—' }}</td>
-            </tr>
-          } @empty {
-            <tr><td colspan="6" class="empty">No adjustments yet.</td></tr>
-          }
-        </tbody>
-      </table>
-    </div>
+@if (showForm() && tab() === 'adjustments') {
+  <section class="panel form-panel">
+    <h2>Stock adjustment</h2>
+    <form [formGroup]="adjustmentForm" (ngSubmit)="saveAdjustment()">
+      <div class="form-grid">
+        <label class="field"><span>Date</span><input type="date" formControlName="date" /></label>
+        <label class="field">
+          <span>Warehouse</span>
+          <select formControlName="warehouseId">
+            @for (w of warehouses(); track w.id) { <option [ngValue]="w.id">{{ w.code }} — {{ w.name }}</option> }
+          </select>
+        </label>
+        <label class="field">
+          <span>Product</span>
+          <select formControlName="productId">
+            @for (p of products(); track p.id) { <option [ngValue]="p.id">{{ p.code }} — {{ p.name }}</option> }
+          </select>
+        </label>
+        <label class="field"><span>Qty delta</span><input type="number" formControlName="qtyDelta" /></label>
+        <label class="field span-2"><span>Reason</span><input formControlName="reason" /></label>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn--ghost" (click)="showForm.set(false)">Cancel</button>
+        <button type="submit" class="btn btn--primary" [disabled]="saving()">{{ saving() ? 'Posting…' : 'Post adjustment' }}</button>
+      </div>
+    </form>
   </section>
 }
+
+@if (showForm() && tab() === 'counts') {
+  <section class="panel form-panel">
+    <h2>Stock count</h2>
+    <form [formGroup]="countForm" (ngSubmit)="saveCount()">
+      <div class="form-grid">
+        <label class="field"><span>Date</span><input type="date" formControlName="date" /></label>
+        <label class="field">
+          <span>Warehouse</span>
+          <select formControlName="warehouseId">
+            @for (w of warehouses(); track w.id) { <option [ngValue]="w.id">{{ w.code }} — {{ w.name }}</option> }
+          </select>
+        </label>
+        <label class="field">
+          <span>Product</span>
+          <select formControlName="productId">
+            @for (p of products(); track p.id) { <option [ngValue]="p.id">{{ p.code }} — {{ p.name }}</option> }
+          </select>
+        </label>
+        <label class="field"><span>Counted qty</span><input type="number" formControlName="countedQty" /></label>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn--ghost" (click)="showForm.set(false)">Cancel</button>
+        <button type="submit" class="btn btn--primary" [disabled]="saving()">{{ saving() ? 'Posting…' : 'Snapshot &amp; post' }}</button>
+      </div>
+    </form>
+  </section>
+}
+
+<section class="panel">
+  @if (loading() && tab() === 'stock') {
+    <p class="muted">Loading…</p>
+  } @else if (tab() === 'dashboard') {
+    <h2>Inventory dashboard</h2>
+    <p>Total qty {{ totalQty() | number: '1.0-2' }} · Value {{ totalValue() | currency: 'PKR' : 'symbol' : '1.2-2' }}</p>
+    <p class="muted">Warehouses {{ warehouses().length }} · Transfers {{ transfers().length }} · Adjustments {{ adjustments().length }}</p>
+  } @else if (tab() === 'stock') {
+    <table class="table">
+      <thead><tr><th>WH</th><th>Code</th><th>Name</th><th>Qty</th><th>Avg Cost</th><th>Value</th></tr></thead>
+      <tbody>
+        @for (s of filteredStock(); track s.productId + (s.warehouseId || '')) {
+          <tr>
+            <td>{{ s.warehouseCode }}</td>
+            <td>{{ s.code }}</td>
+            <td>{{ s.name }}</td>
+            <td>{{ s.stockQty | number: '1.0-2' }}</td>
+            <td>{{ s.averageCost | currency: 'PKR' : 'symbol' : '1.2-2' }}</td>
+            <td>{{ s.value | currency: 'PKR' : 'symbol' : '1.2-2' }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  } @else if (tab() === 'ledger') {
+    <table class="table">
+      <thead><tr><th>Date</th><th>Type</th><th>Product</th><th>WH</th><th>In</th><th>Out</th><th>Bal</th></tr></thead>
+      <tbody>
+        @for (l of ledger(); track $index) {
+          <tr>
+            <td>{{ $any(l).date | date: 'mediumDate' }}</td>
+            <td>{{ $any(l).sourceType }}</td>
+            <td>{{ $any(l).productCode }}</td>
+            <td>{{ $any(l).warehouseCode }}</td>
+            <td>{{ $any(l).qtyIn }}</td>
+            <td>{{ $any(l).qtyOut }}</td>
+            <td>{{ $any(l).balance }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  } @else if (tab() === 'transfers') {
+    <table class="table">
+      <thead><tr><th>No</th><th>Date</th><th>From</th><th>To</th><th>Status</th></tr></thead>
+      <tbody>
+        @for (t of transfers(); track t.id) {
+          <tr>
+            <td>{{ t.transferNo }}</td>
+            <td>{{ t.date | date: 'mediumDate' }}</td>
+            <td>{{ t.fromWarehouseName }}</td>
+            <td>{{ t.toWarehouseName }}</td>
+            <td>{{ statusLabel(t.status) }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  } @else if (tab() === 'adjustments') {
+    <table class="table">
+      <thead><tr><th>No</th><th>Date</th><th>WH</th><th>Reason</th><th>Status</th></tr></thead>
+      <tbody>
+        @for (a of adjustments(); track a.id) {
+          <tr>
+            <td>{{ a.adjustmentNo }}</td>
+            <td>{{ a.date | date: 'mediumDate' }}</td>
+            <td>{{ a.warehouseName }}</td>
+            <td>{{ a.reason }}</td>
+            <td>{{ statusLabel(a.status) }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  } @else if (tab() === 'counts') {
+    <table class="table">
+      <thead><tr><th>No</th><th>Date</th><th>WH</th><th>Status</th></tr></thead>
+      <tbody>
+        @for (c of counts(); track c.id) {
+          <tr>
+            <td>{{ c.countNo }}</td>
+            <td>{{ c.date | date: 'mediumDate' }}</td>
+            <td>{{ c.warehouseName }}</td>
+            <td>{{ statusLabel(c.status) }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  } @else if (tab() === 'valuation') {
+    <table class="table">
+      <thead><tr><th>WH</th><th>Code</th><th>Qty</th><th>Avg</th><th>Value</th></tr></thead>
+      <tbody>
+        @for (s of valuation(); track s.productId + (s.warehouseId || '')) {
+          <tr>
+            <td>{{ s.warehouseCode }}</td>
+            <td>{{ s.code }}</td>
+            <td>{{ s.stockQty | number: '1.0-2' }}</td>
+            <td>{{ s.averageCost | currency: 'PKR' : 'symbol' : '1.2-2' }}</td>
+            <td>{{ s.value | currency: 'PKR' : 'symbol' : '1.2-2' }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</section>

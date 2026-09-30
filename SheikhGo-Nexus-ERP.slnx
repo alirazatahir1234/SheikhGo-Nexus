@@ -1,8 +1,8 @@
 <Solution>
   <Folder Name="/src/">
-    <Project Path="src/SoftaxeERP.Api/SoftaxeERP.Api.csproj" />
-    <Project Path="src/SoftaxeERP.Application/SoftaxeERP.Application.csproj" />
-    <Project Path="src/SoftaxeERP.Domain/SoftaxeERP.Domain.csproj" />
-    <Project Path="src/SoftaxeERP.Infrastructure/SoftaxeERP.Infrastructure.csproj" />
+    <Project Path="src/SheikhGo-Nexus-ERP.Api/SheikhGo-Nexus-ERP.Api.csproj" />
+    <Project Path="src/SheikhGo-Nexus-ERP.Application/SheikhGo-Nexus-ERP.Application.csproj" />
+    <Project Path="src/SheikhGo-Nexus-ERP.Domain/SheikhGo-Nexus-ERP.Domain.csproj" />
+    <Project Path="src/SheikhGo-Nexus-ERP.Infrastructure/SheikhGo-Nexus-ERP.Infrastructure.csproj" />
   </Folder>
 </Solution>

@@ -1,11 +1,11 @@
 <app-page-header title="Cheques" subtitle="Cheque books and post-dated cheques.">
-  <button type="button" class="btn btn--ghost" (click)="tab.set('books'); showBook.set(true)">+ Book</button>
-  <button type="button" class="btn btn--primary" (click)="tab.set('pdc'); showPdc.set(true)">+ PDC</button>
+  <button type="button" class="btn btn--ghost" (click)="openBookForm()">+ Book</button>
+  <button type="button" class="btn btn--primary" (click)="openPdcForm()">+ PDC</button>
 </app-page-header>
 @if (error()) { <div class="alert alert--warn">{{ error() }}</div> }
 <div class="tabs">
-  <button type="button" [class.active]="tab()==='pdc'" (click)="tab.set('pdc')">PD cheques</button>
-  <button type="button" [class.active]="tab()==='books'" (click)="tab.set('books')">Cheque books</button>
+  <a routerLink="/cheques/pdc" routerLinkActive="active">PD cheques</a>
+  <a routerLink="/cheques/books" routerLinkActive="active">Cheque books</a>
 </div>
 
 @if (showBook()) {

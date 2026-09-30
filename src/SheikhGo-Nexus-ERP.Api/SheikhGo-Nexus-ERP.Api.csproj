@@ -5,6 +5,10 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <InvariantGlobalization>false</InvariantGlobalization>
+    <AssemblyName>SheikhGo-Nexus-ERP.Api</AssemblyName>
+    <RootNamespace>SheikhGoNexusERP.Api</RootNamespace>
+    <Product>SheikhGo-Nexus-ERP</Product>
+    <AssemblyTitle>SheikhGo-Nexus-ERP API</AssemblyTitle>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,8 +21,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SoftaxeERP.Application\SoftaxeERP.Application.csproj" />
-    <ProjectReference Include="..\SoftaxeERP.Infrastructure\SoftaxeERP.Infrastructure.csproj" />
+    <ProjectReference Include="..\SheikhGo-Nexus-ERP.Application\SheikhGo-Nexus-ERP.Application.csproj" />
+    <ProjectReference Include="..\SheikhGo-Nexus-ERP.Infrastructure\SheikhGo-Nexus-ERP.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,21 +1,32 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CurrencyPipe } from '@angular/common';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
 import { ExtendedModulesService } from '../../core/services/extended-modules.service';
+import { bindTabFromRoute, navigateModuleTab } from '../../core/nav/route-tabs';
+
+type SalesforceTab = 'salesmen' | 'areas' | 'targets';
+
+const SALESFORCE_TAB_ROUTE: Record<SalesforceTab, string> = {
+  salesmen: 'salesmen',
+  areas: 'areas',
+  targets: 'targets',
+};
 
 @Component({
   selector: 'app-salesforce',
   standalone: true,
-  imports: [ReactiveFormsModule, PageHeaderComponent, CurrencyPipe],
+  imports: [ReactiveFormsModule, PageHeaderComponent, CurrencyPipe, RouterLink, RouterLinkActive],
   templateUrl: './salesforce.component.html',
   styleUrl: './salesforce.component.scss',
 })
 export class SalesforceComponent implements OnInit {
+  private readonly router = inject(Router);
   readonly areas = signal<any[]>([]);
   readonly salesmen = signal<any[]>([]);
   readonly targets = signal<any[]>([]);
-  readonly tab = signal<'salesmen' | 'areas' | 'targets'>('salesmen');
+  readonly tab = signal<SalesforceTab>('salesmen');
   readonly show = signal<'area' | 'salesman' | 'target' | null>(null);
   readonly saving = signal(false);
   readonly error = signal('');
@@ -35,7 +46,17 @@ export class SalesforceComponent implements OnInit {
     });
   }
 
-  ngOnInit(): void { this.reload(); }
+  ngOnInit(): void {
+    bindTabFromRoute<SalesforceTab>((tab) => {
+      this.tab.set(tab);
+      this.show.set(null);
+    });
+    this.reload();
+  }
+
+  setTab(tab: SalesforceTab): void {
+    navigateModuleTab(this.router, 'salesforce', SALESFORCE_TAB_ROUTE[tab]);
+  }
 
   reload(): void {
     this.api.getAreas().subscribe({ next: (a) => this.areas.set(a) });

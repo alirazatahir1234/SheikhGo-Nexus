@@ -4,6 +4,9 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <AssemblyName>SheikhGo-Nexus-ERP.Domain</AssemblyName>
+    <RootNamespace>SheikhGoNexusERP.Domain</RootNamespace>
+    <Product>SheikhGo-Nexus-ERP</Product>
   </PropertyGroup>
 
 </Project>

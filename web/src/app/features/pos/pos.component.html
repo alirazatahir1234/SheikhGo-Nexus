@@ -1,65 +1,118 @@
-<app-page-header title="POS" subtitle="Counter / retail sales with stock deduction.">
-  <button type="button" class="btn btn--primary" (click)="openForm()">New bill</button>
+<app-page-header title="POS" subtitle="Shift cash control; sales post via SO → DO → SI → CP.">
+  <button type="button" class="btn btn--ghost" (click)="showOpen.set(true)">Open shift</button>
+  @if (openShift()) {
+    <button type="button" class="btn btn--ghost" (click)="closeShift()">Close shift</button>
+  }
+  <button type="button" class="btn btn--primary" (click)="openSaleForm()">New sale</button>
 </app-page-header>
-@if (error()) { <div class="alert alert--warn">{{ error() }}</div> }
-@if (showForm()) {
-  <section class="panel form-panel">
-    <h2>POS bill</h2>
-    <form [formGroup]="form" (ngSubmit)="save()">
-      <div class="form-grid">
-        <label class="field"><span>Date</span><input type="date" formControlName="date" /></label>
-        <label class="field">
-          <span>Customer</span>
-          <select formControlName="partyId">
-            <option value="">Walk-in</option>
-            @for (p of parties(); track p.id) { <option [ngValue]="p.id">{{ p.name }}</option> }
+
+<div class="pos">
+  <div class="tabs">
+    <a routerLink="/pos/sales" routerLinkActive="active">Sales</a>
+    <a routerLink="/pos/shifts" routerLinkActive="active">Shifts</a>
+  </div>
+
+  @if (openShift(); as s) {
+    <div class="banner">Open shift {{ s.shiftNo }} · {{ s.terminalCode }} · Opening cash {{ s.openingCash | currency: 'PKR' : 'symbol' : '1.0-0' }}</div>
+  }
+
+  @if (error()) { <div class="alert alert--warn">{{ error() }}</div> }
+
+  @if (showOpen()) {
+    <section class="panel">
+      <h2>Open shift</h2>
+      <form class="grid" [formGroup]="openForm" (ngSubmit)="saveOpen()">
+        <label class="field"><span>Terminal</span>
+          <select formControlName="terminalId">
+            <option value="">Select…</option>
+            @for (t of terminals(); track t.id) { <option [value]="t.id">{{ t.code }} — {{ t.name }}</option> }
           </select>
         </label>
-        <label class="field">
-          <span>Payment</span>
-          <select formControlName="paymentMode"><option>Cash</option><option>Bank</option><option>Mixed</option></select>
-        </label>
-        <label class="field"><span>Discount</span><input type="number" formControlName="discount" /></label>
-        <label class="field"><span>Tax</span><input type="number" formControlName="tax" /></label>
-        <label class="field"><span>Remarks</span><input formControlName="remarks" /></label>
-      </div>
-      <div class="lines" formArrayName="lines">
-        <div class="lines__head"><h3>Items</h3>
-          <button type="button" class="btn btn--ghost btn--sm" (click)="addLine()">Add</button>
+        <label class="field"><span>Opening cash</span><input type="number" formControlName="openingCash" /></label>
+        <div class="form-actions">
+          <button type="button" class="btn btn--ghost" (click)="showOpen.set(false)">Cancel</button>
+          <button type="submit" class="btn btn--primary" [disabled]="saving()">Open</button>
         </div>
-        @for (l of lines.controls; track $index; let i = $index) {
-          <div class="line-row" [formGroupName]="i">
-            <label class="field"><span>Product</span>
-              <select formControlName="productId" (change)="onProduct(i)">
-                <option value="">Select…</option>
-                @for (p of products(); track p.id) { <option [ngValue]="p.id">{{ p.code }} — {{ p.name }}</option> }
-              </select>
-            </label>
-            <label class="field"><span>Qty</span><input type="number" formControlName="qty" (input)="recalc(i)" /></label>
-            <label class="field"><span>Rate</span><input type="number" formControlName="rate" (input)="recalc(i)" /></label>
-            <label class="field"><span>Amount</span><input type="number" formControlName="amount" readonly /></label>
+      </form>
+    </section>
+  }
+
+  @if (showForm()) {
+    <section class="panel">
+      <h2>POS sale</h2>
+      <form [formGroup]="saleForm" (ngSubmit)="saveSale()">
+        <div class="grid">
+          <label class="field"><span>Date</span><input type="date" formControlName="saleDate" /></label>
+          <label class="field"><span>Cash tender</span><input type="number" formControlName="cashAmount" /></label>
+          <label class="field"><span>Card tender</span><input type="number" formControlName="cardAmount" /></label>
+          <label class="field"><span>Remarks</span><input formControlName="remarks" /></label>
+        </div>
+        <div class="lines" formArrayName="lines">
+          <div class="lines__head"><h3>Lines</h3>
+            <button type="button" class="btn btn--ghost btn--sm" (click)="addLine()">Add</button>
           </div>
-        }
-      </div>
-      <div class="form-actions">
-        <button type="button" class="btn btn--ghost" (click)="showForm.set(false)">Cancel</button>
-        <button type="submit" class="btn btn--primary" [disabled]="saving()">Post bill</button>
-      </div>
-    </form>
-  </section>
-}
-<section class="panel"><div class="table-wrap"><table>
-  <thead><tr><th>Bill #</th><th>Date</th><th>Customer</th><th>Mode</th><th class="num">Total</th><th>Status</th></tr></thead>
-  <tbody>
-    @for (b of items(); track b.id) {
-      <tr>
-        <td>{{ b.billNo }}</td>
-        <td>{{ b.date | date: 'mediumDate' }}</td>
-        <td>{{ b.partyName || 'Walk-in' }}</td>
-        <td>{{ b.paymentMode }}</td>
-        <td class="num">{{ b.grandTotal | currency: 'PKR' : 'symbol' : '1.0-0' }}</td>
-        <td>{{ b.status }}</td>
-      </tr>
-    } @empty { <tr><td colspan="6" class="empty">No POS bills yet.</td></tr> }
-  </tbody>
-</table></div></section>
+          @for (l of lines.controls; track $index; let i = $index) {
+            <div class="line-row" [formGroupName]="i">
+              <label class="field"><span>Product</span>
+                <select formControlName="productId" (change)="onProduct(i)">
+                  <option value="">Select…</option>
+                  @for (p of products(); track p.id) { <option [value]="p.id">{{ p.code }} — {{ p.name }}</option> }
+                </select>
+              </label>
+              <label class="field"><span>Qty</span><input type="number" formControlName="qty" (input)="recalc(i)" /></label>
+              <label class="field"><span>Rate</span><input type="number" formControlName="rate" (input)="recalc(i)" /></label>
+              <label class="field"><span>Amount</span><input type="number" formControlName="amount" readonly /></label>
+            </div>
+          }
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn--ghost" (click)="showForm.set(false)">Cancel</button>
+          <button type="submit" class="btn btn--primary" [disabled]="saving()">Post sale</button>
+        </div>
+      </form>
+    </section>
+  }
+
+  @if (tab() === 'sales') {
+    <section class="panel table-wrap"><table>
+      <thead><tr><th>Sale #</th><th>Date</th><th>Party</th><th class="num">Total</th><th>Status</th><th>Links</th></tr></thead>
+      <tbody>
+        @for (b of sales(); track b.id) {
+          <tr>
+            <td>{{ b.saleNo }}</td>
+            <td>{{ b.saleDate | date: 'mediumDate' }}</td>
+            <td>{{ b.partyName || 'CUS-POS' }}</td>
+            <td class="num">{{ b.grandTotal | currency: 'PKR' : 'symbol' : '1.0-0' }}</td>
+            <td>{{ statusLabel(b.status) }}</td>
+            <td class="muted">SO/DO/SI linked</td>
+          </tr>
+        } @empty { <tr><td colspan="6" class="empty">No POS sales yet.</td></tr> }
+      </tbody>
+    </table></section>
+  }
+
+  @if (tab() === 'shifts') {
+    <section class="panel table-wrap"><table>
+      <thead>
+        <tr>
+          <th>Shift</th><th>Terminal</th><th>Opened</th><th class="num">Opening</th>
+          <th class="num">Expected</th><th class="num">Actual</th><th class="num">Variance</th><th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (s of shifts(); track s.id) {
+          <tr>
+            <td>{{ s.shiftNo }}</td>
+            <td>{{ s.terminalCode }}</td>
+            <td>{{ s.openedAt | date: 'short' }}</td>
+            <td class="num">{{ s.openingCash | currency: 'PKR' : 'symbol' : '1.0-0' }}</td>
+            <td class="num">{{ s.expectedCash != null ? (s.expectedCash | currency: 'PKR' : 'symbol' : '1.0-0') : '—' }}</td>
+            <td class="num">{{ s.actualCash != null ? (s.actualCash | currency: 'PKR' : 'symbol' : '1.0-0') : '—' }}</td>
+            <td class="num">{{ s.variance != null ? (s.variance | currency: 'PKR' : 'symbol' : '1.0-0') : '—' }}</td>
+            <td>{{ s.status }}</td>
+          </tr>
+        } @empty { <tr><td colspan="8" class="empty">No shifts yet.</td></tr> }
+      </tbody>
+    </table></section>
+  }
+</div>

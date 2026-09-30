@@ -1,11 +1,11 @@
 using Microsoft.EntityFrameworkCore;
-using SoftaxeERP.Application.DTOs;
-using SoftaxeERP.Application.Interfaces;
-using SoftaxeERP.Domain.Entities;
-using SoftaxeERP.Domain.Enums;
-using SoftaxeERP.Infrastructure.Persistence;
+using SheikhGoNexusERP.Application.DTOs;
+using SheikhGoNexusERP.Application.Interfaces;
+using SheikhGoNexusERP.Domain.Entities;
+using SheikhGoNexusERP.Domain.Enums;
+using SheikhGoNexusERP.Infrastructure.Persistence;
 
-namespace SoftaxeERP.Infrastructure.Services;
+namespace SheikhGoNexusERP.Infrastructure.Services;
 
 public class ProductionService : IProductionService
 {

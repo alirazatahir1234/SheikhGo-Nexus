@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SoftaxeERP.Application.DTOs;
-using SoftaxeERP.Application.Interfaces;
+using SheikhGoNexusERP.Application.DTOs;
+using SheikhGoNexusERP.Application.Interfaces;
 
-namespace SoftaxeERP.Api.Controllers;
+namespace SheikhGoNexusERP.Api.Controllers;
 
 [ApiController]
 [Authorize]
@@ -14,7 +14,15 @@ public class ProductionController : ControllerBase
     public ProductionController(IProductionService svc) => _svc = svc;
 
     [HttpGet("boms")]
-    public async Task<ActionResult<IReadOnlyList<BomDto>>> Boms(CancellationToken ct) => Ok(await _svc.GetBomsAsync(ct));
+    public async Task<ActionResult<IReadOnlyList<BomDto>>> Boms(CancellationToken ct) =>
+        Ok(await _svc.GetBomsAsync(ct));
+
+    [HttpGet("boms/{id:guid}")]
+    public async Task<ActionResult<BomDto>> BomById(Guid id, CancellationToken ct)
+    {
+        var bom = await _svc.GetBomByIdAsync(id, ct);
+        return bom is null ? NotFound() : Ok(bom);
+    }
 
     [HttpPost("boms")]
     public async Task<ActionResult<BomDto>> CreateBom([FromBody] BomUpsertDto dto, CancellationToken ct)
@@ -24,45 +32,51 @@ public class ProductionController : ControllerBase
     }
 
     [HttpGet("orders")]
-    public async Task<ActionResult<IReadOnlyList<ProductionOrderDto>>> Orders(CancellationToken ct) => Ok(await _svc.GetOrdersAsync(ct));
+    public async Task<ActionResult<IReadOnlyList<ProductionOrderDto>>> Orders(CancellationToken ct) =>
+        Ok(await _svc.GetOrdersAsync(ct));
+
+    [HttpGet("orders/{id:guid}")]
+    public async Task<ActionResult<ProductionOrderDto>> OrderById(Guid id, CancellationToken ct)
+    {
+        var order = await _svc.GetOrderByIdAsync(id, ct);
+        return order is null ? NotFound() : Ok(order);
+    }
 
     [HttpPost("orders")]
-    public async Task<ActionResult<ProductionOrderDto>> CreateOrder([FromBody] ProductionCreateDto dto, CancellationToken ct)
+    public async Task<ActionResult<ProductionOrderDto>> CreateOrder([FromBody] ProductionOrderCreateDto dto, CancellationToken ct)
     {
         try { return Ok(await _svc.CreateOrderAsync(dto, ct)); }
         catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
     }
-}
 
-[ApiController]
-[Authorize]
-[Route("api/farm")]
-public class FarmController : ControllerBase
-{
-    private readonly IFarmService _svc;
-    public FarmController(IFarmService svc) => _svc = svc;
-
-    [HttpGet("flocks")]
-    public async Task<ActionResult<IReadOnlyList<FarmFlockDto>>> Flocks(CancellationToken ct) => Ok(await _svc.GetFlocksAsync(ct));
-
-    [HttpPost("flocks")]
-    public async Task<ActionResult<FarmFlockDto>> Create([FromBody] FarmFlockCreateDto dto, CancellationToken ct) =>
-        Ok(await _svc.CreateFlockAsync(dto, ct));
-
-    [HttpGet("flocks/{id:guid}/events")]
-    public async Task<ActionResult<IReadOnlyList<FarmEventDto>>> Events(Guid id, CancellationToken ct) =>
-        Ok(await _svc.GetEventsAsync(id, ct));
-
-    [HttpPost("flocks/{id:guid}/events")]
-    public async Task<ActionResult<FarmEventDto>> AddEvent(Guid id, [FromBody] FarmEventCreateDto dto, CancellationToken ct)
+    [HttpPost("orders/{id:guid}/{actionName}")]
+    public async Task<ActionResult<ProductionOrderDto>> Transition(Guid id, string actionName, CancellationToken ct)
     {
-        try { return Ok(await _svc.AddEventAsync(id, dto, ct)); }
+        try
+        {
+            var result = await _svc.TransitionAsync(id, actionName, ct);
+            return result is null ? NotFound() : Ok(result);
+        }
         catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
     }
 
-    [HttpPost("flocks/{id:guid}/close")]
-    public async Task<IActionResult> Close(Guid id, CancellationToken ct) =>
-        await _svc.CloseFlockAsync(id, ct) ? NoContent() : NotFound();
+    [HttpPost("orders/{id:guid}/variances")]
+    public async Task<ActionResult<ProductionOrderDto>> AddVariance(Guid id, [FromBody] ProductionVarianceCreateDto dto, CancellationToken ct)
+    {
+        try
+        {
+            var result = await _svc.AddVarianceAsync(id, dto, ct);
+            return result is null ? NotFound() : Ok(result);
+        }
+        catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+    }
+
+    [HttpGet("costing/{orderId:guid}")]
+    public async Task<ActionResult<ProductionCostingDto>> Costing(Guid orderId, CancellationToken ct)
+    {
+        var result = await _svc.GetCostingAsync(orderId, ct);
+        return result is null ? NotFound() : Ok(result);
+    }
 }
 
 [ApiController]
@@ -100,13 +114,74 @@ public class InventoryAdjustmentsController : ControllerBase
     public InventoryAdjustmentsController(IStockAdjustmentService svc) => _svc = svc;
 
     [HttpGet("adjustments")]
-    public async Task<ActionResult<IReadOnlyList<StockAdjustmentDto>>> GetAll(CancellationToken ct) =>
+    public async Task<ActionResult<IReadOnlyList<StockAdjustmentDocDto>>> GetAll(CancellationToken ct) =>
         Ok(await _svc.GetAllAsync(ct));
 
+    [HttpGet("adjustments/{id:guid}")]
+    public async Task<IActionResult> Get(Guid id, CancellationToken ct) =>
+        (await _svc.GetByIdAsync(id, ct)) is { } x ? Ok(x) : NotFound();
+
     [HttpPost("adjustments")]
-    public async Task<ActionResult<StockAdjustmentDto>> Create([FromBody] StockAdjustmentCreateDto dto, CancellationToken ct)
+    public async Task<ActionResult<StockAdjustmentDocDto>> Create([FromBody] StockAdjustmentDocCreateDto dto, CancellationToken ct)
     {
         try { return Ok(await _svc.CreateAsync(dto, ct)); }
+        catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+    }
+
+    [HttpPost("adjustments/{id:guid}/{actionName:regex(^(submit|approve|post|cancel)$)}")]
+    public async Task<IActionResult> Transition(Guid id, string actionName, CancellationToken ct)
+    {
+        try
+        {
+            var result = await _svc.TransitionAsync(id, actionName, ct);
+            return result is null ? NotFound() : Ok(result);
+        }
+        catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+        catch (UnauthorizedAccessException) { return Forbid(); }
+    }
+}
+
+[ApiController]
+[Authorize]
+[Route("api/inventory/stock-counts")]
+public class StockCountsController : ControllerBase
+{
+    private readonly IStockCountService _svc;
+    public StockCountsController(IStockCountService svc) => _svc = svc;
+
+    [HttpGet]
+    public async Task<ActionResult<IReadOnlyList<StockCountDto>>> GetAll(CancellationToken ct) => Ok(await _svc.GetAllAsync(ct));
+
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> Get(Guid id, CancellationToken ct) =>
+        (await _svc.GetByIdAsync(id, ct)) is { } x ? Ok(x) : NotFound();
+
+    [HttpPost]
+    public async Task<ActionResult<StockCountDto>> Create([FromBody] StockCountCreateDto dto, CancellationToken ct)
+    {
+        try { return Ok(await _svc.CreateAsync(dto, ct)); }
+        catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+    }
+
+    [HttpPost("{id:guid}/snapshot")]
+    public async Task<IActionResult> Snapshot(Guid id, CancellationToken ct)
+    {
+        try
+        {
+            var result = await _svc.SnapshotAsync(id, ct);
+            return result is null ? NotFound() : Ok(result);
+        }
+        catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+    }
+
+    [HttpPost("{id:guid}/{actionName:regex(^(submit|approve|post|cancel)$)}")]
+    public async Task<IActionResult> Transition(Guid id, string actionName, CancellationToken ct)
+    {
+        try
+        {
+            var result = await _svc.TransitionAsync(id, actionName, ct);
+            return result is null ? NotFound() : Ok(result);
+        }
         catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
     }
 }
@@ -117,7 +192,12 @@ public class InventoryAdjustmentsController : ControllerBase
 public class WarehousesController : ControllerBase
 {
     private readonly IWarehouseService _svc;
-    public WarehousesController(IWarehouseService svc) => _svc = svc;
+    private readonly IWarehouseLocationService _locations;
+    public WarehousesController(IWarehouseService svc, IWarehouseLocationService locations)
+    {
+        _svc = svc;
+        _locations = locations;
+    }
 
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<WarehouseDto>>> GetAll(CancellationToken ct) => Ok(await _svc.GetAllAsync(ct));
@@ -132,6 +212,14 @@ public class WarehousesController : ControllerBase
         var result = await _svc.UpdateAsync(id, dto, ct);
         return result is null ? NotFound() : Ok(result);
     }
+
+    [HttpGet("{id:guid}/locations")]
+    public async Task<ActionResult<IReadOnlyList<WarehouseLocationDto>>> Locations(Guid id, CancellationToken ct) =>
+        Ok(await _locations.GetByWarehouseAsync(id, ct));
+
+    [HttpPost("locations")]
+    public async Task<ActionResult<WarehouseLocationDto>> CreateLocation([FromBody] WarehouseLocationUpsertDto dto, CancellationToken ct) =>
+        Ok(await _locations.CreateAsync(dto, ct));
 }
 
 [ApiController]
@@ -174,29 +262,6 @@ public class PurchaseContractsController : ControllerBase
     [HttpPost("{id:guid}/close")]
     public async Task<IActionResult> Close(Guid id, CancellationToken ct) =>
         await _svc.CloseAsync(id, ct) ? NoContent() : NotFound();
-}
-
-[ApiController]
-[Authorize]
-[Route("api/lab")]
-public class LabController : ControllerBase
-{
-    private readonly ILabService _svc;
-    public LabController(ILabService svc) => _svc = svc;
-
-    [HttpGet("tests")]
-    public async Task<ActionResult<IReadOnlyList<LabTestTypeDto>>> Tests(CancellationToken ct) => Ok(await _svc.GetTestTypesAsync(ct));
-
-    [HttpPost("tests")]
-    public async Task<ActionResult<LabTestTypeDto>> UpsertTest([FromBody] LabTestTypeUpsertDto dto, CancellationToken ct) =>
-        Ok(await _svc.UpsertTestTypeAsync(dto, ct));
-
-    [HttpGet("results")]
-    public async Task<ActionResult<IReadOnlyList<LabResultDto>>> Results(CancellationToken ct) => Ok(await _svc.GetResultsAsync(ct));
-
-    [HttpPost("results")]
-    public async Task<ActionResult<LabResultDto>> CreateResult([FromBody] LabResultCreateDto dto, CancellationToken ct) =>
-        Ok(await _svc.CreateResultAsync(dto, ct));
 }
 
 [ApiController]
@@ -372,10 +437,15 @@ public class BrandsController : ControllerBase
 [Route("api/conversions")]
 public class ConversionsController : ControllerBase
 {
-    private readonly IProductConversionService _svc;
-    public ConversionsController(IProductConversionService svc) => _svc = svc;
-    [HttpGet] public async Task<ActionResult<IReadOnlyList<ProductConversionDto>>> GetAll(CancellationToken ct) => Ok(await _svc.GetAllAsync(ct));
-    [HttpPost] public async Task<ActionResult<ProductConversionDto>> Create([FromBody] ProductConversionUpsertDto dto, CancellationToken ct) => Ok(await _svc.CreateAsync(dto, ct));
+    private readonly IUnitConversionService _svc;
+    public ConversionsController(IUnitConversionService svc) => _svc = svc;
+    [HttpGet] public async Task<ActionResult<IReadOnlyList<UnitConversionDto>>> GetAll(CancellationToken ct) => Ok(await _svc.GetAllAsync(ct));
+    [HttpPost]
+    public async Task<ActionResult<UnitConversionDto>> Create([FromBody] UnitConversionUpsertDto dto, CancellationToken ct)
+    {
+        try { return Ok(await _svc.CreateAsync(dto, ct)); }
+        catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+    }
 }
 
 [ApiController]
@@ -405,9 +475,15 @@ public class AttendanceController : ControllerBase
     private readonly IAttendanceService _svc;
     public AttendanceController(IAttendanceService svc) => _svc = svc;
     [HttpGet] public async Task<ActionResult<IReadOnlyList<AttendanceDto>>> GetAll(CancellationToken ct) => Ok(await _svc.GetAttendanceAsync(ct));
+    [HttpGet("summary")]
+    public async Task<ActionResult<IReadOnlyList<AttendanceSummaryDto>>> Summary([FromQuery] int year, [FromQuery] int month, CancellationToken ct) =>
+        Ok(await _svc.GetSummaryAsync(year, month, ct));
     [HttpPost]
-    public async Task<ActionResult<AttendanceDto>> Create([FromBody] AttendanceCreateDto dto, CancellationToken ct) =>
-        Ok(await _svc.CreateAttendanceAsync(dto, ct));
+    public async Task<ActionResult<AttendanceDto>> Create([FromBody] AttendanceCreateDto dto, CancellationToken ct)
+    {
+        try { return Ok(await _svc.CreateAttendanceAsync(dto, ct)); }
+        catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+    }
     [HttpGet("overtime")]
     public async Task<ActionResult<IReadOnlyList<OvertimeDto>>> Overtime(CancellationToken ct) => Ok(await _svc.GetOvertimeAsync(ct));
     [HttpPost("overtime")]
@@ -436,48 +512,6 @@ public class DayCloseController : ControllerBase
 
 [ApiController]
 [Authorize]
-[Route("api/weighbridge")]
-public class WeighbridgeController : ControllerBase
-{
-    private readonly IWeighbridgeService _svc;
-    public WeighbridgeController(IWeighbridgeService svc) => _svc = svc;
-
-    [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<WeighbridgeTicketDto>>> GetAll(CancellationToken ct) => Ok(await _svc.GetAllAsync(ct));
-
-    [HttpPost]
-    public async Task<ActionResult<WeighbridgeTicketDto>> Create([FromBody] WeighbridgeTicketCreateDto dto, CancellationToken ct) =>
-        Ok(await _svc.CreateAsync(dto, ct));
-
-    [HttpPost("{id:guid}/complete")]
-    public async Task<ActionResult<WeighbridgeTicketDto>> Complete(Guid id, [FromBody] WeighbridgeCompleteDto dto, CancellationToken ct)
-    {
-        var result = await _svc.CompleteAsync(id, dto, ct);
-        return result is null ? NotFound() : Ok(result);
-    }
-}
-
-[ApiController]
-[Authorize]
-[Route("api/pos")]
-public class PosController : ControllerBase
-{
-    private readonly IPosService _svc;
-    public PosController(IPosService svc) => _svc = svc;
-
-    [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<PosSaleDto>>> GetAll(CancellationToken ct) => Ok(await _svc.GetAllAsync(ct));
-
-    [HttpPost]
-    public async Task<ActionResult<PosSaleDto>> Create([FromBody] PosSaleCreateDto dto, CancellationToken ct)
-    {
-        try { return Ok(await _svc.CreateAsync(dto, ct)); }
-        catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
-    }
-}
-
-[ApiController]
-[Authorize]
 [Route("api/stock-transfers")]
 public class StockTransfersController : ControllerBase
 {
@@ -487,11 +521,27 @@ public class StockTransfersController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<StockTransferDto>>> GetAll(CancellationToken ct) => Ok(await _svc.GetAllAsync(ct));
 
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> Get(Guid id, CancellationToken ct) =>
+        (await _svc.GetByIdAsync(id, ct)) is { } x ? Ok(x) : NotFound();
+
     [HttpPost]
     public async Task<ActionResult<StockTransferDto>> Create([FromBody] StockTransferCreateDto dto, CancellationToken ct)
     {
         try { return Ok(await _svc.CreateAsync(dto, ct)); }
         catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+    }
+
+    [HttpPost("{id:guid}/{actionName:regex(^(submit|approve|post|cancel)$)}")]
+    public async Task<IActionResult> Transition(Guid id, string actionName, CancellationToken ct)
+    {
+        try
+        {
+            var result = await _svc.TransitionAsync(id, actionName, ct);
+            return result is null ? NotFound() : Ok(result);
+        }
+        catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+        catch (UnauthorizedAccessException) { return Forbid(); }
     }
 }
 
@@ -532,13 +582,38 @@ public class LeavesController : ControllerBase
     private readonly ILeaveService _svc;
     public LeavesController(ILeaveService svc) => _svc = svc;
 
+    [HttpGet("types")]
+    public async Task<ActionResult<IReadOnlyList<LeaveTypeDto>>> Types(CancellationToken ct) => Ok(await _svc.GetTypesAsync(ct));
+
+    [HttpGet("balances")]
+    public async Task<ActionResult<IReadOnlyList<LeaveBalanceDto>>> Balances([FromQuery] Guid? employeeId, CancellationToken ct) =>
+        Ok(await _svc.GetBalancesAsync(employeeId, ct));
+
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<LeaveDto>>> GetAll(CancellationToken ct) => Ok(await _svc.GetAllAsync(ct));
+
+    [HttpGet("{id:guid}")]
+    public async Task<ActionResult<LeaveDto>> GetById(Guid id, CancellationToken ct)
+    {
+        var r = await _svc.GetByIdAsync(id, ct);
+        return r is null ? NotFound() : Ok(r);
+    }
 
     [HttpPost]
     public async Task<ActionResult<LeaveDto>> Create([FromBody] LeaveCreateDto dto, CancellationToken ct)
     {
         try { return Ok(await _svc.CreateAsync(dto, ct)); }
+        catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+    }
+
+    [HttpPost("{id:guid}/{actionName}")]
+    public async Task<ActionResult<LeaveDto>> Transition(Guid id, string actionName, CancellationToken ct)
+    {
+        try
+        {
+            var r = await _svc.TransitionAsync(id, actionName, ct);
+            return r is null ? NotFound() : Ok(r);
+        }
         catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
     }
 }

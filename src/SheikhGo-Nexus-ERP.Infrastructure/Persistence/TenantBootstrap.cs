@@ -1,8 +1,8 @@
 using System.Text.Json;
-using SoftaxeERP.Domain.Entities;
-using SoftaxeERP.Domain.Enums;
+using SheikhGoNexusERP.Domain.Entities;
+using SheikhGoNexusERP.Domain.Enums;
 
-namespace SoftaxeERP.Infrastructure.Persistence;
+namespace SheikhGoNexusERP.Infrastructure.Persistence;
 
 public static class TenantBootstrap
 {
@@ -25,10 +25,14 @@ public static class TenantBootstrap
             A("1000", "Assets", AccountType.Asset, 1, false),
             A("1100", "Accounts Receivable", AccountType.Asset, 2),
             A("1200", "Inventory", AccountType.Asset, 2),
+            A("1210", "Work in Process", AccountType.Asset, 2),
             A("1300", "Cash in Hand", AccountType.Asset, 2),
             A("1400", "Bank", AccountType.Asset, 2),
             A("2000", "Liabilities", AccountType.Liability, 1, false),
             A("2100", "Accounts Payable", AccountType.Liability, 2),
+            A("2200", "Salary Payable", AccountType.Liability, 2),
+            A("2210", "Tax Payable", AccountType.Liability, 2),
+            A("2220", "Other Payroll Payable", AccountType.Liability, 2),
             A("3000", "Equity", AccountType.Equity, 1, false),
             A("3100", "Capital", AccountType.Equity, 2),
             A("4000", "Revenue", AccountType.Revenue, 1, false),
@@ -37,6 +41,10 @@ public static class TenantBootstrap
             A("5100", "Cost of Goods Sold", AccountType.Expense, 2),
             A("5200", "Salaries Expense", AccountType.Expense, 2),
             A("5300", "Freight Expense", AccountType.Expense, 2),
+            A("5400", "Rent Expense", AccountType.Expense, 2),
+            A("5500", "Utilities Expense", AccountType.Expense, 2),
+            A("5600", "Inventory Adjustment", AccountType.Expense, 2),
+            A("5700", "Farm Expense", AccountType.Expense, 2),
         ];
     }
 
@@ -45,14 +53,14 @@ public static class TenantBootstrap
 
     public static IReadOnlyList<string> DeserializeModules(string? json)
     {
-        if (string.IsNullOrWhiteSpace(json)) return SoftaxeERP.Application.DTOs.SoftaxeModuleCatalog.Default;
+        if (string.IsNullOrWhiteSpace(json)) return SheikhGoNexusERP.Application.DTOs.SoftaxeModuleCatalog.Default;
         try
         {
-            return JsonSerializer.Deserialize<string[]>(json) ?? SoftaxeERP.Application.DTOs.SoftaxeModuleCatalog.Default.ToArray();
+            return JsonSerializer.Deserialize<string[]>(json) ?? SheikhGoNexusERP.Application.DTOs.SoftaxeModuleCatalog.Default.ToArray();
         }
         catch
         {
-            return SoftaxeERP.Application.DTOs.SoftaxeModuleCatalog.Default;
+            return SheikhGoNexusERP.Application.DTOs.SoftaxeModuleCatalog.Default;
         }
     }
 

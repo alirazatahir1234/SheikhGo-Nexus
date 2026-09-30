@@ -7,7 +7,7 @@ import { PageHeaderComponent } from '../../shared/components/page-header/page-he
   standalone: true,
   imports: [PageHeaderComponent, RouterLink],
   template: `
-    <app-page-header [title]="title" subtitle="This domain is planned for a later SheikhGo Nexus phase." />
+    <app-page-header [title]="title" subtitle="This domain is planned for a later SheikhGo-Nexus-ERP phase." />
     <div class="card" style="padding: 2rem; max-width: 36rem;">
       <p style="color: var(--text-muted); margin: 0 0 1rem;">
         Phase 1 focuses on Core Administration, Document Engine, and Procurement.

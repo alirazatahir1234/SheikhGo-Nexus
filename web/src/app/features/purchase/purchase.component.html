@@ -8,9 +8,10 @@
 }
 
 <div class="tabs">
-  <button type="button" [class.active]="tab() === 'orders'" (click)="setTab('orders')">Purchase Orders</button>
-  <button type="button" [class.active]="tab() === 'receipts'" (click)="setTab('receipts')">Goods Receipts</button>
-  <button type="button" [class.active]="tab() === 'invoices'" (click)="setTab('invoices')">Purchase Invoices</button>
+  <a routerLink="/purchase/orders" routerLinkActive="active">Purchase Orders</a>
+  <a routerLink="/purchase/goods-receipts" routerLinkActive="active">Goods Receipts</a>
+  <a routerLink="/purchase/invoices" routerLinkActive="active">Purchase Invoices</a>
+  <a routerLink="/purchase/payments" routerLinkActive="active">Supplier Payments</a>
 </div>
 
 @if (showForm()) {
@@ -221,6 +222,48 @@
         </div>
       </form>
     }
+
+    @if (tab() === 'payments') {
+      <h2>Create supplier payment</h2>
+      <form [formGroup]="paymentForm" (ngSubmit)="save()">
+        <div class="form-grid">
+          <label class="field"><span>Date</span><input type="date" formControlName="date" /></label>
+          <label class="field">
+            <span>Purchase invoice</span>
+            <select formControlName="purchaseInvoiceId" (change)="onPaymentInvoiceChange()">
+              <option value="">Select posted invoice…</option>
+              @for (i of postedInvoices(); track i.id) {
+                <option [ngValue]="i.id">{{ i.invoiceNo }} — {{ i.partyName }} — {{ i.grandTotal | currency: 'PKR' : 'symbol' : '1.2-2' }}</option>
+              }
+            </select>
+          </label>
+          <label class="field">
+            <span>Supplier</span>
+            <select formControlName="partyId">
+              <option value="">Select…</option>
+              @for (p of parties(); track p.id) {
+                <option [ngValue]="p.id">{{ p.code }} — {{ p.name }}</option>
+              }
+            </select>
+          </label>
+          <label class="field">
+            <span>Cash / Bank</span>
+            <select formControlName="cashBankAccountId">
+              <option value="">Default</option>
+              @for (c of cashBanks(); track c.id) {
+                <option [ngValue]="c.id">{{ c.code }} — {{ c.name }}</option>
+              }
+            </select>
+          </label>
+          <label class="field"><span>Amount</span><input type="number" formControlName="amount" /></label>
+          <label class="field span-2"><span>Remarks</span><input formControlName="remarks" /></label>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn--ghost" (click)="showForm.set(false)">Cancel</button>
+          <button type="submit" class="btn btn--primary" [disabled]="saving()">{{ saving() ? 'Saving…' : 'Post payment' }}</button>
+        </div>
+      </form>
+    }
   </section>
 }
 
@@ -315,6 +358,33 @@
               </tr>
             } @empty {
               <tr><td colspan="5" class="empty">{{ loading() ? 'Loading…' : 'No purchase invoices.' }}</td></tr>
+            }
+          </tbody>
+        </table>
+      }
+
+      @if (tab() === 'payments') {
+        <table>
+          <thead>
+            <tr>
+              <th>Payment #</th>
+              <th>Date</th>
+              <th>Supplier</th>
+              <th class="num">Amount</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (p of filteredPayments(); track p.id) {
+              <tr>
+                <td>{{ p.paymentNo }}</td>
+                <td>{{ p.date | date: 'mediumDate' }}</td>
+                <td>{{ p.partyName || ('#' + p.partyId) }}</td>
+                <td class="num">{{ p.amount | currency: 'PKR' : 'symbol' : '1.0-2' }}</td>
+                <td><span class="badge">{{ statusLabel(p.status) }}</span></td>
+              </tr>
+            } @empty {
+              <tr><td colspan="5" class="empty">{{ loading() ? 'Loading…' : 'No supplier payments.' }}</td></tr>
             }
           </tbody>
         </table>

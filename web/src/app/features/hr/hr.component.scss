@@ -1,0 +1,52 @@
+.tabs {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+.tabs button,
+.tabs a {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  padding: 0.5rem 0.9rem;
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 600;
+  text-decoration: none;
+  color: inherit;
+  display: inline-flex;
+  align-items: center;
+}
+.tabs button.active,
+.tabs a.active {
+  background: rgba(20, 184, 166, 0.16);
+  color: #0f766e;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
+}
+.stats strong {
+  display: block;
+  font-size: 1.4rem;
+  margin-top: 0.25rem;
+}
+
+.form-panel {
+  margin-bottom: 1rem;
+}
+
+.run-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+  margin: 1rem 0;
+}
+
+.actions {
+  display: flex;
+  gap: 0.35rem;
+}

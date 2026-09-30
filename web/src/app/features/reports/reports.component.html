@@ -1,19 +1,23 @@
 <section class="reports">
-  <app-page-header title="Reports" subtitle="Ledger, trial balance, and AR/AP aging for the current company." />
+  <app-page-header
+    title="Reports"
+    subtitle="BI shell — posted ledgers only. Filters reconcile to Finance / Inventory source reports."
+  />
 
-  <div class="tabs">
-    <button type="button" [class.active]="tab() === 'ledger'" (click)="setTab('ledger')">Account ledger</button>
-    <button type="button" [class.active]="tab() === 'trial'" (click)="setTab('trial')">Trial balance</button>
-    <button type="button" [class.active]="tab() === 'ar'" (click)="setTab('ar')">AR aging</button>
-    <button type="button" [class.active]="tab() === 'ap'" (click)="setTab('ap')">AP aging</button>
+  <nav class="domain-nav">
+    @for (d of visibleDomains(); track d.key) {
+      <button type="button" [class.active]="domain() === d.key" (click)="selectDomain(d.key)">{{ d.label }}</button>
+    }
+  </nav>
+
+  <div class="report-tabs">
+    @for (r of currentDomain().reports; track r.id) {
+      <button type="button" [class.active]="reportId() === r.id" (click)="selectReport(r.id)">{{ r.label }}</button>
+    }
   </div>
 
-  @if (error()) {
-    <div class="alert alert--danger">{{ error() }}</div>
-  }
-
-  @if (tab() === 'ledger') {
-    <form class="panel filters" [formGroup]="ledgerForm" (ngSubmit)="runLedger()">
+  <form class="panel filters" [formGroup]="filterForm" (ngSubmit)="run()">
+    @if (currentReport().kind === 'ledger') {
       <label class="field">
         <span>Account</span>
         <select formControlName="accountId">
@@ -23,74 +27,99 @@
           }
         </select>
       </label>
+    }
+    @if (currentReport().needsRange) {
       <label class="field"><span>From</span><input type="date" formControlName="from" /></label>
       <label class="field"><span>To</span><input type="date" formControlName="to" /></label>
+    }
+    @if (currentReport().needsAsOf || currentReport().kind === 'tb' || currentReport().kind === 'bs' || currentReport().kind === 'ar' || currentReport().kind === 'ap') {
+      <label class="field"><span>As of</span><input type="date" formControlName="asOf" /></label>
+    }
+    <div class="actions">
       <button class="btn btn--primary" type="submit" [disabled]="loading()">Run</button>
-    </form>
+      @if (currentReport().exportable) {
+        <button class="btn" type="button" (click)="export('csv')" [disabled]="loading()">CSV</button>
+        <button class="btn" type="button" (click)="export('xlsx')" [disabled]="loading()">Excel</button>
+        <button class="btn" type="button" (click)="export('pdf')" [disabled]="loading()">PDF</button>
+      }
+      <button class="btn" type="button" (click)="print()">Print</button>
+    </div>
+  </form>
 
-    @if (ledger(); as r) {
+  @if (error()) {
+    <div class="alert alert--danger">{{ error() }}</div>
+  }
+
+  <div class="report-panel" id="report-print">
+    @if (named(); as r) {
       <div class="panel">
         <div class="meta">
-          <strong>{{ r.accountCode }} — {{ r.accountName }}</strong>
-          <span>Opening: {{ r.openingBalance | currency: 'PKR':'symbol':'1.0-2' }}</span>
-          <span>Closing: {{ r.closingBalance | currency: 'PKR':'symbol':'1.0-2' }}</span>
+          <strong>{{ r.title }}</strong>
+          <span>Total {{ r.grandTotal | currency: 'PKR':'symbol':'1.0-2' }}</span>
         </div>
         <div class="table-wrap">
           <table>
             <thead>
-              <tr>
-                <th>Date</th><th>Voucher</th><th>Type</th><th>Narration</th>
-                <th class="num">Debit</th><th class="num">Credit</th><th class="num">Balance</th>
-              </tr>
+              <tr><th>Code</th><th>Name</th><th class="num">Qty</th><th class="num">Amount</th><th>Extra</th></tr>
             </thead>
             <tbody>
-              @for (l of r.lines; track l.voucherNo + l.date + l.debit + l.credit) {
+              @for (row of r.rows; track row.code + row.name + row.amount) {
                 <tr>
-                  <td>{{ l.date | date: 'mediumDate' }}</td>
-                  <td>{{ l.voucherNo }}</td>
-                  <td>{{ l.voucherType }}</td>
-                  <td>{{ l.narration || '—' }}</td>
-                  <td class="num">{{ l.debit | currency: 'PKR':'symbol':'1.0-2' }}</td>
-                  <td class="num">{{ l.credit | currency: 'PKR':'symbol':'1.0-2' }}</td>
-                  <td class="num">{{ l.balance | currency: 'PKR':'symbol':'1.0-2' }}</td>
+                  <td>{{ row.code }}</td>
+                  <td>{{ row.name }}</td>
+                  <td class="num">{{ row.qty != null ? (row.qty | number: '1.0-2') : '—' }}</td>
+                  <td class="num">{{ row.amount | currency: 'PKR':'symbol':'1.0-2' }}</td>
+                  <td>{{ row.extra || '—' }}</td>
                 </tr>
               } @empty {
-                <tr><td colspan="7" class="muted">No movements in this period.</td></tr>
+                <tr><td colspan="5" class="muted">No rows.</td></tr>
               }
             </tbody>
           </table>
         </div>
       </div>
     }
-  }
 
-  @if (tab() === 'trial') {
-    <form class="panel filters" [formGroup]="asOfForm" (ngSubmit)="runTrial()">
-      <label class="field"><span>As of</span><input type="date" formControlName="asOf" /></label>
-      <button class="btn btn--primary" type="submit" [disabled]="loading()">Run</button>
-    </form>
+    @if (cashFlow(); as r) {
+      <div class="panel">
+        <div class="meta">
+          <strong>Cash flow</strong>
+          <span>Opening {{ r.openingCash | currency: 'PKR':'symbol':'1.0-2' }}</span>
+          <span>In {{ r.inflows | currency: 'PKR':'symbol':'1.0-2' }}</span>
+          <span>Out {{ r.outflows | currency: 'PKR':'symbol':'1.0-2' }}</span>
+          <span>Closing {{ r.closingCash | currency: 'PKR':'symbol':'1.0-2' }}</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Category</th><th>Label</th><th class="num">Amount</th></tr></thead>
+            <tbody>
+              @for (l of r.lines; track l.category + l.label) {
+                <tr>
+                  <td>{{ l.category }}</td>
+                  <td>{{ l.label }}</td>
+                  <td class="num">{{ l.amount | currency: 'PKR':'symbol':'1.0-2' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
 
     @if (trial(); as r) {
       <div class="panel">
         <div class="meta">
-          <strong>As of {{ r.asOf | date: 'mediumDate' }}</strong>
-          <span>Total Dr {{ r.totalDebit | currency: 'PKR':'symbol':'1.0-2' }}</span>
-          <span>Total Cr {{ r.totalCredit | currency: 'PKR':'symbol':'1.0-2' }}</span>
+          <strong>Trial balance — {{ r.asOf | date: 'mediumDate' }}</strong>
+          <span>Dr {{ r.totalDebit | currency: 'PKR':'symbol':'1.0-2' }}</span>
+          <span>Cr {{ r.totalCredit | currency: 'PKR':'symbol':'1.0-2' }}</span>
         </div>
         <div class="table-wrap">
           <table>
-            <thead>
-              <tr>
-                <th>Code</th><th>Account</th><th>Type</th>
-                <th class="num">Debit</th><th class="num">Credit</th>
-              </tr>
-            </thead>
+            <thead><tr><th>Code</th><th>Account</th><th>Type</th><th class="num">Debit</th><th class="num">Credit</th></tr></thead>
             <tbody>
               @for (l of r.lines; track l.accountId) {
                 <tr>
-                  <td>{{ l.code }}</td>
-                  <td>{{ l.name }}</td>
-                  <td>{{ l.accountType }}</td>
+                  <td>{{ l.code }}</td><td>{{ l.name }}</td><td>{{ l.accountType }}</td>
                   <td class="num">{{ l.debit | currency: 'PKR':'symbol':'1.0-2' }}</td>
                   <td class="num">{{ l.credit | currency: 'PKR':'symbol':'1.0-2' }}</td>
                 </tr>
@@ -100,15 +129,30 @@
         </div>
       </div>
     }
-  }
 
-  @if (tab() === 'ar' || tab() === 'ap') {
-    <form class="panel filters" [formGroup]="asOfForm" (ngSubmit)="runAging(tab() === 'ar' ? 'ar' : 'ap')">
-      <label class="field"><span>As of</span><input type="date" formControlName="asOf" /></label>
-      <button class="btn btn--primary" type="submit" [disabled]="loading()">
-        Run {{ tab() === 'ar' ? 'receivables' : 'payables' }} aging
-      </button>
-    </form>
+    @if (pl(); as r) {
+      <div class="panel">
+        <div class="meta"><strong>P&amp;L {{ r.from | date: 'mediumDate' }} → {{ r.to | date: 'mediumDate' }}</strong></div>
+        <div class="kpi-row">
+          <div><span>Revenue</span><strong>{{ r.revenue | currency: 'PKR':'symbol':'1.0-2' }}</strong></div>
+          <div><span>COGS</span><strong>{{ r.costOfSales | currency: 'PKR':'symbol':'1.0-2' }}</strong></div>
+          <div><span>Gross</span><strong>{{ r.grossProfit | currency: 'PKR':'symbol':'1.0-2' }}</strong></div>
+          <div><span>Expenses</span><strong>{{ r.expenses | currency: 'PKR':'symbol':'1.0-2' }}</strong></div>
+          <div><span>Net</span><strong>{{ r.netProfit | currency: 'PKR':'symbol':'1.0-2' }}</strong></div>
+        </div>
+      </div>
+    }
+
+    @if (bs(); as r) {
+      <div class="panel">
+        <div class="meta"><strong>Balance sheet — {{ r.asOf | date: 'mediumDate' }}</strong></div>
+        <div class="kpi-row">
+          <div><span>Assets</span><strong>{{ r.totalAssets | currency: 'PKR':'symbol':'1.0-2' }}</strong></div>
+          <div><span>Liabilities</span><strong>{{ r.totalLiabilities | currency: 'PKR':'symbol':'1.0-2' }}</strong></div>
+          <div><span>Equity</span><strong>{{ r.totalEquity | currency: 'PKR':'symbol':'1.0-2' }}</strong></div>
+        </div>
+      </div>
+    }
 
     @if (aging(); as r) {
       <div class="panel">
@@ -120,13 +164,8 @@
           <table>
             <thead>
               <tr>
-                <th>Party</th>
-                <th class="num">Current</th>
-                <th class="num">1–30</th>
-                <th class="num">31–60</th>
-                <th class="num">61–90</th>
-                <th class="num">90+</th>
-                <th class="num">Total</th>
+                <th>Party</th><th class="num">Current</th><th class="num">1–30</th><th class="num">31–60</th>
+                <th class="num">61–90</th><th class="num">90+</th><th class="num">Total</th>
               </tr>
             </thead>
             <tbody>
@@ -148,5 +187,130 @@
         </div>
       </div>
     }
-  }
+
+    @if (ledger(); as r) {
+      <div class="panel">
+        <div class="meta">
+          <strong>{{ r.accountCode }} — {{ r.accountName }}</strong>
+          <span>Opening {{ r.openingBalance | currency: 'PKR':'symbol':'1.0-2' }}</span>
+          <span>Closing {{ r.closingBalance | currency: 'PKR':'symbol':'1.0-2' }}</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Date</th><th>Voucher</th><th>Type</th><th>Narration</th><th class="num">Debit</th><th class="num">Credit</th><th class="num">Balance</th></tr>
+            </thead>
+            <tbody>
+              @for (l of r.lines; track l.voucherNo + l.date + l.debit + l.credit) {
+                <tr>
+                  <td>{{ l.date | date: 'mediumDate' }}</td>
+                  <td>{{ l.voucherNo }}</td>
+                  <td>{{ l.voucherType }}</td>
+                  <td>{{ l.narration || '—' }}</td>
+                  <td class="num">{{ l.debit | currency: 'PKR':'symbol':'1.0-2' }}</td>
+                  <td class="num">{{ l.credit | currency: 'PKR':'symbol':'1.0-2' }}</td>
+                  <td class="num">{{ l.balance | currency: 'PKR':'symbol':'1.0-2' }}</td>
+                </tr>
+              } @empty {
+                <tr><td colspan="7" class="muted">No movements.</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+
+    @if (invValTotal() !== null) {
+      <div class="panel">
+        <div class="meta">
+          <strong>Inventory valuation</strong>
+          <span>Total {{ invValTotal()! | currency: 'PKR':'symbol':'1.0-2' }}</span>
+          <span class="muted">Qty × AverageCost</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Code</th><th>Name</th><th class="num">Qty</th><th class="num">Value</th></tr></thead>
+            <tbody>
+              @for (row of invRows(); track cell(row, ['productId', 'code'])) {
+                <tr>
+                  <td>{{ cell(row, ['code', 'productCode']) }}</td>
+                  <td>{{ cell(row, ['name', 'productName']) }}</td>
+                  <td class="num">{{ cell(row, ['qty', 'quantity', 'stockQty']) }}</td>
+                  <td class="num">{{ cell(row, ['value']) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+
+    @if (invTurn(); as t) {
+      <div class="panel">
+        <div class="kpi-row">
+          <div><span>COGS (deliveries)</span><strong>{{ t.cogs | currency: 'PKR':'symbol':'1.0-2' }}</strong></div>
+          <div><span>Avg inventory</span><strong>{{ t.avgInventoryValue | currency: 'PKR':'symbol':'1.0-2' }}</strong></div>
+          <div><span>Turnover</span><strong>{{ t.turnover | number: '1.0-4' }}</strong></div>
+        </div>
+      </div>
+    }
+
+    @if (invForecast(); as fc) {
+      <div class="panel">
+        <div class="meta">
+          <strong>Demand &amp; stock-out forecast</strong>
+          <span>As of {{ fc.asOf | date: 'mediumDate' }}</span>
+          <span class="muted">Read-only · SMA 28d · no auto PO</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th class="num">On hand</th>
+                <th class="num">Avg daily</th>
+                <th class="num">Lead days</th>
+                <th class="num">Risk days</th>
+                <th class="num">Reorder qty</th>
+                <th>Confidence</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (line of fc.lines; track line.productId) {
+                <tr>
+                  <td>{{ line.code }} — {{ line.name }}</td>
+                  <td class="num">{{ line.onHand | number: '1.0-2' }}</td>
+                  <td class="num">{{ line.avgDailyUsage | number: '1.0-4' }}</td>
+                  <td class="num">{{ line.leadTimeDays }}</td>
+                  <td class="num">{{ line.stockOutRiskDays ?? '—' }}</td>
+                  <td class="num">{{ line.recommendedOrderQty | number: '1.0-0' }}</td>
+                  <td>{{ line.confidence }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+
+    @if (invRows().length && invValTotal() === null && !named() && !invForecast()) {
+      <div class="panel">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Code</th><th>Name</th><th class="num">Qty / Value</th><th>Extra</th></tr></thead>
+            <tbody>
+              @for (row of invRows(); track $index) {
+                <tr>
+                  <td>{{ cell(row, ['code', 'warehouseCode', 'productCode']) }}</td>
+                  <td>{{ cell(row, ['name', 'productName', 'bucket']) }}</td>
+                  <td class="num">{{ cell(row, ['qty', 'totalQty', 'stockQty', 'value', 'totalValue', 'amount']) }}</td>
+                  <td>{{ cell(row, ['extra', 'daysSinceMovement', 'skuCount']) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+  </div>
 </section>

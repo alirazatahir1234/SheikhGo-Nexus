@@ -1,0 +1,9 @@
+.tabs {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+.tabs a {
+  text-decoration: none;
+}

@@ -1,131 +1,169 @@
 <section class="farm">
-  <app-page-header title="Farm / Flocks" subtitle="Poultry flock cycles — placement, feed, mortality, expenses.">
-    <button class="btn btn--ghost" type="button" (click)="showFlock.set(true)">+ Flock</button>
-    <button class="btn btn--ghost" type="button" [disabled]="!selectedId()" (click)="showShare.set(true)">+ Shareholder</button>
-    <button class="btn btn--primary" type="button" [disabled]="!selectedId()" (click)="showEvent.set(true)">+ Event</button>
+  <app-page-header title="Farm" subtitle="Farms, flocks, feed issue, mortality and expenses.">
+    <button class="btn btn--primary" type="button" (click)="openNewFlock()">+ Flock</button>
   </app-page-header>
+
+  <div class="tabs">
+    <a routerLink="/farm/dashboard" routerLinkActive="active">Dashboard</a>
+    <a routerLink="/farm/farms" routerLinkActive="active">Farms</a>
+    <a routerLink="/farm/flocks" routerLinkActive="active">Flocks</a>
+    <a routerLink="/farm/feed" routerLinkActive="active">Feed</a>
+    <a routerLink="/farm/mortality" routerLinkActive="active">Mortality</a>
+    <a routerLink="/farm/expenses" routerLinkActive="active">Expenses</a>
+    <a routerLink="/farm/performance" routerLinkActive="active">Performance</a>
+  </div>
 
   @if (error()) { <div class="alert alert--danger">{{ error() }}</div> }
 
-  @if (showFlock()) {
-    <form class="panel grid" [formGroup]="flockForm" (ngSubmit)="saveFlock()">
-      <h3>New flock</h3>
-      <label class="field"><span>Code</span><input formControlName="code" /></label>
-      <label class="field"><span>Name</span><input formControlName="name" /></label>
-      <label class="field">
-        <span>Bird type</span>
-        <select formControlName="birdType">
-          <option>Broiler</option><option>Layer</option><option>Breeder</option>
+  @if (showForm()) {
+    <form class="panel grid" [formGroup]="flockForm" (ngSubmit)="createFlock()">
+      <h3>Place flock</h3>
+      <label class="field"><span>Farm</span>
+        <select formControlName="farmId">
+          @for (f of farms(); track f.id) { <option [value]="f.id">{{ f.code }} — {{ f.name }}</option> }
         </select>
       </label>
+      <label class="field"><span>Unit</span>
+        <select formControlName="farmUnitId">
+          <option value="">—</option>
+          @for (u of unitsForFarm(); track u.id) { <option [value]="u.id">{{ u.code }} — {{ u.name }}</option> }
+        </select>
+      </label>
+      <label class="field"><span>Batch</span><input formControlName="batchNo" /></label>
+      <label class="field"><span>Bird type</span><input formControlName="birdType" /></label>
       <label class="field"><span>Placement</span><input type="date" formControlName="placementDate" /></label>
-      <label class="field"><span>Placed qty</span><input type="number" formControlName="placedQty" /></label>
-      <label class="field"><span>Shed</span><input formControlName="shed" /></label>
+      <label class="field"><span>Qty placed</span><input type="number" formControlName="qtyPlaced" /></label>
       <div class="actions">
-        <button class="btn btn--ghost" type="button" (click)="showFlock.set(false)">Cancel</button>
-        <button class="btn btn--primary" type="submit" [disabled]="saving()">Save</button>
+        <button class="btn btn--ghost" type="button" (click)="showForm.set(false)">Cancel</button>
+        <button class="btn btn--primary" type="submit" [disabled]="saving()">Create</button>
       </div>
     </form>
   }
 
-  @if (showShare()) {
-    <form class="panel grid" [formGroup]="shareForm" (ngSubmit)="saveShare()">
-      <h3>Shareholder</h3>
-      <label class="field"><span>Name</span><input formControlName="holderName" /></label>
-      <label class="field"><span>Party code</span><input formControlName="partyCode" /></label>
-      <label class="field"><span>Share %</span><input type="number" formControlName="sharePercent" /></label>
-      <label class="field"><span>Type</span><input formControlName="shareType" /></label>
-      <div class="actions">
-        <button class="btn btn--ghost" type="button" (click)="showShare.set(false)">Cancel</button>
-        <button class="btn btn--primary" type="submit" [disabled]="saving()">Save</button>
-      </div>
-    </form>
+  @if (tab()==='dashboard') {
+    <div class="stats">
+      <div class="panel"><span class="muted">Farms</span><strong>{{ farms().length }}</strong></div>
+      <div class="panel"><span class="muted">Active flocks</span><strong>{{ activeFlocks() }}</strong></div>
+      <div class="panel"><span class="muted">Feed issues</span><strong>{{ feedIssues().length }}</strong></div>
+    </div>
   }
 
-  @if (showEvent()) {
-    <form class="panel grid" [formGroup]="eventForm" (ngSubmit)="saveEvent()">
-      <h3>Flock event</h3>
-      <label class="field"><span>Date</span><input type="date" formControlName="date" /></label>
-      <label class="field">
-        <span>Type</span>
-        <select formControlName="eventType">
-          <option>Feed</option><option>Mortality</option><option>Medicine</option><option>Expense</option>
-        </select>
-      </label>
-      <label class="field"><span>Qty</span><input type="number" formControlName="qty" /></label>
-      <label class="field"><span>Amount</span><input type="number" formControlName="amount" /></label>
-      <label class="field">
-        <span>Product (feed)</span>
-        <select formControlName="productId">
-          <option value="">Optional</option>
-          @for (p of products(); track p.id) {
-            <option [value]="p.id">{{ p.code }} — {{ p.name }}</option>
-          }
-        </select>
-      </label>
-      <label class="field"><span>Remarks</span><input formControlName="remarks" /></label>
-      <div class="actions">
-        <button class="btn btn--ghost" type="button" (click)="showEvent.set(false)">Cancel</button>
-        <button class="btn btn--primary" type="submit" [disabled]="saving()">Save event</button>
-      </div>
-    </form>
-  }
-
-  <div class="layout">
+  @if (tab()==='farms') {
     <div class="panel table-wrap">
       <table>
-        <thead><tr><th>Code</th><th>Flock</th><th>Birds</th><th>Mortality</th><th>Feed kg</th><th>Expense</th><th>Status</th></tr></thead>
+        <thead><tr><th>Code</th><th>Name</th><th>Type</th><th>Units</th></tr></thead>
+        <tbody>
+          @for (f of farms(); track f.id) {
+            <tr><td>{{ f.code }}</td><td>{{ f.name }}</td><td>{{ f.farmType }}</td><td>{{ f.units.length }}</td></tr>
+          } @empty { <tr><td colspan="4" class="muted">No farms</td></tr> }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  @if (tab()==='flocks') {
+    <div class="panel table-wrap">
+      <table>
+        <thead><tr><th>Batch</th><th>Farm</th><th>Type</th><th>Placed</th><th>Current</th><th>Mortality</th><th>Status</th><th></th></tr></thead>
         <tbody>
           @for (f of flocks(); track f.id) {
-            <tr [class.selected]="selectedId()===f.id" (click)="select(f.id)">
-              <td>{{ f.code }}</td>
-              <td>{{ f.name }}<div class="muted tiny">{{ f.birdType }} · {{ f.shed || '—' }}</div></td>
-              <td>{{ f.currentQty }} / {{ f.placedQty }}</td>
-              <td>{{ f.mortalityQty }}</td>
-              <td>{{ f.feedConsumedKg }}</td>
-              <td>{{ f.totalExpense | currency:'PKR':'symbol':'1.0-0' }}</td>
-              <td>{{ f.status }}</td>
+            <tr>
+              <td>{{ f.batchNo }}</td><td>{{ f.farmName }}</td><td>{{ f.birdType }}</td>
+              <td>{{ f.qtyPlaced }}</td><td>{{ f.qtyCurrent }}</td><td>{{ f.qtyMortality }}</td><td>{{ f.status }}</td>
+              <td><button class="btn btn--ghost" type="button" (click)="selectFlock(f)">Open</button></td>
             </tr>
-          } @empty { <tr><td colspan="7" class="muted">No flocks yet.</td></tr> }
+          } @empty { <tr><td colspan="8" class="muted">No flocks</td></tr> }
         </tbody>
       </table>
-      @if (selectedId()) {
-        <div class="actions pad">
-          <button class="btn btn--ghost" type="button" (click)="closeSelected()">Close flock</button>
-        </div>
-      }
     </div>
+  }
 
+  @if (tab()==='feed') {
+    <form class="panel grid" [formGroup]="feedForm" (ngSubmit)="createFeed()">
+      <h3>Issue feed (approve+post)</h3>
+      <label class="field"><span>Farm</span>
+        <select formControlName="farmId">@for (f of farms(); track f.id) { <option [value]="f.id">{{ f.code }}</option> }</select>
+      </label>
+      <label class="field"><span>Flock</span>
+        <select formControlName="flockId">@for (f of flocks(); track f.id) { <option [value]="f.id">{{ f.batchNo }}</option> }</select>
+      </label>
+      <label class="field"><span>Warehouse</span>
+        <select formControlName="warehouseId">@for (w of warehouses(); track w.id) { <option [value]="w.id">{{ w.code }}</option> }</select>
+      </label>
+      <label class="field"><span>Product</span>
+        <select formControlName="productId">@for (p of feedProducts(); track p.id) { <option [value]="p.id">{{ p.code }}</option> }</select>
+      </label>
+      <label class="field"><span>Qty</span><input type="number" formControlName="qty" /></label>
+      <button class="btn btn--primary" type="submit" [disabled]="saving()">Issue & post</button>
+    </form>
     <div class="panel table-wrap">
-      <h3 class="pad">Events</h3>
       <table>
-        <thead><tr><th>Date</th><th>Type</th><th>Qty</th><th>Amount</th><th>Remarks</th></tr></thead>
+        <thead><tr><th>Issue</th><th>Date</th><th>Status</th><th>Lines</th></tr></thead>
         <tbody>
-          @for (e of events(); track e.id) {
-            <tr>
-              <td>{{ e.date | date:'mediumDate' }}</td>
-              <td>{{ e.eventType }}</td>
-              <td>{{ e.qty }}</td>
-              <td>{{ e.amount | currency:'PKR':'symbol':'1.0-0' }}</td>
-              <td>{{ e.remarks || '—' }}</td>
-            </tr>
-          } @empty { <tr><td colspan="5" class="muted">Select a flock.</td></tr> }
-        </tbody>
-      </table>
-      <h3 class="pad">Shareholders</h3>
-      <table>
-        <thead><tr><th>Name</th><th>Code</th><th>%</th><th>Type</th></tr></thead>
-        <tbody>
-          @for (s of shareholders(); track s.id) {
-            <tr>
-              <td>{{ s.holderName }}</td>
-              <td>{{ s.partyCode || '—' }}</td>
-              <td>{{ s.sharePercent }}</td>
-              <td>{{ s.shareType }}</td>
-            </tr>
-          } @empty { <tr><td colspan="4" class="muted">No shareholders.</td></tr> }
+          @for (i of feedIssues(); track i.id) {
+            <tr><td>{{ i.issueNo }}</td><td>{{ i.issueDate | date:'mediumDate' }}</td><td>{{ statusLabel(i.status) }}</td><td>{{ i.lines.length }}</td></tr>
+          }
         </tbody>
       </table>
     </div>
-  </div>
+  }
+
+  @if (tab()==='mortality') {
+    @if (selectedFlock(); as f) {
+      <form class="panel grid" [formGroup]="mortalityForm" (ngSubmit)="addMortality()">
+        <h3>Mortality — {{ f.batchNo }} (current {{ f.qtyCurrent }})</h3>
+        <label class="field"><span>Date</span><input type="date" formControlName="date" /></label>
+        <label class="field"><span>Qty</span><input type="number" formControlName="qty" /></label>
+        <label class="field"><span>Reason</span><input formControlName="reason" /></label>
+        <button class="btn btn--primary" type="submit" [disabled]="saving()">Record</button>
+      </form>
+    } @else { <p class="muted">Open a flock from the Flocks tab first.</p> }
+  }
+
+  @if (tab()==='expenses') {
+    <form class="panel grid" [formGroup]="expenseForm" (ngSubmit)="createExpense()">
+      <h3>Farm expense</h3>
+      <label class="field"><span>Farm</span>
+        <select formControlName="farmId">@for (f of farms(); track f.id) { <option [value]="f.id">{{ f.code }}</option> }</select>
+      </label>
+      <label class="field"><span>Flock</span>
+        <select formControlName="flockId"><option value="">—</option>@for (f of flocks(); track f.id) { <option [value]="f.id">{{ f.batchNo }}</option> }</select>
+      </label>
+      <label class="field"><span>Category</span>
+        <select formControlName="category">
+          <option>Feed</option><option>Medicine</option><option>Labor</option><option>Utilities</option><option>Other</option>
+        </select>
+      </label>
+      <label class="field"><span>Amount</span><input type="number" formControlName="amount" /></label>
+      <label class="field"><span>Narration</span><input formControlName="narration" /></label>
+      <button class="btn btn--primary" type="submit" [disabled]="saving()">Post expense</button>
+    </form>
+    <div class="panel table-wrap">
+      <table>
+        <thead><tr><th>No</th><th>Date</th><th>Category</th><th>Amount</th><th>Status</th></tr></thead>
+        <tbody>
+          @for (e of expenses(); track e.id) {
+            <tr>
+              <td>{{ e.expenseNo }}</td><td>{{ e.expenseDate | date:'mediumDate' }}</td>
+              <td>{{ e.category }}</td><td>{{ e.amount | currency:'PKR':'symbol-narrow':'1.2-2' }}</td>
+              <td>{{ statusLabel(e.status) }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  @if (tab()==='performance') {
+    @if (performance(); as p) {
+      <div class="panel stats">
+        <div><span class="muted">Batch</span><strong>{{ p.batchNo }}</strong></div>
+        <div><span class="muted">Opening</span><strong>{{ p.openingQty }}</strong></div>
+        <div><span class="muted">Mortality</span><strong>{{ p.mortalityQty }} ({{ p.mortalityPercent | number:'1.0-2' }}%)</strong></div>
+        <div><span class="muted">Closing</span><strong>{{ p.closingQty }}</strong></div>
+        <div><span class="muted">Feed kg</span><strong>{{ p.feedConsumedKg | number:'1.0-2' }}</strong></div>
+        <div><span class="muted">Expense</span><strong>{{ p.totalExpense | currency:'PKR':'symbol-narrow':'1.2-2' }}</strong></div>
+      </div>
+    } @else { <p class="muted">Open a flock to load performance.</p> }
+  }
 </section>

@@ -1,0 +1,52 @@
+.tabs {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+.tabs button,
+.tabs a {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  padding: 0.5rem 0.9rem;
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 600;
+  text-decoration: none;
+  color: inherit;
+  display: inline-flex;
+  align-items: center;
+}
+.tabs button.active,
+.tabs a.active {
+  background: rgba(20, 184, 166, 0.16);
+  color: #0f766e;
+}
+
+.field.span-2 {
+  grid-column: span 2;
+}
+
+.form-panel {
+  margin-bottom: 1rem;
+}
+
+.lines__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0.75rem 0 0.5rem;
+}
+
+.line-row {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: 2fr 1fr 1fr 2fr;
+  margin-bottom: 0.5rem;
+}
+
+@media (max-width: 900px) {
+  .line-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}

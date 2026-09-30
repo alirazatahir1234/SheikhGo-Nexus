@@ -5,9 +5,9 @@
 </app-page-header>
 @if (error()) { <div class="alert alert--warn">{{ error() }}</div> }
 <div class="tabs">
-  <button type="button" [class.active]="tab()==='salesmen'" (click)="tab.set('salesmen')">Salesmen</button>
-  <button type="button" [class.active]="tab()==='areas'" (click)="tab.set('areas')">Areas</button>
-  <button type="button" [class.active]="tab()==='targets'" (click)="tab.set('targets')">Targets</button>
+  <a routerLink="/salesforce/salesmen" routerLinkActive="active">Salesmen</a>
+  <a routerLink="/salesforce/areas" routerLinkActive="active">Areas</a>
+  <a routerLink="/salesforce/targets" routerLinkActive="active">Targets</a>
 </div>
 
 @if (show() === 'area') {

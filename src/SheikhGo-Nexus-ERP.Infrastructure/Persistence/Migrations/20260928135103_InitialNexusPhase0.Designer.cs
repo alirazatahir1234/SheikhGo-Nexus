@@ -5,11 +5,11 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using SoftaxeERP.Infrastructure.Persistence;
+using SheikhGoNexusERP.Infrastructure.Persistence;
 
 #nullable disable
 
-namespace SoftaxeERP.Infrastructure.Persistence.Migrations
+namespace SheikhGoNexusERP.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
     [Migration("20260928135103_InitialNexusPhase0")]
@@ -26,7 +26,7 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Account", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Account", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -86,7 +86,7 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("Accounts", "finance");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Approval", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Approval", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -126,7 +126,7 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("Approvals", "documents");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.AuditLog", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.AuditLog", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -179,7 +179,7 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("AuditLogs", "core");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Branch", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Branch", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -227,7 +227,7 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("Branches", "core");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Brand", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Brand", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -267,7 +267,7 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("Brands", "inventory");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Company", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Company", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -361,7 +361,7 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("Companies", "core");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Document", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Document", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -431,7 +431,7 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("Documents", "documents");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.DocumentLine", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.DocumentLine", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -490,7 +490,7 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("DocumentLines", "documents");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.DocumentNumberSequence", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.DocumentNumberSequence", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -553,7 +553,7 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("DocumentNumberSequences", "documents");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.DocumentType", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.DocumentType", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -608,7 +608,7 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("DocumentTypes", "documents");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.FinancialYear", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.FinancialYear", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -661,7 +661,7 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("FinancialYears", "core");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.FiscalPeriod", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.FiscalPeriod", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -711,7 +711,7 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("FiscalPeriods", "core");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.GoodsReceipt", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.GoodsReceipt", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -776,7 +776,7 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("GoodsReceipts", "procurement");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.GoodsReceiptLine", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.GoodsReceiptLine", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -826,7 +826,7 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("GoodsReceiptLines", "procurement");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Party", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Party", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -887,7 +887,7 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("Parties", "procurement");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.PayableBalance", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.PayableBalance", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -927,7 +927,7 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("PayableBalances", "finance");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Permission", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Permission", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -970,7 +970,7 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("Permissions", "identity");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Product", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Product", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1048,7 +1048,7 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("Products", "inventory");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.ProductCategory", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.ProductCategory", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1081,7 +1081,7 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("ProductCategories", "inventory");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.ProductGroup", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.ProductGroup", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1121,7 +1121,7 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("ProductGroups", "inventory");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.PurchaseInvoice", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.PurchaseInvoice", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1198,7 +1198,7 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("PurchaseInvoices", "procurement");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.PurchaseInvoiceLine", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.PurchaseInvoiceLine", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1243,7 +1243,7 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("PurchaseInvoiceLines", "procurement");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.PurchaseOrder", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.PurchaseOrder", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1312,7 +1312,7 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("PurchaseOrders", "procurement");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.PurchaseOrderLine", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.PurchaseOrderLine", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1360,7 +1360,7 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("PurchaseOrderLines", "procurement");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Role", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Role", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1400,7 +1400,7 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("Roles", "identity");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.RolePermission", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.RolePermission", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1434,7 +1434,7 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("RolePermissions", "identity");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.SupplierProfile", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.SupplierProfile", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1478,7 +1478,7 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("SupplierProfiles", "procurement");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Tenant", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Tenant", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1531,7 +1531,7 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("Tenants", "core");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.UnitOfMeasure", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.UnitOfMeasure", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1571,7 +1571,7 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("UnitsOfMeasure", "inventory");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.User", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1624,7 +1624,7 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("Users", "identity");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.UserRole", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.UserRole", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1658,7 +1658,7 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("UserRoles", "identity");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Verification", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Verification", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1698,7 +1698,7 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("Verifications", "documents");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Warehouse", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Warehouse", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1749,7 +1749,7 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("Warehouses", "inventory");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.WarehouseStock", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.WarehouseStock", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1794,9 +1794,9 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("WarehouseStocks", "inventory");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Account", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Account", b =>
                 {
-                    b.HasOne("SoftaxeERP.Domain.Entities.Account", "Parent")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Account", "Parent")
                         .WithMany("Children")
                         .HasForeignKey("ParentId")
                         .OnDelete(DeleteBehavior.Restrict);
@@ -1804,9 +1804,9 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.Navigation("Parent");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Approval", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Approval", b =>
                 {
-                    b.HasOne("SoftaxeERP.Domain.Entities.Document", "Document")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Document", "Document")
                         .WithMany("Approvals")
                         .HasForeignKey("DocumentId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1815,9 +1815,9 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.Navigation("Document");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Branch", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Branch", b =>
                 {
-                    b.HasOne("SoftaxeERP.Domain.Entities.Company", "Company")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Company", "Company")
                         .WithMany("Branches")
                         .HasForeignKey("CompanyId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -1826,40 +1826,40 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.Navigation("Company");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Company", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Company", b =>
                 {
-                    b.HasOne("SoftaxeERP.Domain.Entities.Tenant", null)
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Tenant", null)
                         .WithOne("Company")
-                        .HasForeignKey("SoftaxeERP.Domain.Entities.Company", "TenantId")
+                        .HasForeignKey("SheikhGoNexusERP.Domain.Entities.Company", "TenantId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Document", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Document", b =>
                 {
-                    b.HasOne("SoftaxeERP.Domain.Entities.Branch", "Branch")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Branch", "Branch")
                         .WithMany()
                         .HasForeignKey("BranchId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.Company", "Company")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Company", "Company")
                         .WithMany()
                         .HasForeignKey("CompanyId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.DocumentType", "DocumentType")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.DocumentType", "DocumentType")
                         .WithMany()
                         .HasForeignKey("DocumentTypeId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.FinancialYear", "FinancialYear")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.FinancialYear", "FinancialYear")
                         .WithMany()
                         .HasForeignKey("FinancialYearId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.Party", "Party")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Party", "Party")
                         .WithMany()
                         .HasForeignKey("PartyId")
                         .OnDelete(DeleteBehavior.Restrict);
@@ -1875,19 +1875,19 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.Navigation("Party");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.DocumentLine", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.DocumentLine", b =>
                 {
-                    b.HasOne("SoftaxeERP.Domain.Entities.Account", "Account")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Account", "Account")
                         .WithMany()
                         .HasForeignKey("AccountId");
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.Document", "Document")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Document", "Document")
                         .WithMany("Lines")
                         .HasForeignKey("DocumentId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.Product", "Product")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Product", "Product")
                         .WithMany()
                         .HasForeignKey("ProductId");
 
@@ -1898,26 +1898,26 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.Navigation("Product");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.DocumentNumberSequence", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.DocumentNumberSequence", b =>
                 {
-                    b.HasOne("SoftaxeERP.Domain.Entities.Branch", "Branch")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Branch", "Branch")
                         .WithMany()
                         .HasForeignKey("BranchId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.Company", "Company")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Company", "Company")
                         .WithMany()
                         .HasForeignKey("CompanyId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.DocumentType", "DocumentType")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.DocumentType", "DocumentType")
                         .WithMany()
                         .HasForeignKey("DocumentTypeId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.FinancialYear", "FinancialYear")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.FinancialYear", "FinancialYear")
                         .WithMany()
                         .HasForeignKey("FinancialYearId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -1932,9 +1932,9 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.Navigation("FinancialYear");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.FinancialYear", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.FinancialYear", b =>
                 {
-                    b.HasOne("SoftaxeERP.Domain.Entities.Company", "Company")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Company", "Company")
                         .WithMany()
                         .HasForeignKey("CompanyId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1943,9 +1943,9 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.Navigation("Company");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.FiscalPeriod", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.FiscalPeriod", b =>
                 {
-                    b.HasOne("SoftaxeERP.Domain.Entities.FinancialYear", "FinancialYear")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.FinancialYear", "FinancialYear")
                         .WithMany("Periods")
                         .HasForeignKey("FinancialYearId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1954,25 +1954,25 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.Navigation("FinancialYear");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.GoodsReceipt", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.GoodsReceipt", b =>
                 {
-                    b.HasOne("SoftaxeERP.Domain.Entities.Document", "Document")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Document", "Document")
                         .WithMany()
                         .HasForeignKey("DocumentId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.Party", "Party")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Party", "Party")
                         .WithMany()
                         .HasForeignKey("PartyId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.PurchaseOrder", "PurchaseOrder")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.PurchaseOrder", "PurchaseOrder")
                         .WithMany("GoodsReceipts")
                         .HasForeignKey("PurchaseOrderId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.Warehouse", "Warehouse")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Warehouse", "Warehouse")
                         .WithMany()
                         .HasForeignKey("WarehouseId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -1987,21 +1987,21 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.Navigation("Warehouse");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.GoodsReceiptLine", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.GoodsReceiptLine", b =>
                 {
-                    b.HasOne("SoftaxeERP.Domain.Entities.GoodsReceipt", "GoodsReceipt")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.GoodsReceipt", "GoodsReceipt")
                         .WithMany("Lines")
                         .HasForeignKey("GoodsReceiptId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.Product", "Product")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Product", "Product")
                         .WithMany()
                         .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.PurchaseOrderLine", "PurchaseOrderLine")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.PurchaseOrderLine", "PurchaseOrderLine")
                         .WithMany()
                         .HasForeignKey("PurchaseOrderLineId")
                         .OnDelete(DeleteBehavior.Restrict);
@@ -2013,9 +2013,9 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.Navigation("PurchaseOrderLine");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.PayableBalance", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.PayableBalance", b =>
                 {
-                    b.HasOne("SoftaxeERP.Domain.Entities.Party", "Party")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Party", "Party")
                         .WithMany()
                         .HasForeignKey("PartyId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -2024,24 +2024,24 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.Navigation("Party");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Product", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Product", b =>
                 {
-                    b.HasOne("SoftaxeERP.Domain.Entities.Brand", "Brand")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Brand", "Brand")
                         .WithMany("Products")
                         .HasForeignKey("BrandId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.ProductCategory", "Category")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.ProductCategory", "Category")
                         .WithMany("Products")
                         .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.ProductGroup", "ProductGroup")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.ProductGroup", "ProductGroup")
                         .WithMany("Products")
                         .HasForeignKey("ProductGroupId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.UnitOfMeasure", "UnitOfMeasure")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.UnitOfMeasure", "UnitOfMeasure")
                         .WithMany("Products")
                         .HasForeignKey("UnitOfMeasureId")
                         .OnDelete(DeleteBehavior.Restrict);
@@ -2055,25 +2055,25 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.Navigation("UnitOfMeasure");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.PurchaseInvoice", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.PurchaseInvoice", b =>
                 {
-                    b.HasOne("SoftaxeERP.Domain.Entities.Document", "Document")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Document", "Document")
                         .WithMany()
                         .HasForeignKey("DocumentId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.GoodsReceipt", "GoodsReceipt")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.GoodsReceipt", "GoodsReceipt")
                         .WithMany()
                         .HasForeignKey("GoodsReceiptId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.Party", "Party")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Party", "Party")
                         .WithMany()
                         .HasForeignKey("PartyId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.PurchaseOrder", "PurchaseOrder")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.PurchaseOrder", "PurchaseOrder")
                         .WithMany()
                         .HasForeignKey("PurchaseOrderId")
                         .OnDelete(DeleteBehavior.Restrict);
@@ -2087,15 +2087,15 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.Navigation("PurchaseOrder");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.PurchaseInvoiceLine", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.PurchaseInvoiceLine", b =>
                 {
-                    b.HasOne("SoftaxeERP.Domain.Entities.Product", "Product")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Product", "Product")
                         .WithMany()
                         .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.PurchaseInvoice", "PurchaseInvoice")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.PurchaseInvoice", "PurchaseInvoice")
                         .WithMany("Lines")
                         .HasForeignKey("PurchaseInvoiceId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -2106,20 +2106,20 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.Navigation("PurchaseInvoice");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.PurchaseOrder", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.PurchaseOrder", b =>
                 {
-                    b.HasOne("SoftaxeERP.Domain.Entities.Document", "Document")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Document", "Document")
                         .WithMany()
                         .HasForeignKey("DocumentId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.Party", "Party")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Party", "Party")
                         .WithMany()
                         .HasForeignKey("PartyId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.Warehouse", "Warehouse")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Warehouse", "Warehouse")
                         .WithMany()
                         .HasForeignKey("WarehouseId")
                         .OnDelete(DeleteBehavior.Restrict);
@@ -2131,15 +2131,15 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.Navigation("Warehouse");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.PurchaseOrderLine", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.PurchaseOrderLine", b =>
                 {
-                    b.HasOne("SoftaxeERP.Domain.Entities.Product", "Product")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Product", "Product")
                         .WithMany()
                         .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.PurchaseOrder", "PurchaseOrder")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.PurchaseOrder", "PurchaseOrder")
                         .WithMany("Lines")
                         .HasForeignKey("PurchaseOrderId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -2150,15 +2150,15 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.Navigation("PurchaseOrder");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.RolePermission", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.RolePermission", b =>
                 {
-                    b.HasOne("SoftaxeERP.Domain.Entities.Permission", "Permission")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Permission", "Permission")
                         .WithMany("RolePermissions")
                         .HasForeignKey("PermissionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.Role", "Role")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Role", "Role")
                         .WithMany("RolePermissions")
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -2169,35 +2169,35 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.Navigation("Role");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.SupplierProfile", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.SupplierProfile", b =>
                 {
-                    b.HasOne("SoftaxeERP.Domain.Entities.Party", "Party")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Party", "Party")
                         .WithOne("SupplierProfile")
-                        .HasForeignKey("SoftaxeERP.Domain.Entities.SupplierProfile", "PartyId")
+                        .HasForeignKey("SheikhGoNexusERP.Domain.Entities.SupplierProfile", "PartyId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Party");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.User", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.User", b =>
                 {
-                    b.HasOne("SoftaxeERP.Domain.Entities.Tenant", null)
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Tenant", null)
                         .WithMany("Users")
                         .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.UserRole", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.UserRole", b =>
                 {
-                    b.HasOne("SoftaxeERP.Domain.Entities.Role", "Role")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Role", "Role")
                         .WithMany("UserRoles")
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.User", "User")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.User", "User")
                         .WithMany("UserRoles")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -2208,9 +2208,9 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Verification", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Verification", b =>
                 {
-                    b.HasOne("SoftaxeERP.Domain.Entities.Document", "Document")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Document", "Document")
                         .WithMany("Verifications")
                         .HasForeignKey("DocumentId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -2219,9 +2219,9 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.Navigation("Document");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Warehouse", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Warehouse", b =>
                 {
-                    b.HasOne("SoftaxeERP.Domain.Entities.Branch", "Branch")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Branch", "Branch")
                         .WithMany("Warehouses")
                         .HasForeignKey("BranchId")
                         .OnDelete(DeleteBehavior.SetNull);
@@ -2229,15 +2229,15 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.Navigation("Branch");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.WarehouseStock", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.WarehouseStock", b =>
                 {
-                    b.HasOne("SoftaxeERP.Domain.Entities.Product", "Product")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Product", "Product")
                         .WithMany("Stocks")
                         .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.Warehouse", "Warehouse")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Warehouse", "Warehouse")
                         .WithMany("Stocks")
                         .HasForeignKey("WarehouseId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -2248,27 +2248,27 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.Navigation("Warehouse");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Account", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Account", b =>
                 {
                     b.Navigation("Children");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Branch", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Branch", b =>
                 {
                     b.Navigation("Warehouses");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Brand", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Brand", b =>
                 {
                     b.Navigation("Products");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Company", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Company", b =>
                 {
                     b.Navigation("Branches");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Document", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Document", b =>
                 {
                     b.Navigation("Approvals");
 
@@ -2277,78 +2277,78 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.Navigation("Verifications");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.FinancialYear", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.FinancialYear", b =>
                 {
                     b.Navigation("Periods");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.GoodsReceipt", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.GoodsReceipt", b =>
                 {
                     b.Navigation("Lines");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Party", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Party", b =>
                 {
                     b.Navigation("SupplierProfile");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Permission", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Permission", b =>
                 {
                     b.Navigation("RolePermissions");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Product", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Product", b =>
                 {
                     b.Navigation("Stocks");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.ProductCategory", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.ProductCategory", b =>
                 {
                     b.Navigation("Products");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.ProductGroup", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.ProductGroup", b =>
                 {
                     b.Navigation("Products");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.PurchaseInvoice", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.PurchaseInvoice", b =>
                 {
                     b.Navigation("Lines");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.PurchaseOrder", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.PurchaseOrder", b =>
                 {
                     b.Navigation("GoodsReceipts");
 
                     b.Navigation("Lines");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Role", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Role", b =>
                 {
                     b.Navigation("RolePermissions");
 
                     b.Navigation("UserRoles");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Tenant", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Tenant", b =>
                 {
                     b.Navigation("Company");
 
                     b.Navigation("Users");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.UnitOfMeasure", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.UnitOfMeasure", b =>
                 {
                     b.Navigation("Products");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.User", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.User", b =>
                 {
                     b.Navigation("UserRoles");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Warehouse", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Warehouse", b =>
                 {
                     b.Navigation("Stocks");
                 });

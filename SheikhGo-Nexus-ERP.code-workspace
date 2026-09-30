@@ -1,0 +1,11 @@
+{
+  "folders": [
+    {
+      "name": "SheikhGo-Nexus-ERP",
+      "path": "."
+    }
+  ],
+  "settings": {
+    "window.title": "SheikhGo-Nexus-ERP${separator}${activeEditorShort}"
+  }
+}

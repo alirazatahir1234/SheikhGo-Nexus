@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SoftaxeERP.Application.DTOs;
-using SoftaxeERP.Application.Interfaces;
+using SheikhGoNexusERP.Application.DTOs;
+using SheikhGoNexusERP.Application.Interfaces;
 
-namespace SoftaxeERP.Api.Controllers;
+namespace SheikhGoNexusERP.Api.Controllers;
 
 [ApiController, Authorize, Route("api/admin")]
 public class AdminController(IAdminService service) : ControllerBase

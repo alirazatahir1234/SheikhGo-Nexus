@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace SoftaxeERP.Infrastructure.Persistence.Migrations
+namespace SheikhGoNexusERP.Infrastructure.Persistence.Migrations
 {
     /// <inheritdoc />
     public partial class InitialNexusPhase0 : Migration

@@ -92,6 +92,9 @@ export class DocumentActionsComponent {
     let next: ActionBtn | null = null;
     if (n === 0) {
       next = { action: 'submit', label: 'Submit', primary: true };
+    } else if (n === 6) {
+      // Calculated (payroll)
+      next = { action: 'submit', label: 'Submit', primary: true };
     } else if (n === 1) {
       // Submitted
       if (needVerify) next = { action: 'verify', label: 'Verify', primary: true };

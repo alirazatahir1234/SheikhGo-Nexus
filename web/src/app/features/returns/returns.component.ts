@@ -1,20 +1,31 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormArray, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CurrencyPipe, DatePipe } from '@angular/common';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
 import { ExtendedModulesService } from '../../core/services/extended-modules.service';
 import { ProductsService } from '../../core/services/products.service';
 import { PartiesService } from '../../core/services/parties.service';
 import { Party, Product } from '../../core/models/erp.models';
+import { bindTabFromRoute, navigateModuleTab } from '../../core/nav/route-tabs';
+
+type ReturnsTab = 'sale' | 'purchase';
+
+const RETURNS_TAB_ROUTE: Record<ReturnsTab, string> = {
+  sale: 'sale',
+  purchase: 'purchase',
+};
 
 @Component({
   selector: 'app-returns',
   standalone: true,
-  imports: [ReactiveFormsModule, PageHeaderComponent, DatePipe, CurrencyPipe],
+  imports: [ReactiveFormsModule, PageHeaderComponent, DatePipe, CurrencyPipe, RouterLink, RouterLinkActive],
   templateUrl: './returns.component.html',
+  styleUrl: './returns.component.scss',
 })
 export class ReturnsComponent implements OnInit {
-  readonly tab = signal<'sale' | 'purchase'>('sale');
+  private readonly router = inject(Router);
+  readonly tab = signal<ReturnsTab>('sale');
   readonly saleReturns = signal<any[]>([]);
   readonly purchaseReturns = signal<any[]>([]);
   readonly products = signal<Product[]>([]);
@@ -55,9 +66,17 @@ export class ReturnsComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    bindTabFromRoute<ReturnsTab>((tab) => {
+      this.tab.set(tab);
+      this.showForm.set(false);
+    });
     this.productsApi.getAll().subscribe({ next: (p) => this.products.set(p) });
     this.partiesApi.getAll().subscribe({ next: (p) => this.parties.set(p) });
     this.reload();
+  }
+
+  setTab(tab: ReturnsTab): void {
+    navigateModuleTab(this.router, 'returns', RETURNS_TAB_ROUTE[tab]);
   }
 
   reload(): void {

@@ -1,23 +1,33 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CurrencyPipe } from '@angular/common';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
 import { ExtendedModulesService } from '../../core/services/extended-modules.service';
 import { ProductsService } from '../../core/services/products.service';
 import { Product } from '../../core/models/erp.models';
+import { bindTabFromRoute, navigateModuleTab } from '../../core/nav/route-tabs';
+
+type BrandsTab = 'brands' | 'conversions';
+
+const BRANDS_TAB_ROUTE: Record<BrandsTab, string> = {
+  brands: 'list',
+  conversions: 'conversions',
+};
 
 @Component({
   selector: 'app-brands',
   standalone: true,
-  imports: [ReactiveFormsModule, PageHeaderComponent, CurrencyPipe],
+  imports: [ReactiveFormsModule, PageHeaderComponent, CurrencyPipe, RouterLink, RouterLinkActive],
   templateUrl: './brands.component.html',
   styleUrl: './brands.component.scss',
 })
 export class BrandsComponent implements OnInit {
+  private readonly router = inject(Router);
   readonly brands = signal<any[]>([]);
   readonly conversions = signal<any[]>([]);
   readonly products = signal<Product[]>([]);
-  readonly tab = signal<'brands' | 'conversions'>('brands');
+  readonly tab = signal<BrandsTab>('brands');
   readonly show = signal<'brand' | 'conv' | null>(null);
   readonly saving = signal(false);
   readonly error = signal('');
@@ -37,8 +47,13 @@ export class BrandsComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    bindTabFromRoute<BrandsTab>((tab) => this.tab.set(tab));
     this.productsApi.getAll().subscribe({ next: (p) => this.products.set(p) });
     this.reload();
+  }
+
+  setTab(tab: BrandsTab): void {
+    navigateModuleTab(this.router, 'brands', BRANDS_TAB_ROUTE[tab]);
   }
 
   reload(): void {

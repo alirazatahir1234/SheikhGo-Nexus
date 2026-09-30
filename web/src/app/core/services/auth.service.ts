@@ -126,7 +126,7 @@ export class AuthService {
     }
     localStorage.setItem(TOKEN_KEY, res.token);
     localStorage.setItem(USER_KEY, JSON.stringify(res.user));
-    const company = res.company ?? { id: '', name: 'SheikhGo Nexus' };
+    const company = res.company ?? { id: '', name: 'SheikhGo-Nexus-ERP' };
     localStorage.setItem(COMPANY_KEY, JSON.stringify(company));
     localStorage.setItem('nexus_company_id', company.id);
 

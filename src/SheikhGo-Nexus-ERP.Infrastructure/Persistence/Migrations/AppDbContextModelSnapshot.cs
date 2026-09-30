@@ -4,11 +4,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using SoftaxeERP.Infrastructure.Persistence;
+using SheikhGoNexusERP.Infrastructure.Persistence;
 
 #nullable disable
 
-namespace SoftaxeERP.Infrastructure.Persistence.Migrations
+namespace SheikhGoNexusERP.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
     partial class AppDbContextModelSnapshot : ModelSnapshot
@@ -23,7 +23,7 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Account", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Account", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -41,6 +41,9 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("CreatedBy")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
@@ -83,7 +86,368 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("Accounts", "finance");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Approval", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.AiAgentRun", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AgentType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("BranchId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("ConversationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("FailureReason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("FinancialYearId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Goal")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("PlanJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("StartedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ConversationId");
+
+                    b.HasIndex("TenantId", "UserId", "Status");
+
+                    b.ToTable("AgentRuns", "ai");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.AiAgentStep", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AgentRunId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("ExecutedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("InputJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid?>("LinkedPendingActionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("OutputJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("RequiresConfirmation")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("StepNo")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ToolName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AgentRunId", "StepNo");
+
+                    b.ToTable("AgentSteps", "ai");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.AiConversation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("BranchId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("CompanyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Conversations", "ai");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.AiMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("ConversationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Intent")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ToolsJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ConversationId");
+
+                    b.ToTable("Messages", "ai");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.AiPendingAction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ActionType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("AgentRunId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("AgentStepId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("BranchId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ConversationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("FinancialYearId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("PayloadJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PermissionRequired")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PreviewJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("ResultDocumentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ResultDocumentNo")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AgentRunId");
+
+                    b.HasIndex("AgentStepId");
+
+                    b.HasIndex("ConversationId");
+
+                    b.HasIndex("TenantId", "UserId", "Status");
+
+                    b.ToTable("PendingActions", "ai");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.AiPrediction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("BranchId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("CompanyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Confidence")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("HorizonDays")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("PredictionType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("ProductId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ResultJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "UserId", "CreatedAt");
+
+                    b.ToTable("Predictions", "ai");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Approval", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -123,7 +487,56 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("Approvals", "documents");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.AuditLog", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Attendance", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("EmployeeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal?>("OvertimeHours")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Remarks")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmployeeId");
+
+                    b.HasIndex("TenantId", "EmployeeId", "Date")
+                        .IsUnique();
+
+                    b.ToTable("Attendances", "hr");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.AuditLog", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -176,7 +589,114 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("AuditLogs", "core");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Branch", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.BillOfMaterial", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("EffectiveFrom")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("EffectiveTo")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("FinishedProductId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("ScrapPercent")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FinishedProductId");
+
+                    b.HasIndex("TenantId", "Code", "Version")
+                        .IsUnique();
+
+                    b.ToTable("BillOfMaterials", "production");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.BillOfMaterialLine", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("BillOfMaterialId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ComponentProductId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("LineNo")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("QtyPer")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("ScrapPercent")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("UomId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BillOfMaterialId");
+
+                    b.HasIndex("ComponentProductId");
+
+                    b.HasIndex("UomId");
+
+                    b.ToTable("BillOfMaterialLines", "production");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Branch", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -224,7 +744,7 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("Branches", "core");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Brand", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Brand", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -264,7 +784,130 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("Brands", "inventory");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Company", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.CashBankAccount", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("AccountKind")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("GlAccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GlAccountId");
+
+                    b.HasIndex("TenantId", "Code")
+                        .IsUnique();
+
+                    b.ToTable("CashBankAccounts", "finance");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.CashBankTransaction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("CashBankAccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("DocumentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid?>("JournalEntryId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Narration")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("OppositeCashBankAccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("PartyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("PostingDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("TxnType")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CashBankAccountId");
+
+                    b.HasIndex("DocumentId");
+
+                    b.HasIndex("JournalEntryId");
+
+                    b.HasIndex("OppositeCashBankAccountId");
+
+                    b.HasIndex("PartyId");
+
+                    b.ToTable("CashBankTransactions", "finance");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Company", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -358,7 +1001,351 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("Companies", "core");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Document", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.CustomerPayment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid?>("CashBankAccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("DocumentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("PartyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("PaymentDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("PaymentNo")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Remarks")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CashBankAccountId");
+
+                    b.HasIndex("DocumentId");
+
+                    b.HasIndex("PartyId");
+
+                    b.HasIndex("TenantId", "PaymentNo")
+                        .IsUnique();
+
+                    b.ToTable("CustomerPayments", "sales");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.CustomerPaymentApplication", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("AmountApplied")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("CustomerPaymentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("SalesInvoiceId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomerPaymentId");
+
+                    b.HasIndex("SalesInvoiceId");
+
+                    b.ToTable("CustomerPaymentApplications", "sales");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.CustomerProfile", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("CreditLimit")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("PartyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("PaymentDays")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PaymentTerms")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PartyId")
+                        .IsUnique();
+
+                    b.ToTable("CustomerProfiles", "procurement");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.DeliveryOrder", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("DeliveryDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DeliveryNo")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<Guid?>("DocumentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("PartyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Remarks")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("SalesOrderId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("WarehouseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DocumentId");
+
+                    b.HasIndex("PartyId");
+
+                    b.HasIndex("SalesOrderId");
+
+                    b.HasIndex("WarehouseId");
+
+                    b.HasIndex("TenantId", "DeliveryNo")
+                        .IsUnique();
+
+                    b.ToTable("DeliveryOrders", "sales");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.DeliveryOrderLine", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("DeliveryOrderId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("LineNo")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Qty")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("Rate")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid?>("SalesOrderLineId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DeliveryOrderId");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("SalesOrderLineId");
+
+                    b.ToTable("DeliveryOrderLines", "sales");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Department", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Code")
+                        .IsUnique();
+
+                    b.ToTable("Departments", "hr");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Designation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Code")
+                        .IsUnique();
+
+                    b.ToTable("Designations", "hr");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Document", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -428,7 +1415,7 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("Documents", "documents");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.DocumentLine", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.DocumentLine", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -487,7 +1474,7 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("DocumentLines", "documents");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.DocumentNumberSequence", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.DocumentNumberSequence", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -550,7 +1537,7 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("DocumentNumberSequences", "documents");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.DocumentType", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.DocumentType", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -605,7 +1592,491 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("DocumentTypes", "documents");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.FinancialYear", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Driver", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("EmployeeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("LicenseNo")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmployeeId");
+
+                    b.HasIndex("TenantId", "Code")
+                        .IsUnique();
+
+                    b.ToTable("Drivers", "operations");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Employee", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("BasicSalary")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("BranchId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("DepartmentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("DesignationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Email")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("EmployeeCode")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("EmploymentStatus")
+                        .HasColumnType("int");
+
+                    b.Property<int>("EmploymentType")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("JoiningDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Phone")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BranchId");
+
+                    b.HasIndex("DepartmentId");
+
+                    b.HasIndex("DesignationId");
+
+                    b.HasIndex("TenantId", "EmployeeCode")
+                        .IsUnique();
+
+                    b.ToTable("Employees", "hr");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Farm", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("BranchId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("FarmType")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BranchId");
+
+                    b.HasIndex("TenantId", "Code")
+                        .IsUnique();
+
+                    b.ToTable("Farms", "farm");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.FarmExpense", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid?>("CashBankAccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Category")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("DocumentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("ExpenseDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ExpenseNo")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<Guid>("FarmId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("FlockId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Narration")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CashBankAccountId");
+
+                    b.HasIndex("DocumentId");
+
+                    b.HasIndex("FarmId");
+
+                    b.HasIndex("FlockId");
+
+                    b.HasIndex("TenantId", "ExpenseNo")
+                        .IsUnique();
+
+                    b.ToTable("FarmExpenses", "farm");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.FarmTreatment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("BatchNo")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("DocumentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("FlockId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Narration")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("ProductId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Qty")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("TreatmentNo")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("WarehouseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DocumentId");
+
+                    b.HasIndex("FlockId");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("WarehouseId");
+
+                    b.HasIndex("TenantId", "TreatmentNo")
+                        .IsUnique();
+
+                    b.ToTable("FarmTreatments", "farm");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.FarmUnit", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int?>("Capacity")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("FarmId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FarmId");
+
+                    b.HasIndex("TenantId", "FarmId", "Code")
+                        .IsUnique();
+
+                    b.ToTable("FarmUnits", "farm");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.FeedIssue", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("DocumentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("FarmId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("FlockId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("IssueDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("IssueNo")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Remarks")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("WarehouseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DocumentId");
+
+                    b.HasIndex("FarmId");
+
+                    b.HasIndex("FlockId");
+
+                    b.HasIndex("WarehouseId");
+
+                    b.HasIndex("TenantId", "IssueNo")
+                        .IsUnique();
+
+                    b.ToTable("FeedIssues", "farm");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.FeedIssueLine", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("FeedIssueId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("LineNo")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Qty")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("TotalCost")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("UnitCost")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FeedIssueId");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("FeedIssueLines", "farm");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.FinancialYear", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -658,7 +2129,7 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("FinancialYears", "core");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.FiscalPeriod", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.FiscalPeriod", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -708,7 +2179,232 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("FiscalPeriods", "core");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.GoodsReceipt", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Flock", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("BatchNo")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("BirdType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("FarmId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("FarmUnitId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("PlacementDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("QtyCurrent")
+                        .HasColumnType("int");
+
+                    b.Property<int>("QtyMortality")
+                        .HasColumnType("int");
+
+                    b.Property<int>("QtyPlaced")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Remarks")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FarmId");
+
+                    b.HasIndex("FarmUnitId");
+
+                    b.HasIndex("TenantId", "BatchNo")
+                        .IsUnique();
+
+                    b.ToTable("Flocks", "farm");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.GatePass", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Direction")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("DocumentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("DriverId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("GatePassNo")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("PassDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Remarks")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SourceDocType")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("SourceEntityId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("VehicleId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("WeighmentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DocumentId");
+
+                    b.HasIndex("DriverId");
+
+                    b.HasIndex("VehicleId");
+
+                    b.HasIndex("WeighmentId");
+
+                    b.HasIndex("TenantId", "GatePassNo")
+                        .IsUnique();
+
+                    b.ToTable("GatePasses", "operations");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.GatePassLine", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("GatePassId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Narration")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("ProductId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Qty")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GatePassId");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("GatePassLines", "operations");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.GlAccountMapping", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("MappingKey")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AccountId");
+
+                    b.HasIndex("TenantId", "MappingKey")
+                        .IsUnique();
+
+                    b.ToTable("GlAccountMappings", "finance");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.GoodsReceipt", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -773,7 +2469,7 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("GoodsReceipts", "procurement");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.GoodsReceiptLine", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.GoodsReceiptLine", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -823,7 +2519,633 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("GoodsReceiptLines", "procurement");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Party", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.InventoryTransaction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("BranchId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("DocumentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Narration")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("QtyIn")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("QtyOut")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("SourceEntityId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("SourceLineId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("SourceType")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("TotalCost")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("TxnDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("UnitCost")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("WarehouseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("WarehouseLocationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BranchId");
+
+                    b.HasIndex("CompanyId");
+
+                    b.HasIndex("DocumentId");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("WarehouseId");
+
+                    b.HasIndex("WarehouseLocationId");
+
+                    b.HasIndex("TenantId", "SourceType", "SourceEntityId", "SourceLineId", "WarehouseId")
+                        .IsUnique()
+                        .HasFilter("[IsDeleted] = 0");
+
+                    b.ToTable("InventoryTransactions", "inventory");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.JournalEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("BranchId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("DocumentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("FinancialYearId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("FiscalPeriodId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("JournalNo")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Narration")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("PostingDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("SourceEntityId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("SourceType")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("TotalCredit")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("TotalDebit")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BranchId");
+
+                    b.HasIndex("CompanyId");
+
+                    b.HasIndex("DocumentId");
+
+                    b.HasIndex("FinancialYearId");
+
+                    b.HasIndex("FiscalPeriodId");
+
+                    b.HasIndex("TenantId", "JournalNo")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId", "SourceType", "SourceEntityId");
+
+                    b.ToTable("JournalEntries", "finance");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.JournalEntryLine", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("Credit")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("Debit")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("JournalEntryId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("LineNo")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("PartyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("ProductId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AccountId");
+
+                    b.HasIndex("JournalEntryId");
+
+                    b.HasIndex("PartyId");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("JournalEntryLines", "finance");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.LabSample", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("FlockId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid?>("ProductId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Remarks")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("SampleDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("SampleNo")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<Guid?>("SourceEntityId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("SourceType")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("WarehouseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FlockId");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("WarehouseId");
+
+                    b.HasIndex("TenantId", "SampleNo")
+                        .IsUnique();
+
+                    b.ToTable("LabSamples", "quality");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.LabTestResult", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("ApprovedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("ApprovedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Decision")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Narration")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("SampleId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TestTypeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("TestedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("Value")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApprovedByUserId");
+
+                    b.HasIndex("SampleId");
+
+                    b.HasIndex("TestTypeId");
+
+                    b.ToTable("LabTestResults", "quality");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.LabTestType", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal?>("MaxValue")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("MinValue")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Unit")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Code")
+                        .IsUnique();
+
+                    b.ToTable("LabTestTypes", "quality");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.LeaveBalance", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("EmployeeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Entitled")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("LeaveTypeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Remaining")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("Used")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("Year")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmployeeId");
+
+                    b.HasIndex("LeaveTypeId");
+
+                    b.HasIndex("TenantId", "EmployeeId", "LeaveTypeId", "Year")
+                        .IsUnique();
+
+                    b.ToTable("LeaveBalances", "hr");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.LeaveRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("Days")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid?>("DocumentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("EmployeeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("FromDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("LeaveTypeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Remarks")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RequestNo")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("ToDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DocumentId");
+
+                    b.HasIndex("EmployeeId");
+
+                    b.HasIndex("LeaveTypeId");
+
+                    b.HasIndex("TenantId", "RequestNo")
+                        .IsUnique();
+
+                    b.ToTable("LeaveRequests", "hr");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.LeaveType", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("AnnualAllowanceDays")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("Paid")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Code")
+                        .IsUnique();
+
+                    b.ToTable("LeaveTypes", "hr");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.MortalityRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("FlockId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("Qty")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Reason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("RecordedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FlockId");
+
+                    b.HasIndex("RecordedByUserId");
+
+                    b.ToTable("MortalityRecords", "farm");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Party", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -884,7 +3206,7 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("Parties", "procurement");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.PayableBalance", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.PayableBalance", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -924,7 +3246,325 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("PayableBalances", "finance");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Permission", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.PayrollComponent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("AffectsGross")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("ComponentType")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("GlMappingKey")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsSystem")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Code")
+                        .IsUnique();
+
+                    b.ToTable("PayrollComponents", "hr");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.PayrollEmployee", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Basic")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("Deductions")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("EmployeeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Gross")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal>("Net")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("PayrollRunId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmployeeId");
+
+                    b.HasIndex("PayrollRunId");
+
+                    b.ToTable("PayrollEmployees", "hr");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.PayrollLine", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("ComponentType")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("PayrollComponentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("PayrollEmployeeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PayrollComponentId");
+
+                    b.HasIndex("PayrollEmployeeId");
+
+                    b.ToTable("PayrollLines", "hr");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.PayrollPeriod", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("EndDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("Month")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Year")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Year", "Month")
+                        .IsUnique();
+
+                    b.ToTable("PayrollPeriods", "hr");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.PayrollProfile", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("EmployeeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmployeeId")
+                        .IsUnique();
+
+                    b.ToTable("PayrollProfiles", "hr");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.PayrollProfileLine", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("PayrollComponentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("PayrollProfileId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PayrollComponentId");
+
+                    b.HasIndex("PayrollProfileId");
+
+                    b.ToTable("PayrollProfileLines", "hr");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.PayrollRun", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("DeductionTotal")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid?>("DocumentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("GrossTotal")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal>("NetTotal")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("PayrollPeriodId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Remarks")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("RunDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("RunNo")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DocumentId");
+
+                    b.HasIndex("PayrollPeriodId");
+
+                    b.HasIndex("TenantId", "RunNo")
+                        .IsUnique();
+
+                    b.ToTable("PayrollRuns", "hr");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Permission", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -967,11 +3607,314 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("Permissions", "identity");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Product", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.PosPayment", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid?>("CashBankAccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("CustomerPaymentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("PosSaleId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Tender")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CashBankAccountId");
+
+                    b.HasIndex("CustomerPaymentId");
+
+                    b.HasIndex("PosSaleId");
+
+                    b.ToTable("PosPayments", "pos");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.PosSale", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("DeliveryOrderId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("DocumentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("GrandTotal")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("PartyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Remarks")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("SaleDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("SaleNo")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<Guid?>("SalesInvoiceId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("SalesOrderId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ShiftId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("SubTotal")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TerminalId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DeliveryOrderId");
+
+                    b.HasIndex("DocumentId");
+
+                    b.HasIndex("PartyId");
+
+                    b.HasIndex("SalesInvoiceId");
+
+                    b.HasIndex("SalesOrderId");
+
+                    b.HasIndex("ShiftId");
+
+                    b.HasIndex("TerminalId");
+
+                    b.HasIndex("TenantId", "SaleNo")
+                        .IsUnique();
+
+                    b.ToTable("PosSales", "pos");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.PosSaleLine", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("LineNo")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("PosSaleId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Qty")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("Rate")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PosSaleId");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("PosSaleLines", "pos");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.PosShift", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal?>("ActualCash")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("ClosedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("ClosedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal?>("ExpectedCash")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("OpenedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("OpenedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("OpeningCash")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("ShiftNo")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TerminalId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal?>("Variance")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClosedByUserId");
+
+                    b.HasIndex("OpenedByUserId");
+
+                    b.HasIndex("TerminalId");
+
+                    b.HasIndex("TenantId", "ShiftNo")
+                        .IsUnique();
+
+                    b.ToTable("PosShifts", "pos");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.PosTerminal", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("BranchId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("WarehouseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BranchId");
+
+                    b.HasIndex("WarehouseId");
+
+                    b.HasIndex("TenantId", "Code")
+                        .IsUnique();
+
+                    b.ToTable("PosTerminals", "pos");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Product", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("AverageCost")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<Guid?>("BrandId")
                         .HasColumnType("uniqueidentifier");
@@ -1045,7 +3988,7 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("Products", "inventory");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.ProductCategory", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.ProductCategory", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1078,7 +4021,7 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("ProductCategories", "inventory");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.ProductGroup", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.ProductGroup", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1118,7 +4061,240 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("ProductGroups", "inventory");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.PurchaseInvoice", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.ProductionOrder", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("BomId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("DocumentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("DocumentStatus")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("FinishedProductId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal>("LaborCost")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("MaterialCost")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("OrderDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("OrderNo")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<decimal>("OverheadCost")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("QtyCompleted")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("QtyOrdered")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Remarks")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("TotalCost")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("UnitCost")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("WarehouseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BomId");
+
+                    b.HasIndex("DocumentId");
+
+                    b.HasIndex("FinishedProductId");
+
+                    b.HasIndex("WarehouseId");
+
+                    b.HasIndex("TenantId", "OrderNo")
+                        .IsUnique();
+
+                    b.ToTable("ProductionOrders", "production");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.ProductionOrderComponent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("ActualQty")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("LineNo")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("PlannedQty")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ProductionOrderId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("TotalCost")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("UnitCost")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("ProductionOrderId");
+
+                    b.ToTable("ProductionOrderComponents", "production");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.ProductionOrderOutput", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsByProduct")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("LineNo")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ProductionOrderId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Qty")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("TotalCost")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("UnitCost")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("ProductionOrderId");
+
+                    b.ToTable("ProductionOrderOutputs", "production");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.ProductionVarianceLine", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Narration")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ProductionOrderId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Qty")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("TotalCost")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("UnitCost")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("ProductionOrderId");
+
+                    b.ToTable("ProductionVarianceLines", "production");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.PurchaseInvoice", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1151,6 +4327,9 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
+
+                    b.Property<decimal>("PaidAmount")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<Guid>("PartyId")
                         .HasColumnType("uniqueidentifier");
@@ -1195,7 +4374,7 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("PurchaseInvoices", "procurement");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.PurchaseInvoiceLine", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.PurchaseInvoiceLine", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1240,7 +4419,7 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("PurchaseInvoiceLines", "procurement");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.PurchaseOrder", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.PurchaseOrder", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1309,7 +4488,7 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("PurchaseOrders", "procurement");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.PurchaseOrderLine", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.PurchaseOrderLine", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1357,7 +4536,47 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("PurchaseOrderLines", "procurement");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Role", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.ReceivableBalance", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Balance")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("PartyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PartyId");
+
+                    b.HasIndex("TenantId", "PartyId")
+                        .IsUnique();
+
+                    b.ToTable("ReceivableBalances", "finance");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Role", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1397,7 +4616,7 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("Roles", "identity");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.RolePermission", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.RolePermission", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1431,7 +4650,733 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("RolePermissions", "identity");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.SupplierProfile", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.SalaryPayment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("CashBankAccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("DocumentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("PaymentDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("PaymentNo")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<Guid>("PayrollRunId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Remarks")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CashBankAccountId");
+
+                    b.HasIndex("DocumentId");
+
+                    b.HasIndex("PayrollRunId");
+
+                    b.HasIndex("TenantId", "PaymentNo")
+                        .IsUnique();
+
+                    b.ToTable("SalaryPayments", "hr");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.SalesInvoice", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("DeliveryOrderId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Discount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid?>("DocumentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("GrandTotal")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("InvoiceDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("InvoiceNo")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal>("PaidAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("PartyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Remarks")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("SalesOrderId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("SubTotal")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("Tax")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DeliveryOrderId");
+
+                    b.HasIndex("DocumentId");
+
+                    b.HasIndex("PartyId");
+
+                    b.HasIndex("SalesOrderId");
+
+                    b.HasIndex("TenantId", "InvoiceNo")
+                        .IsUnique();
+
+                    b.ToTable("SalesInvoices", "sales");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.SalesInvoiceLine", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("LineNo")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Qty")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("Rate")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("SalesInvoiceId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("SalesInvoiceId");
+
+                    b.ToTable("SalesInvoiceLines", "sales");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.SalesOrder", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("DocumentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("GrandTotal")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("OrderDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("OrderNo")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<Guid>("PartyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Remarks")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("SubTotal")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("Tax")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("WarehouseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DocumentId");
+
+                    b.HasIndex("PartyId");
+
+                    b.HasIndex("WarehouseId");
+
+                    b.HasIndex("TenantId", "OrderNo")
+                        .IsUnique();
+
+                    b.ToTable("SalesOrders", "sales");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.SalesOrderLine", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("DeliveredQty")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("LineNo")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Qty")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("Rate")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("SalesOrderId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("SalesOrderId");
+
+                    b.ToTable("SalesOrderLines", "sales");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.StockAdjustment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("AdjustmentDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("AdjustmentNo")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("DocumentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Remarks")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("StockCountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("WarehouseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DocumentId");
+
+                    b.HasIndex("StockCountId");
+
+                    b.HasIndex("WarehouseId");
+
+                    b.HasIndex("TenantId", "AdjustmentNo")
+                        .IsUnique();
+
+                    b.ToTable("StockAdjustments", "inventory");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.StockAdjustmentLine", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("LineReason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("QtyDelta")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("StockAdjustmentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("WarehouseLocationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("StockAdjustmentId");
+
+                    b.HasIndex("WarehouseLocationId");
+
+                    b.ToTable("StockAdjustmentLines", "inventory");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.StockCount", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CountDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CountNo")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("DocumentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid?>("LinkedAdjustmentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Remarks")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("SnapshotAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("WarehouseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DocumentId");
+
+                    b.HasIndex("WarehouseId");
+
+                    b.HasIndex("TenantId", "CountNo")
+                        .IsUnique();
+
+                    b.ToTable("StockCounts", "inventory");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.StockCountLine", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("CountedQty")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("StockCountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("SystemQty")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("Variance")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid?>("WarehouseLocationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("StockCountId");
+
+                    b.HasIndex("WarehouseLocationId");
+
+                    b.ToTable("StockCountLines", "inventory");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.StockTransfer", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("DocumentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("FromWarehouseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Remarks")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ToWarehouseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("TransferDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("TransferNo")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DocumentId");
+
+                    b.HasIndex("FromWarehouseId");
+
+                    b.HasIndex("ToWarehouseId");
+
+                    b.HasIndex("TenantId", "TransferNo")
+                        .IsUnique();
+
+                    b.ToTable("StockTransfers", "inventory");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.StockTransferLine", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("FromLocationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Qty")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("StockTransferId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("ToLocationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FromLocationId");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("StockTransferId");
+
+                    b.HasIndex("ToLocationId");
+
+                    b.ToTable("StockTransferLines", "inventory");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.SupplierPayment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid?>("CashBankAccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("DocumentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("PartyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("PaymentDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("PaymentNo")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Remarks")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CashBankAccountId");
+
+                    b.HasIndex("DocumentId");
+
+                    b.HasIndex("PartyId");
+
+                    b.HasIndex("TenantId", "PaymentNo")
+                        .IsUnique();
+
+                    b.ToTable("SupplierPayments", "procurement");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.SupplierPaymentApplication", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("AmountApplied")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("PurchaseInvoiceId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("SupplierPaymentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PurchaseInvoiceId");
+
+                    b.HasIndex("SupplierPaymentId");
+
+                    b.ToTable("SupplierPaymentApplications", "procurement");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.SupplierProfile", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1475,7 +5420,7 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("SupplierProfiles", "procurement");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Tenant", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Tenant", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1528,7 +5473,57 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("Tenants", "core");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.UnitOfMeasure", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.UnitConversion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("Factor")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("FromUomId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid?>("ProductId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ToUomId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FromUomId");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("ToUomId");
+
+                    b.ToTable("UnitConversions", "inventory");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.UnitOfMeasure", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1568,7 +5563,7 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("UnitsOfMeasure", "inventory");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.User", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1621,7 +5616,7 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("Users", "identity");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.UserRole", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.UserRole", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1655,7 +5650,148 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("UserRoles", "identity");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Verification", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Vehicle", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Make")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Model")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("VehicleTypeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("VehicleTypeId");
+
+                    b.HasIndex("TenantId", "Code")
+                        .IsUnique();
+
+                    b.ToTable("Vehicles", "operations");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.VehicleAssignment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("DriverId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("FromDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("ToDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("VehicleId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DriverId");
+
+                    b.HasIndex("VehicleId");
+
+                    b.ToTable("VehicleAssignments", "operations");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.VehicleType", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Code")
+                        .IsUnique();
+
+                    b.ToTable("VehicleTypes", "operations");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Verification", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1695,7 +5831,7 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("Verifications", "documents");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Warehouse", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Warehouse", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1746,7 +5882,55 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("Warehouses", "inventory");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.WarehouseStock", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.WarehouseLocation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("WarehouseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("WarehouseId");
+
+                    b.HasIndex("TenantId", "WarehouseId", "Code")
+                        .IsUnique();
+
+                    b.ToTable("WarehouseLocations", "inventory");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.WarehouseStock", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1763,6 +5947,9 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
 
                     b.Property<Guid>("ProductId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("QualityStatus")
+                        .HasColumnType("int");
 
                     b.Property<decimal>("Quantity")
                         .HasColumnType("decimal(18,2)");
@@ -1791,9 +5978,155 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.ToTable("WarehouseStocks", "inventory");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Account", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.WeighbridgeScale", b =>
                 {
-                    b.HasOne("SoftaxeERP.Domain.Entities.Account", "Parent")
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Location")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Code")
+                        .IsUnique();
+
+                    b.ToTable("WeighbridgeScales", "weighbridge");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Weighment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Direction")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("DocumentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("FirstWeight")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("FirstWeightAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("GatePassId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid?>("LinkedDocumentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("LinkedDocumentType")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal?>("NetWeight")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid?>("PartyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("ProductId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Remarks")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("ScaleId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal?>("SecondWeight")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("SecondWeightAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("TicketNo")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("VehicleId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("VehicleNo")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DocumentId");
+
+                    b.HasIndex("GatePassId");
+
+                    b.HasIndex("PartyId");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("ScaleId");
+
+                    b.HasIndex("VehicleId");
+
+                    b.HasIndex("TenantId", "TicketNo")
+                        .IsUnique();
+
+                    b.ToTable("Weighments", "weighbridge");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Account", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Account", "Parent")
                         .WithMany("Children")
                         .HasForeignKey("ParentId")
                         .OnDelete(DeleteBehavior.Restrict);
@@ -1801,9 +6134,77 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.Navigation("Parent");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Approval", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.AiAgentRun", b =>
                 {
-                    b.HasOne("SoftaxeERP.Domain.Entities.Document", "Document")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.AiConversation", "Conversation")
+                        .WithMany()
+                        .HasForeignKey("ConversationId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Conversation");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.AiAgentStep", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.AiAgentRun", "AgentRun")
+                        .WithMany("Steps")
+                        .HasForeignKey("AgentRunId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("AgentRun");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.AiConversation", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.AiMessage", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.AiConversation", "Conversation")
+                        .WithMany("Messages")
+                        .HasForeignKey("ConversationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Conversation");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.AiPendingAction", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.AiAgentRun", "AgentRun")
+                        .WithMany()
+                        .HasForeignKey("AgentRunId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.AiAgentStep", "AgentStep")
+                        .WithMany()
+                        .HasForeignKey("AgentStepId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.AiConversation", "Conversation")
+                        .WithMany()
+                        .HasForeignKey("ConversationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("AgentRun");
+
+                    b.Navigation("AgentStep");
+
+                    b.Navigation("Conversation");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Approval", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Document", "Document")
                         .WithMany("Approvals")
                         .HasForeignKey("DocumentId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1812,9 +6213,57 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.Navigation("Document");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Branch", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Attendance", b =>
                 {
-                    b.HasOne("SoftaxeERP.Domain.Entities.Company", "Company")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Employee");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.BillOfMaterial", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Product", "FinishedProduct")
+                        .WithMany()
+                        .HasForeignKey("FinishedProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("FinishedProduct");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.BillOfMaterialLine", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.BillOfMaterial", "BillOfMaterial")
+                        .WithMany("Lines")
+                        .HasForeignKey("BillOfMaterialId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Product", "ComponentProduct")
+                        .WithMany()
+                        .HasForeignKey("ComponentProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.UnitOfMeasure", "Uom")
+                        .WithMany()
+                        .HasForeignKey("UomId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("BillOfMaterial");
+
+                    b.Navigation("ComponentProduct");
+
+                    b.Navigation("Uom");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Branch", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Company", "Company")
                         .WithMany("Branches")
                         .HasForeignKey("CompanyId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -1823,40 +6272,205 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.Navigation("Company");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Company", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.CashBankAccount", b =>
                 {
-                    b.HasOne("SoftaxeERP.Domain.Entities.Tenant", null)
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Account", "GlAccount")
+                        .WithMany()
+                        .HasForeignKey("GlAccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("GlAccount");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.CashBankTransaction", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.CashBankAccount", "CashBankAccount")
+                        .WithMany()
+                        .HasForeignKey("CashBankAccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Document", "Document")
+                        .WithMany()
+                        .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.JournalEntry", "JournalEntry")
+                        .WithMany()
+                        .HasForeignKey("JournalEntryId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.CashBankAccount", "OppositeCashBankAccount")
+                        .WithMany()
+                        .HasForeignKey("OppositeCashBankAccountId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Party", "Party")
+                        .WithMany()
+                        .HasForeignKey("PartyId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("CashBankAccount");
+
+                    b.Navigation("Document");
+
+                    b.Navigation("JournalEntry");
+
+                    b.Navigation("OppositeCashBankAccount");
+
+                    b.Navigation("Party");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Company", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Tenant", null)
                         .WithOne("Company")
-                        .HasForeignKey("SoftaxeERP.Domain.Entities.Company", "TenantId")
+                        .HasForeignKey("SheikhGoNexusERP.Domain.Entities.Company", "TenantId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Document", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.CustomerPayment", b =>
                 {
-                    b.HasOne("SoftaxeERP.Domain.Entities.Branch", "Branch")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.CashBankAccount", "CashBankAccount")
+                        .WithMany()
+                        .HasForeignKey("CashBankAccountId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Document", "Document")
+                        .WithMany()
+                        .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Party", "Party")
+                        .WithMany()
+                        .HasForeignKey("PartyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CashBankAccount");
+
+                    b.Navigation("Document");
+
+                    b.Navigation("Party");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.CustomerPaymentApplication", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.CustomerPayment", "CustomerPayment")
+                        .WithMany("Applications")
+                        .HasForeignKey("CustomerPaymentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.SalesInvoice", "SalesInvoice")
+                        .WithMany()
+                        .HasForeignKey("SalesInvoiceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CustomerPayment");
+
+                    b.Navigation("SalesInvoice");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.CustomerProfile", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Party", "Party")
+                        .WithOne("CustomerProfile")
+                        .HasForeignKey("SheikhGoNexusERP.Domain.Entities.CustomerProfile", "PartyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Party");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.DeliveryOrder", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Document", "Document")
+                        .WithMany()
+                        .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Party", "Party")
+                        .WithMany()
+                        .HasForeignKey("PartyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.SalesOrder", "SalesOrder")
+                        .WithMany("DeliveryOrders")
+                        .HasForeignKey("SalesOrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Warehouse", "Warehouse")
+                        .WithMany()
+                        .HasForeignKey("WarehouseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Document");
+
+                    b.Navigation("Party");
+
+                    b.Navigation("SalesOrder");
+
+                    b.Navigation("Warehouse");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.DeliveryOrderLine", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.DeliveryOrder", "DeliveryOrder")
+                        .WithMany("Lines")
+                        .HasForeignKey("DeliveryOrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.SalesOrderLine", "SalesOrderLine")
+                        .WithMany()
+                        .HasForeignKey("SalesOrderLineId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("DeliveryOrder");
+
+                    b.Navigation("Product");
+
+                    b.Navigation("SalesOrderLine");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Document", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Branch", "Branch")
                         .WithMany()
                         .HasForeignKey("BranchId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.Company", "Company")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Company", "Company")
                         .WithMany()
                         .HasForeignKey("CompanyId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.DocumentType", "DocumentType")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.DocumentType", "DocumentType")
                         .WithMany()
                         .HasForeignKey("DocumentTypeId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.FinancialYear", "FinancialYear")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.FinancialYear", "FinancialYear")
                         .WithMany()
                         .HasForeignKey("FinancialYearId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.Party", "Party")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Party", "Party")
                         .WithMany()
                         .HasForeignKey("PartyId")
                         .OnDelete(DeleteBehavior.Restrict);
@@ -1872,19 +6486,19 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.Navigation("Party");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.DocumentLine", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.DocumentLine", b =>
                 {
-                    b.HasOne("SoftaxeERP.Domain.Entities.Account", "Account")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Account", "Account")
                         .WithMany()
                         .HasForeignKey("AccountId");
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.Document", "Document")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Document", "Document")
                         .WithMany("Lines")
                         .HasForeignKey("DocumentId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.Product", "Product")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Product", "Product")
                         .WithMany()
                         .HasForeignKey("ProductId");
 
@@ -1895,26 +6509,26 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.Navigation("Product");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.DocumentNumberSequence", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.DocumentNumberSequence", b =>
                 {
-                    b.HasOne("SoftaxeERP.Domain.Entities.Branch", "Branch")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Branch", "Branch")
                         .WithMany()
                         .HasForeignKey("BranchId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.Company", "Company")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Company", "Company")
                         .WithMany()
                         .HasForeignKey("CompanyId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.DocumentType", "DocumentType")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.DocumentType", "DocumentType")
                         .WithMany()
                         .HasForeignKey("DocumentTypeId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.FinancialYear", "FinancialYear")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.FinancialYear", "FinancialYear")
                         .WithMany()
                         .HasForeignKey("FinancialYearId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -1929,9 +6543,182 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.Navigation("FinancialYear");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.FinancialYear", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Driver", b =>
                 {
-                    b.HasOne("SoftaxeERP.Domain.Entities.Company", "Company")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Employee");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Employee", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Branch", "Branch")
+                        .WithMany()
+                        .HasForeignKey("BranchId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Department", "Department")
+                        .WithMany()
+                        .HasForeignKey("DepartmentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Designation", "Designation")
+                        .WithMany()
+                        .HasForeignKey("DesignationId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Branch");
+
+                    b.Navigation("Department");
+
+                    b.Navigation("Designation");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Farm", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Branch", "Branch")
+                        .WithMany()
+                        .HasForeignKey("BranchId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Branch");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.FarmExpense", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.CashBankAccount", "CashBankAccount")
+                        .WithMany()
+                        .HasForeignKey("CashBankAccountId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Document", "Document")
+                        .WithMany()
+                        .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Farm", "Farm")
+                        .WithMany()
+                        .HasForeignKey("FarmId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Flock", "Flock")
+                        .WithMany()
+                        .HasForeignKey("FlockId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("CashBankAccount");
+
+                    b.Navigation("Document");
+
+                    b.Navigation("Farm");
+
+                    b.Navigation("Flock");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.FarmTreatment", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Document", "Document")
+                        .WithMany()
+                        .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Flock", "Flock")
+                        .WithMany("Treatments")
+                        .HasForeignKey("FlockId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Warehouse", "Warehouse")
+                        .WithMany()
+                        .HasForeignKey("WarehouseId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Document");
+
+                    b.Navigation("Flock");
+
+                    b.Navigation("Product");
+
+                    b.Navigation("Warehouse");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.FarmUnit", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Farm", "Farm")
+                        .WithMany("Units")
+                        .HasForeignKey("FarmId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Farm");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.FeedIssue", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Document", "Document")
+                        .WithMany()
+                        .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Farm", "Farm")
+                        .WithMany()
+                        .HasForeignKey("FarmId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Flock", "Flock")
+                        .WithMany("FeedIssues")
+                        .HasForeignKey("FlockId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Warehouse", "Warehouse")
+                        .WithMany()
+                        .HasForeignKey("WarehouseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Document");
+
+                    b.Navigation("Farm");
+
+                    b.Navigation("Flock");
+
+                    b.Navigation("Warehouse");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.FeedIssueLine", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.FeedIssue", "FeedIssue")
+                        .WithMany("Lines")
+                        .HasForeignKey("FeedIssueId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("FeedIssue");
+
+                    b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.FinancialYear", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Company", "Company")
                         .WithMany()
                         .HasForeignKey("CompanyId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1940,9 +6727,9 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.Navigation("Company");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.FiscalPeriod", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.FiscalPeriod", b =>
                 {
-                    b.HasOne("SoftaxeERP.Domain.Entities.FinancialYear", "FinancialYear")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.FinancialYear", "FinancialYear")
                         .WithMany("Periods")
                         .HasForeignKey("FinancialYearId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1951,25 +6738,103 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.Navigation("FinancialYear");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.GoodsReceipt", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Flock", b =>
                 {
-                    b.HasOne("SoftaxeERP.Domain.Entities.Document", "Document")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Farm", "Farm")
+                        .WithMany("Flocks")
+                        .HasForeignKey("FarmId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.FarmUnit", "FarmUnit")
+                        .WithMany()
+                        .HasForeignKey("FarmUnitId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Farm");
+
+                    b.Navigation("FarmUnit");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.GatePass", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Document", "Document")
                         .WithMany()
                         .HasForeignKey("DocumentId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.Party", "Party")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Driver", "Driver")
+                        .WithMany()
+                        .HasForeignKey("DriverId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Vehicle", "Vehicle")
+                        .WithMany()
+                        .HasForeignKey("VehicleId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Weighment", "Weighment")
+                        .WithMany()
+                        .HasForeignKey("WeighmentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Document");
+
+                    b.Navigation("Driver");
+
+                    b.Navigation("Vehicle");
+
+                    b.Navigation("Weighment");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.GatePassLine", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.GatePass", "GatePass")
+                        .WithMany("Lines")
+                        .HasForeignKey("GatePassId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("GatePass");
+
+                    b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.GlAccountMapping", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Account", "Account")
+                        .WithMany()
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Account");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.GoodsReceipt", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Document", "Document")
+                        .WithMany()
+                        .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Party", "Party")
                         .WithMany()
                         .HasForeignKey("PartyId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.PurchaseOrder", "PurchaseOrder")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.PurchaseOrder", "PurchaseOrder")
                         .WithMany("GoodsReceipts")
                         .HasForeignKey("PurchaseOrderId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.Warehouse", "Warehouse")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Warehouse", "Warehouse")
                         .WithMany()
                         .HasForeignKey("WarehouseId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -1984,21 +6849,21 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.Navigation("Warehouse");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.GoodsReceiptLine", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.GoodsReceiptLine", b =>
                 {
-                    b.HasOne("SoftaxeERP.Domain.Entities.GoodsReceipt", "GoodsReceipt")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.GoodsReceipt", "GoodsReceipt")
                         .WithMany("Lines")
                         .HasForeignKey("GoodsReceiptId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.Product", "Product")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Product", "Product")
                         .WithMany()
                         .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.PurchaseOrderLine", "PurchaseOrderLine")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.PurchaseOrderLine", "PurchaseOrderLine")
                         .WithMany()
                         .HasForeignKey("PurchaseOrderLineId")
                         .OnDelete(DeleteBehavior.Restrict);
@@ -2010,9 +6875,245 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.Navigation("PurchaseOrderLine");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.PayableBalance", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.InventoryTransaction", b =>
                 {
-                    b.HasOne("SoftaxeERP.Domain.Entities.Party", "Party")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Branch", "Branch")
+                        .WithMany()
+                        .HasForeignKey("BranchId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Document", "Document")
+                        .WithMany()
+                        .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Warehouse", "Warehouse")
+                        .WithMany()
+                        .HasForeignKey("WarehouseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.WarehouseLocation", "WarehouseLocation")
+                        .WithMany()
+                        .HasForeignKey("WarehouseLocationId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Branch");
+
+                    b.Navigation("Company");
+
+                    b.Navigation("Document");
+
+                    b.Navigation("Product");
+
+                    b.Navigation("Warehouse");
+
+                    b.Navigation("WarehouseLocation");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.JournalEntry", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Branch", "Branch")
+                        .WithMany()
+                        .HasForeignKey("BranchId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Document", "Document")
+                        .WithMany()
+                        .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.FinancialYear", "FinancialYear")
+                        .WithMany()
+                        .HasForeignKey("FinancialYearId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.FiscalPeriod", "FiscalPeriod")
+                        .WithMany()
+                        .HasForeignKey("FiscalPeriodId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Branch");
+
+                    b.Navigation("Company");
+
+                    b.Navigation("Document");
+
+                    b.Navigation("FinancialYear");
+
+                    b.Navigation("FiscalPeriod");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.JournalEntryLine", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Account", "Account")
+                        .WithMany()
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.JournalEntry", "JournalEntry")
+                        .WithMany("Lines")
+                        .HasForeignKey("JournalEntryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Party", "Party")
+                        .WithMany()
+                        .HasForeignKey("PartyId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Account");
+
+                    b.Navigation("JournalEntry");
+
+                    b.Navigation("Party");
+
+                    b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.LabSample", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Flock", "Flock")
+                        .WithMany()
+                        .HasForeignKey("FlockId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Warehouse", "Warehouse")
+                        .WithMany()
+                        .HasForeignKey("WarehouseId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Flock");
+
+                    b.Navigation("Product");
+
+                    b.Navigation("Warehouse");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.LabTestResult", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.User", "ApprovedByUser")
+                        .WithMany()
+                        .HasForeignKey("ApprovedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.LabSample", "Sample")
+                        .WithMany("Results")
+                        .HasForeignKey("SampleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.LabTestType", "TestType")
+                        .WithMany()
+                        .HasForeignKey("TestTypeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ApprovedByUser");
+
+                    b.Navigation("Sample");
+
+                    b.Navigation("TestType");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.LeaveBalance", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.LeaveType", "LeaveType")
+                        .WithMany()
+                        .HasForeignKey("LeaveTypeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Employee");
+
+                    b.Navigation("LeaveType");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.LeaveRequest", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Document", "Document")
+                        .WithMany()
+                        .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.LeaveType", "LeaveType")
+                        .WithMany()
+                        .HasForeignKey("LeaveTypeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Document");
+
+                    b.Navigation("Employee");
+
+                    b.Navigation("LeaveType");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.MortalityRecord", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Flock", "Flock")
+                        .WithMany("Mortalities")
+                        .HasForeignKey("FlockId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.User", "RecordedByUser")
+                        .WithMany()
+                        .HasForeignKey("RecordedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Flock");
+
+                    b.Navigation("RecordedByUser");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.PayableBalance", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Party", "Party")
                         .WithMany()
                         .HasForeignKey("PartyId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -2021,24 +7122,253 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.Navigation("Party");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Product", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.PayrollEmployee", b =>
                 {
-                    b.HasOne("SoftaxeERP.Domain.Entities.Brand", "Brand")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.PayrollRun", "PayrollRun")
+                        .WithMany("Employees")
+                        .HasForeignKey("PayrollRunId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Employee");
+
+                    b.Navigation("PayrollRun");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.PayrollLine", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.PayrollComponent", "PayrollComponent")
+                        .WithMany()
+                        .HasForeignKey("PayrollComponentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.PayrollEmployee", "PayrollEmployee")
+                        .WithMany("Lines")
+                        .HasForeignKey("PayrollEmployeeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("PayrollComponent");
+
+                    b.Navigation("PayrollEmployee");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.PayrollProfile", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Employee", "Employee")
+                        .WithOne("PayrollProfile")
+                        .HasForeignKey("SheikhGoNexusERP.Domain.Entities.PayrollProfile", "EmployeeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Employee");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.PayrollProfileLine", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.PayrollComponent", "PayrollComponent")
+                        .WithMany()
+                        .HasForeignKey("PayrollComponentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.PayrollProfile", "PayrollProfile")
+                        .WithMany("Lines")
+                        .HasForeignKey("PayrollProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("PayrollComponent");
+
+                    b.Navigation("PayrollProfile");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.PayrollRun", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Document", "Document")
+                        .WithMany()
+                        .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.PayrollPeriod", "PayrollPeriod")
+                        .WithMany()
+                        .HasForeignKey("PayrollPeriodId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Document");
+
+                    b.Navigation("PayrollPeriod");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.PosPayment", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.CashBankAccount", "CashBankAccount")
+                        .WithMany()
+                        .HasForeignKey("CashBankAccountId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.CustomerPayment", "CustomerPayment")
+                        .WithMany()
+                        .HasForeignKey("CustomerPaymentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.PosSale", "PosSale")
+                        .WithMany("Payments")
+                        .HasForeignKey("PosSaleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CashBankAccount");
+
+                    b.Navigation("CustomerPayment");
+
+                    b.Navigation("PosSale");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.PosSale", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.DeliveryOrder", "DeliveryOrder")
+                        .WithMany()
+                        .HasForeignKey("DeliveryOrderId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Document", "Document")
+                        .WithMany()
+                        .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Party", "Party")
+                        .WithMany()
+                        .HasForeignKey("PartyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.SalesInvoice", "SalesInvoice")
+                        .WithMany()
+                        .HasForeignKey("SalesInvoiceId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.SalesOrder", "SalesOrder")
+                        .WithMany()
+                        .HasForeignKey("SalesOrderId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.PosShift", "Shift")
+                        .WithMany("Sales")
+                        .HasForeignKey("ShiftId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.PosTerminal", "Terminal")
+                        .WithMany()
+                        .HasForeignKey("TerminalId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("DeliveryOrder");
+
+                    b.Navigation("Document");
+
+                    b.Navigation("Party");
+
+                    b.Navigation("SalesInvoice");
+
+                    b.Navigation("SalesOrder");
+
+                    b.Navigation("Shift");
+
+                    b.Navigation("Terminal");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.PosSaleLine", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.PosSale", "PosSale")
+                        .WithMany("Lines")
+                        .HasForeignKey("PosSaleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("PosSale");
+
+                    b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.PosShift", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.User", "ClosedByUser")
+                        .WithMany()
+                        .HasForeignKey("ClosedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.User", "OpenedByUser")
+                        .WithMany()
+                        .HasForeignKey("OpenedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.PosTerminal", "Terminal")
+                        .WithMany()
+                        .HasForeignKey("TerminalId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ClosedByUser");
+
+                    b.Navigation("OpenedByUser");
+
+                    b.Navigation("Terminal");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.PosTerminal", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Branch", "Branch")
+                        .WithMany()
+                        .HasForeignKey("BranchId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Warehouse", "Warehouse")
+                        .WithMany()
+                        .HasForeignKey("WarehouseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Branch");
+
+                    b.Navigation("Warehouse");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Product", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Brand", "Brand")
                         .WithMany("Products")
                         .HasForeignKey("BrandId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.ProductCategory", "Category")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.ProductCategory", "Category")
                         .WithMany("Products")
                         .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.ProductGroup", "ProductGroup")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.ProductGroup", "ProductGroup")
                         .WithMany("Products")
                         .HasForeignKey("ProductGroupId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.UnitOfMeasure", "UnitOfMeasure")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.UnitOfMeasure", "UnitOfMeasure")
                         .WithMany("Products")
                         .HasForeignKey("UnitOfMeasureId")
                         .OnDelete(DeleteBehavior.Restrict);
@@ -2052,25 +7382,116 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.Navigation("UnitOfMeasure");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.PurchaseInvoice", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.ProductionOrder", b =>
                 {
-                    b.HasOne("SoftaxeERP.Domain.Entities.Document", "Document")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.BillOfMaterial", "Bom")
+                        .WithMany()
+                        .HasForeignKey("BomId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Document", "Document")
                         .WithMany()
                         .HasForeignKey("DocumentId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.GoodsReceipt", "GoodsReceipt")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Product", "FinishedProduct")
+                        .WithMany()
+                        .HasForeignKey("FinishedProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Warehouse", "Warehouse")
+                        .WithMany()
+                        .HasForeignKey("WarehouseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Bom");
+
+                    b.Navigation("Document");
+
+                    b.Navigation("FinishedProduct");
+
+                    b.Navigation("Warehouse");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.ProductionOrderComponent", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.ProductionOrder", "ProductionOrder")
+                        .WithMany("Components")
+                        .HasForeignKey("ProductionOrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+
+                    b.Navigation("ProductionOrder");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.ProductionOrderOutput", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.ProductionOrder", "ProductionOrder")
+                        .WithMany("Outputs")
+                        .HasForeignKey("ProductionOrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+
+                    b.Navigation("ProductionOrder");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.ProductionVarianceLine", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.ProductionOrder", "ProductionOrder")
+                        .WithMany("Variances")
+                        .HasForeignKey("ProductionOrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+
+                    b.Navigation("ProductionOrder");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.PurchaseInvoice", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Document", "Document")
+                        .WithMany()
+                        .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.GoodsReceipt", "GoodsReceipt")
                         .WithMany()
                         .HasForeignKey("GoodsReceiptId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.Party", "Party")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Party", "Party")
                         .WithMany()
                         .HasForeignKey("PartyId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.PurchaseOrder", "PurchaseOrder")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.PurchaseOrder", "PurchaseOrder")
                         .WithMany()
                         .HasForeignKey("PurchaseOrderId")
                         .OnDelete(DeleteBehavior.Restrict);
@@ -2084,15 +7505,15 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.Navigation("PurchaseOrder");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.PurchaseInvoiceLine", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.PurchaseInvoiceLine", b =>
                 {
-                    b.HasOne("SoftaxeERP.Domain.Entities.Product", "Product")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Product", "Product")
                         .WithMany()
                         .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.PurchaseInvoice", "PurchaseInvoice")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.PurchaseInvoice", "PurchaseInvoice")
                         .WithMany("Lines")
                         .HasForeignKey("PurchaseInvoiceId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -2103,20 +7524,20 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.Navigation("PurchaseInvoice");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.PurchaseOrder", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.PurchaseOrder", b =>
                 {
-                    b.HasOne("SoftaxeERP.Domain.Entities.Document", "Document")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Document", "Document")
                         .WithMany()
                         .HasForeignKey("DocumentId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.Party", "Party")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Party", "Party")
                         .WithMany()
                         .HasForeignKey("PartyId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.Warehouse", "Warehouse")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Warehouse", "Warehouse")
                         .WithMany()
                         .HasForeignKey("WarehouseId")
                         .OnDelete(DeleteBehavior.Restrict);
@@ -2128,15 +7549,15 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.Navigation("Warehouse");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.PurchaseOrderLine", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.PurchaseOrderLine", b =>
                 {
-                    b.HasOne("SoftaxeERP.Domain.Entities.Product", "Product")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Product", "Product")
                         .WithMany()
                         .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.PurchaseOrder", "PurchaseOrder")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.PurchaseOrder", "PurchaseOrder")
                         .WithMany("Lines")
                         .HasForeignKey("PurchaseOrderId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -2147,15 +7568,26 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.Navigation("PurchaseOrder");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.RolePermission", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.ReceivableBalance", b =>
                 {
-                    b.HasOne("SoftaxeERP.Domain.Entities.Permission", "Permission")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Party", "Party")
+                        .WithMany()
+                        .HasForeignKey("PartyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Party");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.RolePermission", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Permission", "Permission")
                         .WithMany("RolePermissions")
                         .HasForeignKey("PermissionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.Role", "Role")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Role", "Role")
                         .WithMany("RolePermissions")
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -2166,35 +7598,375 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.Navigation("Role");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.SupplierProfile", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.SalaryPayment", b =>
                 {
-                    b.HasOne("SoftaxeERP.Domain.Entities.Party", "Party")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.CashBankAccount", "CashBankAccount")
+                        .WithMany()
+                        .HasForeignKey("CashBankAccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Document", "Document")
+                        .WithMany()
+                        .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.PayrollRun", "PayrollRun")
+                        .WithMany("Payments")
+                        .HasForeignKey("PayrollRunId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CashBankAccount");
+
+                    b.Navigation("Document");
+
+                    b.Navigation("PayrollRun");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.SalesInvoice", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.DeliveryOrder", "DeliveryOrder")
+                        .WithMany()
+                        .HasForeignKey("DeliveryOrderId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Document", "Document")
+                        .WithMany()
+                        .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Party", "Party")
+                        .WithMany()
+                        .HasForeignKey("PartyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.SalesOrder", "SalesOrder")
+                        .WithMany()
+                        .HasForeignKey("SalesOrderId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("DeliveryOrder");
+
+                    b.Navigation("Document");
+
+                    b.Navigation("Party");
+
+                    b.Navigation("SalesOrder");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.SalesInvoiceLine", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.SalesInvoice", "SalesInvoice")
+                        .WithMany("Lines")
+                        .HasForeignKey("SalesInvoiceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+
+                    b.Navigation("SalesInvoice");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.SalesOrder", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Document", "Document")
+                        .WithMany()
+                        .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Party", "Party")
+                        .WithMany()
+                        .HasForeignKey("PartyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Warehouse", "Warehouse")
+                        .WithMany()
+                        .HasForeignKey("WarehouseId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Document");
+
+                    b.Navigation("Party");
+
+                    b.Navigation("Warehouse");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.SalesOrderLine", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.SalesOrder", "SalesOrder")
+                        .WithMany("Lines")
+                        .HasForeignKey("SalesOrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+
+                    b.Navigation("SalesOrder");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.StockAdjustment", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Document", "Document")
+                        .WithMany()
+                        .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.StockCount", "StockCount")
+                        .WithMany()
+                        .HasForeignKey("StockCountId");
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Warehouse", "Warehouse")
+                        .WithMany()
+                        .HasForeignKey("WarehouseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Document");
+
+                    b.Navigation("StockCount");
+
+                    b.Navigation("Warehouse");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.StockAdjustmentLine", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.StockAdjustment", "StockAdjustment")
+                        .WithMany("Lines")
+                        .HasForeignKey("StockAdjustmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.WarehouseLocation", "WarehouseLocation")
+                        .WithMany()
+                        .HasForeignKey("WarehouseLocationId");
+
+                    b.Navigation("Product");
+
+                    b.Navigation("StockAdjustment");
+
+                    b.Navigation("WarehouseLocation");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.StockCount", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Document", "Document")
+                        .WithMany()
+                        .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Warehouse", "Warehouse")
+                        .WithMany()
+                        .HasForeignKey("WarehouseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Document");
+
+                    b.Navigation("Warehouse");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.StockCountLine", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.StockCount", "StockCount")
+                        .WithMany("Lines")
+                        .HasForeignKey("StockCountId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.WarehouseLocation", "WarehouseLocation")
+                        .WithMany()
+                        .HasForeignKey("WarehouseLocationId");
+
+                    b.Navigation("Product");
+
+                    b.Navigation("StockCount");
+
+                    b.Navigation("WarehouseLocation");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.StockTransfer", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Document", "Document")
+                        .WithMany()
+                        .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Warehouse", "FromWarehouse")
+                        .WithMany()
+                        .HasForeignKey("FromWarehouseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Warehouse", "ToWarehouse")
+                        .WithMany()
+                        .HasForeignKey("ToWarehouseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Document");
+
+                    b.Navigation("FromWarehouse");
+
+                    b.Navigation("ToWarehouse");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.StockTransferLine", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.WarehouseLocation", "FromLocation")
+                        .WithMany()
+                        .HasForeignKey("FromLocationId");
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.StockTransfer", "StockTransfer")
+                        .WithMany("Lines")
+                        .HasForeignKey("StockTransferId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.WarehouseLocation", "ToLocation")
+                        .WithMany()
+                        .HasForeignKey("ToLocationId");
+
+                    b.Navigation("FromLocation");
+
+                    b.Navigation("Product");
+
+                    b.Navigation("StockTransfer");
+
+                    b.Navigation("ToLocation");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.SupplierPayment", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.CashBankAccount", "CashBankAccount")
+                        .WithMany()
+                        .HasForeignKey("CashBankAccountId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Document", "Document")
+                        .WithMany()
+                        .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Party", "Party")
+                        .WithMany()
+                        .HasForeignKey("PartyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CashBankAccount");
+
+                    b.Navigation("Document");
+
+                    b.Navigation("Party");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.SupplierPaymentApplication", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.PurchaseInvoice", "PurchaseInvoice")
+                        .WithMany()
+                        .HasForeignKey("PurchaseInvoiceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.SupplierPayment", "SupplierPayment")
+                        .WithMany("Applications")
+                        .HasForeignKey("SupplierPaymentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("PurchaseInvoice");
+
+                    b.Navigation("SupplierPayment");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.SupplierProfile", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Party", "Party")
                         .WithOne("SupplierProfile")
-                        .HasForeignKey("SoftaxeERP.Domain.Entities.SupplierProfile", "PartyId")
+                        .HasForeignKey("SheikhGoNexusERP.Domain.Entities.SupplierProfile", "PartyId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Party");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.User", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.UnitConversion", b =>
                 {
-                    b.HasOne("SoftaxeERP.Domain.Entities.Tenant", null)
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.UnitOfMeasure", "FromUom")
+                        .WithMany()
+                        .HasForeignKey("FromUomId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.UnitOfMeasure", "ToUom")
+                        .WithMany()
+                        .HasForeignKey("ToUomId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("FromUom");
+
+                    b.Navigation("Product");
+
+                    b.Navigation("ToUom");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.User", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Tenant", null)
                         .WithMany("Users")
                         .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.UserRole", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.UserRole", b =>
                 {
-                    b.HasOne("SoftaxeERP.Domain.Entities.Role", "Role")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Role", "Role")
                         .WithMany("UserRoles")
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.User", "User")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.User", "User")
                         .WithMany("UserRoles")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -2205,9 +7977,38 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Verification", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Vehicle", b =>
                 {
-                    b.HasOne("SoftaxeERP.Domain.Entities.Document", "Document")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.VehicleType", "VehicleType")
+                        .WithMany()
+                        .HasForeignKey("VehicleTypeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("VehicleType");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.VehicleAssignment", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Driver", "Driver")
+                        .WithMany()
+                        .HasForeignKey("DriverId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Vehicle", "Vehicle")
+                        .WithMany()
+                        .HasForeignKey("VehicleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Driver");
+
+                    b.Navigation("Vehicle");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Verification", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Document", "Document")
                         .WithMany("Verifications")
                         .HasForeignKey("DocumentId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -2216,9 +8017,9 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.Navigation("Document");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Warehouse", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Warehouse", b =>
                 {
-                    b.HasOne("SoftaxeERP.Domain.Entities.Branch", "Branch")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Branch", "Branch")
                         .WithMany("Warehouses")
                         .HasForeignKey("BranchId")
                         .OnDelete(DeleteBehavior.SetNull);
@@ -2226,15 +8027,26 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.Navigation("Branch");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.WarehouseStock", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.WarehouseLocation", b =>
                 {
-                    b.HasOne("SoftaxeERP.Domain.Entities.Product", "Product")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Warehouse", "Warehouse")
+                        .WithMany("Locations")
+                        .HasForeignKey("WarehouseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Warehouse");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.WarehouseStock", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Product", "Product")
                         .WithMany("Stocks")
                         .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("SoftaxeERP.Domain.Entities.Warehouse", "Warehouse")
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Warehouse", "Warehouse")
                         .WithMany("Stocks")
                         .HasForeignKey("WarehouseId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -2245,27 +8057,98 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.Navigation("Warehouse");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Account", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Weighment", b =>
+                {
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Document", "Document")
+                        .WithMany()
+                        .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.GatePass", "GatePass")
+                        .WithMany()
+                        .HasForeignKey("GatePassId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Party", "Party")
+                        .WithMany()
+                        .HasForeignKey("PartyId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.WeighbridgeScale", "Scale")
+                        .WithMany()
+                        .HasForeignKey("ScaleId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SheikhGoNexusERP.Domain.Entities.Vehicle", "Vehicle")
+                        .WithMany()
+                        .HasForeignKey("VehicleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Document");
+
+                    b.Navigation("GatePass");
+
+                    b.Navigation("Party");
+
+                    b.Navigation("Product");
+
+                    b.Navigation("Scale");
+
+                    b.Navigation("Vehicle");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Account", b =>
                 {
                     b.Navigation("Children");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Branch", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.AiAgentRun", b =>
+                {
+                    b.Navigation("Steps");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.AiConversation", b =>
+                {
+                    b.Navigation("Messages");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.BillOfMaterial", b =>
+                {
+                    b.Navigation("Lines");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Branch", b =>
                 {
                     b.Navigation("Warehouses");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Brand", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Brand", b =>
                 {
                     b.Navigation("Products");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Company", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Company", b =>
                 {
                     b.Navigation("Branches");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Document", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.CustomerPayment", b =>
+                {
+                    b.Navigation("Applications");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.DeliveryOrder", b =>
+                {
+                    b.Navigation("Lines");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Document", b =>
                 {
                     b.Navigation("Approvals");
 
@@ -2274,79 +8157,194 @@ namespace SoftaxeERP.Infrastructure.Persistence.Migrations
                     b.Navigation("Verifications");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.FinancialYear", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Employee", b =>
+                {
+                    b.Navigation("PayrollProfile");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Farm", b =>
+                {
+                    b.Navigation("Flocks");
+
+                    b.Navigation("Units");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.FeedIssue", b =>
+                {
+                    b.Navigation("Lines");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.FinancialYear", b =>
                 {
                     b.Navigation("Periods");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.GoodsReceipt", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Flock", b =>
+                {
+                    b.Navigation("FeedIssues");
+
+                    b.Navigation("Mortalities");
+
+                    b.Navigation("Treatments");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.GatePass", b =>
                 {
                     b.Navigation("Lines");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Party", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.GoodsReceipt", b =>
                 {
+                    b.Navigation("Lines");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.JournalEntry", b =>
+                {
+                    b.Navigation("Lines");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.LabSample", b =>
+                {
+                    b.Navigation("Results");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Party", b =>
+                {
+                    b.Navigation("CustomerProfile");
+
                     b.Navigation("SupplierProfile");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Permission", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.PayrollEmployee", b =>
+                {
+                    b.Navigation("Lines");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.PayrollProfile", b =>
+                {
+                    b.Navigation("Lines");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.PayrollRun", b =>
+                {
+                    b.Navigation("Employees");
+
+                    b.Navigation("Payments");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Permission", b =>
                 {
                     b.Navigation("RolePermissions");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Product", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.PosSale", b =>
+                {
+                    b.Navigation("Lines");
+
+                    b.Navigation("Payments");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.PosShift", b =>
+                {
+                    b.Navigation("Sales");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Product", b =>
                 {
                     b.Navigation("Stocks");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.ProductCategory", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.ProductCategory", b =>
                 {
                     b.Navigation("Products");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.ProductGroup", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.ProductGroup", b =>
                 {
                     b.Navigation("Products");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.PurchaseInvoice", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.ProductionOrder", b =>
+                {
+                    b.Navigation("Components");
+
+                    b.Navigation("Outputs");
+
+                    b.Navigation("Variances");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.PurchaseInvoice", b =>
                 {
                     b.Navigation("Lines");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.PurchaseOrder", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.PurchaseOrder", b =>
                 {
                     b.Navigation("GoodsReceipts");
 
                     b.Navigation("Lines");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Role", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Role", b =>
                 {
                     b.Navigation("RolePermissions");
 
                     b.Navigation("UserRoles");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Tenant", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.SalesInvoice", b =>
+                {
+                    b.Navigation("Lines");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.SalesOrder", b =>
+                {
+                    b.Navigation("DeliveryOrders");
+
+                    b.Navigation("Lines");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.StockAdjustment", b =>
+                {
+                    b.Navigation("Lines");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.StockCount", b =>
+                {
+                    b.Navigation("Lines");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.StockTransfer", b =>
+                {
+                    b.Navigation("Lines");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.SupplierPayment", b =>
+                {
+                    b.Navigation("Applications");
+                });
+
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Tenant", b =>
                 {
                     b.Navigation("Company");
 
                     b.Navigation("Users");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.UnitOfMeasure", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.UnitOfMeasure", b =>
                 {
                     b.Navigation("Products");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.User", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.User", b =>
                 {
                     b.Navigation("UserRoles");
                 });
 
-            modelBuilder.Entity("SoftaxeERP.Domain.Entities.Warehouse", b =>
+            modelBuilder.Entity("SheikhGoNexusERP.Domain.Entities.Warehouse", b =>
                 {
+                    b.Navigation("Locations");
+
                     b.Navigation("Stocks");
                 });
 #pragma warning restore 612, 618

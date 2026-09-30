@@ -1,5 +1,35 @@
 import { Routes } from '@angular/router';
 import { authGuard, guestGuard, permissionGuard } from './core/guards/auth.guard';
+import { tabChildren } from './core/nav/route-tabs';
+
+const productionLoad = () =>
+  import('./features/production/production.component') as Promise<Record<string, import('@angular/core').Type<unknown>>>;
+const financeLoad = () =>
+  import('./features/finance/finance.component') as Promise<Record<string, import('@angular/core').Type<unknown>>>;
+const salesLoad = () =>
+  import('./features/sales/sales.component') as Promise<Record<string, import('@angular/core').Type<unknown>>>;
+const purchaseLoad = () =>
+  import('./features/purchase/purchase.component') as Promise<Record<string, import('@angular/core').Type<unknown>>>;
+const inventoryLoad = () =>
+  import('./features/inventory/inventory.component') as Promise<Record<string, import('@angular/core').Type<unknown>>>;
+const hrLoad = () =>
+  import('./features/hr/hr.component') as Promise<Record<string, import('@angular/core').Type<unknown>>>;
+const farmLoad = () =>
+  import('./features/farm/farm.component') as Promise<Record<string, import('@angular/core').Type<unknown>>>;
+const labLoad = () =>
+  import('./features/lab/lab.component') as Promise<Record<string, import('@angular/core').Type<unknown>>>;
+const operationsLoad = () =>
+  import('./features/operations/operations.component') as Promise<Record<string, import('@angular/core').Type<unknown>>>;
+const posLoad = () =>
+  import('./features/pos/pos.component') as Promise<Record<string, import('@angular/core').Type<unknown>>>;
+const brandsLoad = () =>
+  import('./features/brands/brands.component') as Promise<Record<string, import('@angular/core').Type<unknown>>>;
+const chequesLoad = () =>
+  import('./features/cheques/cheques.component') as Promise<Record<string, import('@angular/core').Type<unknown>>>;
+const returnsLoad = () =>
+  import('./features/returns/returns.component') as Promise<Record<string, import('@angular/core').Type<unknown>>>;
+const salesforceLoad = () =>
+  import('./features/salesforce/salesforce.component') as Promise<Record<string, import('@angular/core').Type<unknown>>>;
 
 export const routes: Routes = [
   {
@@ -19,6 +49,12 @@ export const routes: Routes = [
         path: 'dashboard',
         loadComponent: () =>
           import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent),
+      },
+      {
+        path: 'ai',
+        canActivate: [permissionGuard],
+        data: { permission: 'Ai.Chat.View' },
+        loadComponent: () => import('./features/ai/ai.component').then((m) => m.AiComponent),
       },
       {
         path: 'coming-soon/:domain',
@@ -96,18 +132,147 @@ export const routes: Routes = [
             'Procurement.PurchaseOrder.View',
             'Procurement.GoodsReceipt.View',
             'Procurement.PurchaseInvoice.View',
+            'Finance.SupplierPayment.View',
           ],
           permissionMode: 'any',
         },
-        loadComponent: () =>
-          import('./features/purchase/purchase.component').then((m) => m.PurchaseComponent),
+        children: tabChildren(
+          purchaseLoad,
+          'PurchaseComponent',
+          [
+            { path: 'orders', tab: 'orders' },
+            { path: 'orders/:id', tab: 'orders' },
+            { path: 'goods-receipts', tab: 'receipts' },
+            { path: 'goods-receipts/:id', tab: 'receipts' },
+            { path: 'invoices', tab: 'invoices' },
+            { path: 'invoices/:id', tab: 'invoices' },
+            { path: 'payments', tab: 'payments' },
+          ],
+          'orders',
+        ),
+      },
+      {
+        path: 'sales',
+        canActivate: [permissionGuard],
+        data: {
+          permissions: [
+            'Sales.Customer.View',
+            'Sales.Order.View',
+            'Sales.Delivery.View',
+            'Sales.Invoice.View',
+            'Sales.Payment.View',
+          ],
+          permissionMode: 'any',
+        },
+        children: tabChildren(
+          salesLoad,
+          'SalesComponent',
+          [
+            { path: 'customers', tab: 'customers' },
+            { path: 'orders', tab: 'orders' },
+            { path: 'orders/:id', tab: 'orders' },
+            { path: 'delivery-orders', tab: 'deliveries' },
+            { path: 'delivery-orders/:id', tab: 'deliveries' },
+            { path: 'invoices', tab: 'invoices' },
+            { path: 'invoices/:id', tab: 'invoices' },
+            { path: 'payments', tab: 'payments' },
+          ],
+          'orders',
+        ),
+      },
+      {
+        path: 'finance',
+        canActivate: [permissionGuard],
+        data: {
+          permissions: [
+            'Finance.Account.View',
+            'Finance.Journal.View',
+            'Finance.Ledger.View',
+            'Finance.Reports.View',
+            'Finance.CashBank.View',
+            'Finance.Period.View',
+            'Finance.SupplierPayment.View',
+          ],
+          permissionMode: 'any',
+        },
+        children: tabChildren(
+          financeLoad,
+          'FinanceComponent',
+          [
+            { path: 'dashboard', tab: 'dashboard' },
+            { path: 'chart-of-accounts', tab: 'accounts' },
+            { path: 'journals', tab: 'journals' },
+            { path: 'general-ledger', tab: 'ledger' },
+            { path: 'cash-bank', tab: 'cashbank' },
+            { path: 'periods', tab: 'periods' },
+            { path: 'trial-balance', tab: 'trial' },
+            { path: 'profit-loss', tab: 'pl' },
+            { path: 'balance-sheet', tab: 'bs' },
+            { path: 'supplier-payments', tab: 'supplierPayments' },
+          ],
+          'dashboard',
+        ),
       },
       {
         path: 'inventory',
         canActivate: [permissionGuard],
-        data: { permission: 'Inventory.Product.View' },
-        loadComponent: () =>
-          import('./features/inventory/inventory.component').then((m) => m.InventoryComponent),
+        data: {
+          permissions: [
+            'Inventory.Product.View',
+            'Inventory.Warehouse.View',
+            'Inventory.Transfer.View',
+            'Inventory.Adjustment.View',
+            'Inventory.StockCount.View',
+            'Inventory.Reports.View',
+          ],
+          permissionMode: 'any',
+        },
+        children: tabChildren(
+          inventoryLoad,
+          'InventoryComponent',
+          [
+            { path: 'dashboard', tab: 'dashboard' },
+            { path: 'stock', tab: 'stock' },
+            { path: 'ledger', tab: 'ledger' },
+            { path: 'transfers', tab: 'transfers' },
+            { path: 'transfers/:id', tab: 'transfers' },
+            { path: 'adjustments', tab: 'adjustments' },
+            { path: 'adjustments/:id', tab: 'adjustments' },
+            { path: 'counts', tab: 'counts' },
+            { path: 'counts/:id', tab: 'counts' },
+            { path: 'valuation', tab: 'valuation' },
+          ],
+          'stock',
+        ),
+      },
+      {
+        path: 'hr',
+        canActivate: [permissionGuard],
+        data: {
+          permissions: [
+            'HR.Employee.View',
+            'HR.Attendance.View',
+            'HR.Leave.View',
+            'HR.Payroll.View',
+          ],
+          permissionMode: 'any',
+        },
+        children: tabChildren(
+          hrLoad,
+          'HrComponent',
+          [
+            { path: 'dashboard', tab: 'dashboard' },
+            { path: 'employees', tab: 'employees' },
+            { path: 'departments', tab: 'departments' },
+            { path: 'designations', tab: 'designations' },
+            { path: 'attendance', tab: 'attendance' },
+            { path: 'leave', tab: 'leave' },
+            { path: 'periods', tab: 'periods' },
+            { path: 'payroll', tab: 'payroll' },
+            { path: 'payroll/:id', tab: 'runDetail' },
+          ],
+          'dashboard',
+        ),
       },
       {
         path: 'parties',
@@ -136,9 +301,25 @@ export const routes: Routes = [
       },
       {
         path: 'lab',
-        loadComponent: () =>
-          import('./features/lab/lab.component').then((m) => m.LabComponent),
+        canActivate: [permissionGuard],
+        data: {
+          permissions: ['Lab.TestType.View', 'Lab.Sample.View', 'Lab.Result.View'],
+          permissionMode: 'any',
+        },
+        children: tabChildren(
+          labLoad,
+          'LabComponent',
+          [
+            { path: 'dashboard', tab: 'dashboard' },
+            { path: 'types', tab: 'types' },
+            { path: 'samples', tab: 'samples' },
+            { path: 'samples/:id', tab: 'samples' },
+            { path: 'results', tab: 'results' },
+          ],
+          'dashboard',
+        ),
       },
+      { path: 'quality', redirectTo: 'lab', pathMatch: 'full' },
       {
         path: 'cost-centres',
         loadComponent: () =>
@@ -146,39 +327,53 @@ export const routes: Routes = [
       },
       {
         path: 'cheques',
-        loadComponent: () =>
-          import('./features/cheques/cheques.component').then((m) => m.ChequesComponent),
+        children: tabChildren(
+          chequesLoad,
+          'ChequesComponent',
+          [
+            { path: 'pdc', tab: 'pdc' },
+            { path: 'books', tab: 'books' },
+          ],
+          'pdc',
+        ),
       },
       {
         path: 'salesforce',
-        loadComponent: () =>
-          import('./features/salesforce/salesforce.component').then((m) => m.SalesforceComponent),
+        children: tabChildren(
+          salesforceLoad,
+          'SalesforceComponent',
+          [
+            { path: 'salesmen', tab: 'salesmen' },
+            { path: 'areas', tab: 'areas' },
+            { path: 'targets', tab: 'targets' },
+          ],
+          'salesmen',
+        ),
       },
       {
         path: 'demands',
         loadComponent: () =>
           import('./features/demands/demands.component').then((m) => m.DemandsComponent),
       },
-      {
-        path: 'hr-finance',
-        loadComponent: () =>
-          import('./features/hr-finance/hr-finance.component').then((m) => m.HrFinanceComponent),
-      },
+      { path: 'hr-finance', redirectTo: 'hr', pathMatch: 'full' },
       {
         path: 'brands',
-        loadComponent: () =>
-          import('./features/brands/brands.component').then((m) => m.BrandsComponent),
+        children: tabChildren(
+          brandsLoad,
+          'BrandsComponent',
+          [
+            { path: 'list', tab: 'brands' },
+            { path: 'conversions', tab: 'conversions' },
+          ],
+          'list',
+        ),
       },
       {
         path: 'budgets',
         loadComponent: () =>
           import('./features/budgets/budgets.component').then((m) => m.BudgetsComponent),
       },
-      {
-        path: 'attendance',
-        loadComponent: () =>
-          import('./features/attendance/attendance.component').then((m) => m.AttendanceComponent),
-      },
+      { path: 'attendance', redirectTo: 'hr/attendance', pathMatch: 'full' },
       {
         path: 'day-close',
         loadComponent: () =>
@@ -186,13 +381,42 @@ export const routes: Routes = [
       },
       {
         path: 'weighbridge',
+        canActivate: [permissionGuard],
+        data: { permissions: ['Weighbridge.Ticket.View'], permissionMode: 'any' },
         loadComponent: () =>
           import('./features/weighbridge/weighbridge.component').then((m) => m.WeighbridgeComponent),
       },
       {
+        path: 'operations',
+        canActivate: [permissionGuard],
+        data: {
+          permissions: ['Operations.Vehicle.View', 'Operations.GatePass.View'],
+          permissionMode: 'any',
+        },
+        children: tabChildren(
+          operationsLoad,
+          'OperationsComponent',
+          [
+            { path: 'vehicles', tab: 'vehicles' },
+            { path: 'drivers', tab: 'drivers' },
+            { path: 'gate-passes', tab: 'gatepasses' },
+          ],
+          'vehicles',
+        ),
+      },
+      {
         path: 'pos',
-        loadComponent: () =>
-          import('./features/pos/pos.component').then((m) => m.PosComponent),
+        canActivate: [permissionGuard],
+        data: { permissions: ['POS.Sale.View', 'POS.Shift.View'], permissionMode: 'any' },
+        children: tabChildren(
+          posLoad,
+          'PosComponent',
+          [
+            { path: 'sales', tab: 'sales' },
+            { path: 'shifts', tab: 'shifts' },
+          ],
+          'sales',
+        ),
       },
       {
         path: 'stock-transfer',
@@ -201,29 +425,62 @@ export const routes: Routes = [
       },
       {
         path: 'returns',
-        loadComponent: () =>
-          import('./features/returns/returns.component').then((m) => m.ReturnsComponent),
+        children: tabChildren(
+          returnsLoad,
+          'ReturnsComponent',
+          [
+            { path: 'sale', tab: 'sale' },
+            { path: 'purchase', tab: 'purchase' },
+          ],
+          'sale',
+        ),
       },
-      {
-        path: 'leaves',
-        loadComponent: () =>
-          import('./features/leaves/leaves.component').then((m) => m.LeavesComponent),
-      },
+      { path: 'leaves', redirectTo: 'hr/leave', pathMatch: 'full' },
       {
         path: 'production',
-        loadComponent: () =>
-          import('./features/production/production.component').then((m) => m.ProductionComponent),
+        canActivate: [permissionGuard],
+        data: {
+          permissions: ['Production.BOM.View', 'Production.Order.View'],
+          permissionMode: 'any',
+        },
+        children: tabChildren(
+          productionLoad,
+          'ProductionComponent',
+          [
+            { path: 'dashboard', tab: 'dashboard' },
+            { path: 'boms', tab: 'boms' },
+            { path: 'boms/:id', tab: 'boms' },
+            { path: 'orders', tab: 'orders' },
+            { path: 'orders/:id', tab: 'detail' },
+            { path: 'costing', tab: 'costing' },
+          ],
+          'dashboard',
+        ),
       },
       {
         path: 'farm',
-        loadComponent: () =>
-          import('./features/farm/farm.component').then((m) => m.FarmComponent),
+        canActivate: [permissionGuard],
+        data: {
+          permissions: ['Farm.View', 'Flock.View'],
+          permissionMode: 'any',
+        },
+        children: tabChildren(
+          farmLoad,
+          'FarmComponent',
+          [
+            { path: 'dashboard', tab: 'dashboard' },
+            { path: 'farms', tab: 'farms' },
+            { path: 'flocks', tab: 'flocks' },
+            { path: 'flocks/:id', tab: 'flocks' },
+            { path: 'feed', tab: 'feed' },
+            { path: 'mortality', tab: 'mortality' },
+            { path: 'expenses', tab: 'expenses' },
+            { path: 'performance', tab: 'performance' },
+          ],
+          'dashboard',
+        ),
       },
-      {
-        path: 'payroll',
-        loadComponent: () =>
-          import('./features/payroll/payroll.component').then((m) => m.PayrollComponent),
-      },
+      { path: 'payroll', redirectTo: 'hr/payroll', pathMatch: 'full' },
       {
         path: 'users',
         loadComponent: () =>
@@ -231,6 +488,25 @@ export const routes: Routes = [
       },
       {
         path: 'reports',
+        canActivate: [permissionGuard],
+        data: {
+          permissions: [
+            'Reports.Executive.View',
+            'Reports.Finance.View',
+            'Reports.Sales.View',
+            'Reports.Procurement.View',
+            'Reports.Inventory.View',
+            'Reports.HR.View',
+            'Reports.Production.View',
+            'Reports.Farm.View',
+            'Reports.Quality.View',
+            'Reports.Operations.View',
+            'Reports.POS.View',
+            'Finance.Reports.View',
+            'Inventory.Reports.View',
+          ],
+          permissionMode: 'any',
+        },
         loadComponent: () =>
           import('./features/reports/reports.component').then((m) => m.ReportsComponent),
       },

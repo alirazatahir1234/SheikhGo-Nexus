@@ -2,16 +2,29 @@
   display: flex;
   gap: 0.4rem;
   margin-bottom: 1rem;
+  flex-wrap: wrap;
 }
-.tabs button {
+.tabs button,
+.tabs a {
   border: 1px solid var(--border);
   background: var(--surface);
   padding: 0.5rem 0.9rem;
   border-radius: 999px;
   cursor: pointer;
   font-weight: 600;
+  text-decoration: none;
+  color: inherit;
+  display: inline-flex;
+  align-items: center;
 }
-.tabs button.active {
+.tabs button.active,
+.tabs a.active {
   background: rgba(20, 184, 166, 0.16);
   color: #0f766e;
+}
+.field.span-2 {
+  grid-column: span 2;
+}
+.form-panel {
+  margin-bottom: 1rem;
 }

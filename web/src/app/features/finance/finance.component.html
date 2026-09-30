@@ -1,0 +1,265 @@
+<app-page-header title="Finance" subtitle="CoA · Journals · GL · Cash/Bank · Periods · Reports (Weighted Avg perpetual)">
+  <app-search-box placeholder="Search…" [value]="search()" (valueChange)="search.set($event)" />
+  @if (tab() === 'journals') {
+    <button type="button" class="btn btn--primary" (click)="openJournalForm()">New journal</button>
+  }
+  @if (tab() === 'supplierPayments') {
+    <button type="button" class="btn btn--primary" (click)="openPaymentForm()">Supplier payment</button>
+  }
+</app-page-header>
+
+@if (error()) {
+  <div class="alert alert--warn">{{ error() }}</div>
+}
+
+<div class="tabs">
+  <a routerLink="/finance/dashboard" routerLinkActive="active">Dashboard</a>
+  <a routerLink="/finance/chart-of-accounts" routerLinkActive="active">Chart of Accounts</a>
+  <a routerLink="/finance/journals" routerLinkActive="active">Journals</a>
+  <a routerLink="/finance/general-ledger" routerLinkActive="active">General Ledger</a>
+  <a routerLink="/finance/cash-bank" routerLinkActive="active">Cash / Bank</a>
+  <a routerLink="/finance/periods" routerLinkActive="active">Periods</a>
+  <a routerLink="/finance/trial-balance" routerLinkActive="active">Trial Balance</a>
+  <a routerLink="/finance/profit-loss" routerLinkActive="active">P&amp;L</a>
+  <a routerLink="/finance/balance-sheet" routerLinkActive="active">Balance Sheet</a>
+  <a routerLink="/finance/supplier-payments" routerLinkActive="active">Supplier Payments</a>
+</div>
+
+@if (showForm() && tab() === 'journals') {
+  <section class="panel form-panel">
+    <h2>Manual journal</h2>
+    <form [formGroup]="journalForm" (ngSubmit)="saveJournal()">
+      <div class="form-grid">
+        <label class="field"><span>Date</span><input type="date" formControlName="postingDate" /></label>
+        <label class="field span-2"><span>Narration</span><input formControlName="narration" /></label>
+      </div>
+      <div class="lines" formArrayName="lines">
+        <div class="lines__head">
+          <h3>Lines (must balance)</h3>
+          <button type="button" class="btn btn--ghost btn--sm" (click)="addJournalLine()">Add line</button>
+        </div>
+        @for (line of journalLines.controls; track $index; let i = $index) {
+          <div class="line-row" [formGroupName]="i">
+            <label class="field">
+              <span>Account</span>
+              <select formControlName="accountId">
+                <option value="">Select…</option>
+                @for (a of accounts(); track a.id) {
+                  <option [ngValue]="a.id">{{ a.code }} — {{ a.name }}</option>
+                }
+              </select>
+            </label>
+            <label class="field"><span>Debit</span><input type="number" formControlName="debit" /></label>
+            <label class="field"><span>Credit</span><input type="number" formControlName="credit" /></label>
+            <label class="field"><span>Description</span><input formControlName="description" /></label>
+          </div>
+        }
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn--ghost" (click)="showForm.set(false)">Cancel</button>
+        <button type="submit" class="btn btn--primary" [disabled]="saving()">{{ saving() ? 'Saving…' : 'Post journal' }}</button>
+      </div>
+    </form>
+  </section>
+}
+
+@if (showForm() && tab() === 'supplierPayments') {
+  <section class="panel form-panel">
+    <h2>Supplier payment</h2>
+    <form [formGroup]="paymentForm" (ngSubmit)="savePayment()">
+      <div class="form-grid">
+        <label class="field"><span>Date</span><input type="date" formControlName="date" /></label>
+        <label class="field">
+          <span>Purchase invoice</span>
+          <select formControlName="purchaseInvoiceId" (change)="onPaymentInvoiceChange()">
+            <option value="">Select…</option>
+            @for (i of purchaseInvoices(); track i.id) {
+              <option [ngValue]="i.id">{{ i.invoiceNo }} — {{ i.partyName }} — {{ i.grandTotal | currency: 'PKR' : 'symbol' : '1.2-2' }}</option>
+            }
+          </select>
+        </label>
+        <label class="field">
+          <span>Supplier</span>
+          <select formControlName="partyId">
+            @for (p of parties(); track p.id) {
+              <option [ngValue]="p.id">{{ p.code }} — {{ p.name }}</option>
+            }
+          </select>
+        </label>
+        <label class="field">
+          <span>Cash/Bank</span>
+          <select formControlName="cashBankAccountId">
+            @for (c of cashBanks(); track c.id) {
+              <option [ngValue]="c.id">{{ c.code }} — {{ c.name }}</option>
+            }
+          </select>
+        </label>
+        <label class="field"><span>Amount</span><input type="number" formControlName="amount" /></label>
+        <label class="field span-2"><span>Remarks</span><input formControlName="remarks" /></label>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn--ghost" (click)="showForm.set(false)">Cancel</button>
+        <button type="submit" class="btn btn--primary" [disabled]="saving()">{{ saving() ? 'Saving…' : 'Post payment' }}</button>
+      </div>
+    </form>
+  </section>
+}
+
+<section class="panel">
+  @if (loading() && tab() === 'dashboard') {
+    <p class="muted">Loading…</p>
+  } @else if (tab() === 'dashboard') {
+    <h2>Finance dashboard</h2>
+    <p>{{ arApHint() }}</p>
+    <p class="muted">Open periods: {{ openPeriodCount() || 'ensure via Periods tab' }}</p>
+    <p class="muted">Journals: {{ journals().length }} · Cash/Bank accounts: {{ cashBanks().length }}</p>
+  } @else if (tab() === 'accounts') {
+    <table class="table">
+      <thead><tr><th>Code</th><th>Name</th><th>Type</th><th>Level</th></tr></thead>
+      <tbody>
+        @for (a of filteredAccounts(); track a.id) {
+          <tr>
+            <td>{{ a.code }}</td>
+            <td>{{ a.name }}</td>
+            <td>{{ a.accountType }}</td>
+            <td>{{ a.level }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  } @else if (tab() === 'journals') {
+    <table class="table">
+      <thead><tr><th>No</th><th>Date</th><th>Source</th><th>Status</th><th>Debit</th><th>Credit</th><th>Narration</th></tr></thead>
+      <tbody>
+        @for (j of filteredJournals(); track j.id) {
+          <tr>
+            <td>{{ j.journalNo }}</td>
+            <td>{{ j.postingDate | date: 'mediumDate' }}</td>
+            <td>{{ j.sourceType }}</td>
+            <td>{{ statusLabel(j.status) }}</td>
+            <td>{{ j.totalDebit | currency: 'PKR' : 'symbol' : '1.2-2' }}</td>
+            <td>{{ j.totalCredit | currency: 'PKR' : 'symbol' : '1.2-2' }}</td>
+            <td>{{ j.narration }}</td>
+          </tr>
+        } @empty {
+          <tr><td colspan="7" class="muted">No journals yet.</td></tr>
+        }
+      </tbody>
+    </table>
+  } @else if (tab() === 'ledger') {
+    <div class="form-grid">
+      <label class="field">
+        <span>Account</span>
+        <select [ngModel]="ledgerAccountId()" (ngModelChange)="ledgerAccountId.set($event); loadLedger()" [ngModelOptions]="{standalone: true}">
+          <option value="">Select…</option>
+          @for (a of accounts(); track a.id) {
+            <option [ngValue]="a.id">{{ a.code }} — {{ a.name }}</option>
+          }
+        </select>
+      </label>
+    </div>
+    <table class="table">
+      <thead><tr><th>Date</th><th>Voucher</th><th>Debit</th><th>Credit</th><th>Balance</th></tr></thead>
+      <tbody>
+        @for (l of ledgerLines(); track $index) {
+          <tr>
+            <td>{{ l.date | date: 'mediumDate' }}</td>
+            <td>{{ l.voucherNo }}</td>
+            <td>{{ l.debit | currency: 'PKR' : 'symbol' : '1.2-2' }}</td>
+            <td>{{ l.credit | currency: 'PKR' : 'symbol' : '1.2-2' }}</td>
+            <td>{{ l.balance | currency: 'PKR' : 'symbol' : '1.2-2' }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  } @else if (tab() === 'cashbank') {
+    <table class="table">
+      <thead><tr><th>Code</th><th>Name</th><th>Kind</th><th>GL</th><th>Default</th></tr></thead>
+      <tbody>
+        @for (c of cashBanks(); track c.id) {
+          <tr>
+            <td>{{ c.code }}</td>
+            <td>{{ c.name }}</td>
+            <td>{{ c.accountKind }}</td>
+            <td>{{ c.glAccountCode }}</td>
+            <td>{{ c.isDefault ? 'Yes' : '' }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  } @else if (tab() === 'periods') {
+    <table class="table">
+      <thead><tr><th>Period</th><th>Start</th><th>End</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        @for (p of periods(); track p.id) {
+          <tr>
+            <td>{{ p.name }}</td>
+            <td>{{ p.startDate | date: 'mediumDate' }}</td>
+            <td>{{ p.endDate | date: 'mediumDate' }}</td>
+            <td>{{ p.isClosed ? 'Closed' : 'Open' }}</td>
+            <td>
+              @if (p.isClosed) {
+                <button type="button" class="btn btn--ghost btn--sm" (click)="openPeriod(p.id)">Reopen</button>
+              } @else {
+                <button type="button" class="btn btn--ghost btn--sm" (click)="closePeriod(p.id)">Close</button>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  } @else if (tab() === 'trial') {
+    @if (trial(); as tb) {
+      <p>{{ arApHint() }}</p>
+      <table class="table">
+        <thead><tr><th>Code</th><th>Name</th><th>Debit</th><th>Credit</th></tr></thead>
+        <tbody>
+          @for (l of tb.lines; track l.accountId) {
+            <tr>
+              <td>{{ l.code }}</td>
+              <td>{{ l.name }}</td>
+              <td>{{ l.debit | currency: 'PKR' : 'symbol' : '1.2-2' }}</td>
+              <td>{{ l.credit | currency: 'PKR' : 'symbol' : '1.2-2' }}</td>
+            </tr>
+          }
+          <tr>
+            <td colspan="2"><strong>Total</strong></td>
+            <td><strong>{{ tb.totalDebit | currency: 'PKR' : 'symbol' : '1.2-2' }}</strong></td>
+            <td><strong>{{ tb.totalCredit | currency: 'PKR' : 'symbol' : '1.2-2' }}</strong></td>
+          </tr>
+        </tbody>
+      </table>
+    }
+  } @else if (tab() === 'pl') {
+    @if (pl(); as r) {
+      <p>Revenue {{ r.revenue | currency: 'PKR' : 'symbol' : '1.2-2' }} − COGS {{ r.costOfSales | currency: 'PKR' : 'symbol' : '1.2-2' }} = Gross {{ r.grossProfit | currency: 'PKR' : 'symbol' : '1.2-2' }}</p>
+      <p>− Expenses {{ r.expenses | currency: 'PKR' : 'symbol' : '1.2-2' }} = <strong>Net {{ r.netProfit | currency: 'PKR' : 'symbol' : '1.2-2' }}</strong></p>
+    }
+  } @else if (tab() === 'bs') {
+    @if (bs(); as r) {
+      <h3>Assets {{ r.totalAssets | currency: 'PKR' : 'symbol' : '1.2-2' }}</h3>
+      <ul>@for (a of r.assets; track a.code) { <li>{{ a.code }} {{ a.name }} — {{ a.amount | currency: 'PKR' : 'symbol' : '1.2-2' }}</li> }</ul>
+      <h3>Liabilities {{ r.totalLiabilities | currency: 'PKR' : 'symbol' : '1.2-2' }}</h3>
+      <ul>@for (a of r.liabilities; track a.code) { <li>{{ a.code }} {{ a.name }} — {{ a.amount | currency: 'PKR' : 'symbol' : '1.2-2' }}</li> }</ul>
+      <h3>Equity {{ r.totalEquity | currency: 'PKR' : 'symbol' : '1.2-2' }}</h3>
+      <ul>@for (a of r.equity; track a.code) { <li>{{ a.code }} {{ a.name }} — {{ a.amount | currency: 'PKR' : 'symbol' : '1.2-2' }}</li> }</ul>
+    }
+  } @else if (tab() === 'supplierPayments') {
+    <table class="table">
+      <thead><tr><th>No</th><th>Supplier</th><th>Date</th><th>Status</th><th>Amount</th></tr></thead>
+      <tbody>
+        @for (p of supplierPayments(); track p.id) {
+          <tr>
+            <td>{{ p.paymentNo }}</td>
+            <td>{{ p.partyName }}</td>
+            <td>{{ p.date | date: 'mediumDate' }}</td>
+            <td>{{ statusLabel(p.status) }}</td>
+            <td>{{ p.amount | currency: 'PKR' : 'symbol' : '1.2-2' }}</td>
+          </tr>
+        } @empty {
+          <tr><td colspan="5" class="muted">No supplier payments.</td></tr>
+        }
+      </tbody>
+    </table>
+  }
+</section>

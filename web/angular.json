@@ -6,7 +6,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "softaxe-erp": {
+    "sheikhgo-nexus-erp": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -91,10 +91,10 @@
           },
           "configurations": {
             "production": {
-              "buildTarget": "softaxe-erp:build:production"
+              "buildTarget": "sheikhgo-nexus-erp:build:production"
             },
             "development": {
-              "buildTarget": "softaxe-erp:build:development"
+              "buildTarget": "sheikhgo-nexus-erp:build:development"
             }
           },
           "defaultConfiguration": "development"

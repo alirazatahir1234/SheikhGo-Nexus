@@ -9,17 +9,19 @@ const STATUS_MAP: Record<string, number> = {
   Approved: 3,
   Posted: 4,
   Cancelled: 5,
+  Calculated: 6,
   '0': 0,
   '1': 1,
   '2': 2,
   '3': 3,
   '4': 4,
   '5': 5,
+  '6': 6,
 };
 
 export function normalizeDocStatus(status: string | number | null | undefined): number {
   if (status == null || status === '') return 0;
-  if (typeof status === 'number') return Math.min(5, Math.max(0, status));
+  if (typeof status === 'number') return Math.min(6, Math.max(0, status));
   const key = String(status).trim();
   return STATUS_MAP[key] ?? STATUS_MAP[key.charAt(0).toUpperCase() + key.slice(1).toLowerCase()] ?? 0;
 }
@@ -27,6 +29,7 @@ export function normalizeDocStatus(status: string | number | null | undefined): 
 export function statusLabel(status: string | number | null | undefined): string {
   const n = normalizeDocStatus(status);
   if (n === 5) return 'Cancelled';
+  if (n === 6) return 'Calculated';
   return STEPS[n] ?? 'Draft';
 }
 
@@ -125,7 +128,9 @@ export class DocumentStatusStepperComponent {
 
   readonly currentIndex = computed(() => {
     const n = normalizeDocStatus(this.status());
-    return n === 5 ? -1 : n;
+    if (n === 5) return -1;
+    if (n === 6) return 0; // Calculated still on Draft step visually + badge
+    return n;
   });
 
   readonly isCancelled = computed(() => normalizeDocStatus(this.status()) === 5);

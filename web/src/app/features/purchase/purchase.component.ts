@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import {
   FormArray,
   FormBuilder,
@@ -6,6 +6,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { CurrencyPipe, DatePipe } from '@angular/common';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import {
   AuditLogEntry,
   DocumentWorkflowActors,
@@ -32,7 +33,17 @@ import { AuditTimelineComponent, AuditTimelineEntry } from '../../shared/documen
 import { WorkflowActorsComponent } from '../../shared/documents/workflow-actors.component';
 import { AuthService } from '../../core/services/auth.service';
 import { AdminApiService, DocumentTypeRow } from '../../core/services/admin-api.service';
-type ProcTab = 'orders' | 'receipts' | 'invoices';
+import { CashBankAccount, FinanceApiService, SupplierPayment } from '../../core/services/finance-api.service';
+import { bindTabFromRoute, navigateModuleTab } from '../../core/nav/route-tabs';
+
+type ProcTab = 'orders' | 'receipts' | 'invoices' | 'payments';
+
+const PURCHASE_TAB_ROUTE: Record<ProcTab, string> = {
+  orders: 'orders',
+  receipts: 'goods-receipts',
+  invoices: 'invoices',
+  payments: 'payments',
+};
 
 @Component({
   selector: 'app-purchase',
@@ -51,15 +62,20 @@ type ProcTab = 'orders' | 'receipts' | 'invoices';
     DocumentActionsComponent,
     AuditTimelineComponent,
     WorkflowActorsComponent,
+    RouterLink,
+    RouterLinkActive,
   ],
   templateUrl: './purchase.component.html',
   styleUrl: './purchase.component.scss',
 })
 export class PurchaseComponent implements OnInit {
+  private readonly router = inject(Router);
   readonly tab = signal<ProcTab>('orders');
   readonly orders = signal<PurchaseOrder[]>([]);
   readonly receipts = signal<GoodsReceipt[]>([]);
   readonly invoices = signal<PurchaseInvoice[]>([]);
+  readonly supplierPayments = signal<SupplierPayment[]>([]);
+  readonly cashBanks = signal<CashBankAccount[]>([]);
   readonly parties = signal<Party[]>([]);
   readonly products = signal<Product[]>([]);
   readonly warehouses = signal<Warehouse[]>([]);
@@ -142,12 +158,28 @@ export class PurchaseComponent implements OnInit {
     );
   });
 
+  readonly filteredPayments = computed(() => {
+    const q = this.search().toLowerCase().trim();
+    return this.supplierPayments().filter(
+      (p) =>
+        !q ||
+        p.paymentNo.toLowerCase().includes(q) ||
+        (p.partyName ?? '').toLowerCase().includes(q),
+    );
+  });
+
+  readonly postedInvoices = computed(() =>
+    this.invoices().filter((i) => this.statusLabel(i.status) === 'Posted'),
+  );
+
   readonly orderForm;
   readonly receiptForm;
   readonly invoiceForm;
+  readonly paymentForm;
 
   constructor(
     private readonly api: PurchasesService,
+    private readonly financeApi: FinanceApiService,
     private readonly partiesApi: PartiesService,
     private readonly productsApi: ProductsService,
     private readonly companyApi: CompanyService,
@@ -184,6 +216,15 @@ export class PurchaseComponent implements OnInit {
       remarks: [''],
       lines: this.fb.array([this.createLine()]),
     });
+
+    this.paymentForm = this.fb.nonNullable.group({
+      date: [new Date().toISOString().slice(0, 10), Validators.required],
+      partyId: ['', Validators.required],
+      purchaseInvoiceId: ['', Validators.required],
+      cashBankAccountId: [''],
+      amount: [0, [Validators.required, Validators.min(0.01)]],
+      remarks: [''],
+    });
   }
 
   get orderLines(): FormArray {
@@ -197,6 +238,12 @@ export class PurchaseComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    bindTabFromRoute<ProcTab>((tab) => {
+      this.tab.set(tab);
+      this.showForm.set(false);
+      this.clearSelection();
+      this.error.set('');
+    });
     this.loadAll();
     this.adminApi.getDocumentTypes().subscribe({
       next: (types) => this.documentTypes.set(types),
@@ -224,10 +271,7 @@ export class PurchaseComponent implements OnInit {
   }
 
   setTab(tab: ProcTab): void {
-    this.tab.set(tab);
-    this.showForm.set(false);
-    this.clearSelection();
-    this.error.set('');
+    navigateModuleTab(this.router, 'purchase', PURCHASE_TAB_ROUTE[tab]);
   }
 
   clearSelection(): void {
@@ -240,7 +284,7 @@ export class PurchaseComponent implements OnInit {
   loadAll(): void {
     this.loading.set(true);
     this.error.set('');
-    let pending = 3;
+    let pending = 5;
     const done = () => {
       pending -= 1;
       if (pending <= 0) this.loading.set(false);
@@ -276,6 +320,26 @@ export class PurchaseComponent implements OnInit {
         done();
       },
     });
+    this.financeApi.getSupplierPayments().subscribe({
+      next: (d) => {
+        this.supplierPayments.set(d);
+        done();
+      },
+      error: () => {
+        this.supplierPayments.set([]);
+        done();
+      },
+    });
+    this.financeApi.getCashBank().subscribe({
+      next: (d) => {
+        this.cashBanks.set(d);
+        done();
+      },
+      error: () => {
+        this.cashBanks.set([]);
+        done();
+      },
+    });
   }
 
   createLine() {
@@ -287,22 +351,22 @@ export class PurchaseComponent implements OnInit {
     });
   }
 
-  addLine(which: ProcTab): void {
+  addLine(which: Exclude<ProcTab, 'payments'>): void {
     this.linesOf(which).push(this.createLine());
   }
 
-  removeLine(which: ProcTab, index: number): void {
+  removeLine(which: Exclude<ProcTab, 'payments'>, index: number): void {
     const lines = this.linesOf(which);
     if (lines.length > 1) lines.removeAt(index);
   }
 
-  linesOf(which: ProcTab): FormArray {
+  linesOf(which: Exclude<ProcTab, 'payments'>): FormArray {
     if (which === 'orders') return this.orderLines;
     if (which === 'receipts') return this.receiptLines;
     return this.invoiceLines;
   }
 
-  onProductChange(which: ProcTab, index: number): void {
+  onProductChange(which: Exclude<ProcTab, 'payments'>, index: number): void {
     const line = this.linesOf(which).at(index);
     const product = this.products().find((p) => String(p.id) === String(line.value.productId));
     if (product) {
@@ -312,7 +376,7 @@ export class PurchaseComponent implements OnInit {
     }
   }
 
-  recalcLine(which: ProcTab, index: number): void {
+  recalcLine(which: Exclude<ProcTab, 'payments'>, index: number): void {
     const line = this.linesOf(which).at(index);
     line.patchValue(
       { amount: Number(line.value.qty || 0) * Number(line.value.rate || 0) },
@@ -321,11 +385,11 @@ export class PurchaseComponent implements OnInit {
     this.applyDefaultTax(which);
   }
 
-  subTotal(which: ProcTab): number {
+  subTotal(which: Exclude<ProcTab, 'payments'>): number {
     return this.linesOf(which).controls.reduce((sum, c) => sum + Number(c.value.amount || 0), 0);
   }
 
-  applyDefaultTax(which: ProcTab): void {
+  applyDefaultTax(which: Exclude<ProcTab, 'payments'>): void {
     if (!this.taxEnabled() || which === 'receipts') return;
     const discount = which === 'invoices' ? Number(this.invoiceForm.value.discount || 0) : 0;
     const taxable = Math.max(0, this.subTotal(which) - discount);
@@ -334,7 +398,7 @@ export class PurchaseComponent implements OnInit {
     else this.invoiceForm.patchValue({ tax }, { emitEvent: false });
   }
 
-  grandTotal(which: ProcTab): number {
+  grandTotal(which: Exclude<ProcTab, 'payments'>): number {
     if (which === 'receipts') return this.subTotal(which);
     if (which === 'orders') return this.subTotal(which) + Number(this.orderForm.value.tax || 0);
     return (
@@ -363,6 +427,15 @@ export class PurchaseComponent implements OnInit {
       });
       this.receiptLines.clear();
       this.receiptLines.push(this.createLine());
+    } else if (this.tab() === 'payments') {
+      this.paymentForm.reset({
+        date: today,
+        partyId: '',
+        purchaseInvoiceId: '',
+        cashBankAccountId: this.cashBanks().find((c) => c.isDefault)?.id ?? '',
+        amount: 0,
+        remarks: '',
+      });
     } else {
       this.invoiceForm.reset({
         date: today,
@@ -433,7 +506,7 @@ export class PurchaseComponent implements OnInit {
     return null;
   }
 
-  mapLines(which: ProcTab) {
+  mapLines(which: Exclude<ProcTab, 'payments'>) {
     const productMap = new Map(this.products().map((p) => [String(p.id), p.name]));
     return this.linesOf(which).getRawValue().map((l) => ({
       productId: String(l.productId),
@@ -513,6 +586,37 @@ export class PurchaseComponent implements OnInit {
           error: (e) => {
             this.saving.set(false);
             this.error.set(e?.error?.message || 'Failed to create goods receipt.');
+          },
+        });
+      return;
+    }
+
+    if (tab === 'payments') {
+      if (this.paymentForm.invalid) {
+        this.paymentForm.markAllAsTouched();
+        return;
+      }
+      this.saving.set(true);
+      const raw = this.paymentForm.getRawValue();
+      this.financeApi
+        .createSupplierPayment({
+          date: raw.date,
+          partyId: raw.partyId,
+          amount: Number(raw.amount),
+          cashBankAccountId: raw.cashBankAccountId || null,
+          remarks: raw.remarks,
+          post: true,
+          applications: [{ purchaseInvoiceId: raw.purchaseInvoiceId, amountApplied: Number(raw.amount) }],
+        })
+        .subscribe({
+          next: (created) => {
+            this.supplierPayments.update((list) => [created, ...list]);
+            this.saving.set(false);
+            this.showForm.set(false);
+          },
+          error: (e) => {
+            this.saving.set(false);
+            this.error.set(e?.error?.message || 'Failed to create supplier payment.');
           },
         });
       return;
@@ -677,9 +781,18 @@ export class PurchaseComponent implements OnInit {
     return (r.lines ?? []).reduce((s, l) => s + Number(l.amount || 0), 0);
   }
 
+  onPaymentInvoiceChange(): void {
+    const id = String(this.paymentForm.value.purchaseInvoiceId || '');
+    const inv = this.postedInvoices().find((i) => i.id === id);
+    if (!inv) return;
+    const outstanding = Number(inv.grandTotal) - Number(inv.paidAmount || 0);
+    this.paymentForm.patchValue({ partyId: inv.partyId, amount: outstanding > 0 ? outstanding : inv.grandTotal });
+  }
+
   newButtonLabel(): string {
     if (this.tab() === 'orders') return 'New PO';
     if (this.tab() === 'receipts') return 'New GRN';
+    if (this.tab() === 'payments') return 'Supplier payment';
     return 'New invoice';
   }
 

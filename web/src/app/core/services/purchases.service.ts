@@ -78,6 +78,7 @@ export interface PurchaseInvoice {
   discount: number;
   tax: number;
   grandTotal: number;
+  paidAmount?: number;
   remarks?: string;
   lines: PurchaseLine[];
   goodsReceiptId?: string | null;

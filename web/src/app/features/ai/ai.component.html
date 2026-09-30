@@ -1,0 +1,193 @@
+<section class="ai">
+  <app-page-header
+    title="AI Assistant"
+    subtitle="Nexus Intelligence — reports, draft actions, and controlled agents. Sensitive creates always need your confirmation."
+  />
+
+  <div class="ai-layout">
+    <aside class="panel history">
+      <div class="history-head">
+        <h2>Conversations</h2>
+        <button type="button" class="btn" (click)="newChat()">New</button>
+      </div>
+      <ul>
+        @for (c of conversations(); track c.id) {
+          <li>
+            <button type="button" [class.active]="conversationId() === c.id" (click)="openConversation(c.id)">
+              <span>{{ c.title }}</span>
+              <small>{{ c.updatedAt | date: 'short' }}</small>
+            </button>
+          </li>
+        } @empty {
+          <li class="muted">No conversations yet.</li>
+        }
+      </ul>
+    </aside>
+
+    <div class="panel chat">
+      @if (error()) {
+        <div class="alert alert--danger">{{ error() }}</div>
+      }
+
+      <div class="messages">
+        @for (m of messages(); track m.id) {
+          <div class="bubble" [class.user]="m.role === 'user'" [class.assistant]="m.role === 'assistant'">
+            <div class="role">
+              {{ m.role }}
+              @if (m.kind) {
+                <span class="kind"> · {{ m.kind }}</span>
+              }
+            </div>
+            <pre>{{ m.content }}</pre>
+          </div>
+        } @empty {
+          <p class="muted hint">
+            Try: “What are this month's sales?”, “Which products will run out of stock?”, “Create a PO for 50 Demo Product from Demo Supplier.”, or
+            “Find products below minimum stock and prepare purchase orders.”
+          </p>
+        }
+      </div>
+
+      @if (activeAgent(); as agent) {
+        <div class="action-card agent-card" [attr.data-status]="agent.status">
+          <div class="action-head">
+            <strong>AI Agent Plan — {{ agent.agentType }}</strong>
+            <span class="chip" [class.chip--warn]="agent.status === 'WaitingConfirmation'">{{ agent.status }}</span>
+            @if (agent.status === 'WaitingConfirmation') {
+              <span class="chip">CONFIRMATION REQUIRED</span>
+            }
+          </div>
+          <p class="action-summary">{{ agent.summary }}</p>
+          <ol class="agent-steps">
+            @for (s of agent.steps; track s.id) {
+              <li>
+                <span class="chip">{{ s.stepNo }}. {{ s.toolName }}</span>
+                <span class="muted">{{ s.status }}</span>
+              </li>
+            }
+          </ol>
+          @if (agent.proposedOrders.length) {
+            <ul class="proposed-pos">
+              @for (po of agent.proposedOrders; track po.pendingActionId || po.supplierId) {
+                <li>
+                  <strong>{{ po.supplierName }}</strong>
+                  — qty {{ po.totalQty }}
+                  <div class="muted">{{ po.lines.join('; ') }}</div>
+                </li>
+              }
+            </ul>
+          }
+          @if (agent.status === 'WaitingConfirmation') {
+            <div class="action-actions">
+              <button type="button" class="btn btn--primary" (click)="confirmAgent()" [disabled]="loading()">
+                Confirm All
+              </button>
+              <button type="button" class="btn" (click)="cancelAgent()" [disabled]="loading()">Cancel</button>
+            </div>
+          }
+          @if (agent.status === 'Completed' && agent.pendingActions.length) {
+            <p class="executed">
+              Executed —
+              @for (p of agent.pendingActions; track p.id; let last = $last) {
+                @if (p.resultDocumentNo) {
+                  <strong>{{ p.resultDocumentNo }}</strong>
+                  @if (!last) {
+                    <span>, </span>
+                  }
+                }
+              }
+              (Draft)
+            </p>
+          }
+        </div>
+      }
+
+      @if (activeAction(); as action) {
+        <div class="action-card" [attr.data-status]="action.status">
+          <div class="action-head">
+            <strong>{{ action.actionType }}</strong>
+            <span class="chip" [class.chip--warn]="action.status === 'Pending'">{{ action.status }}</span>
+            <span class="chip">CONFIRMATION REQUIRED</span>
+          </div>
+          <p class="action-summary">{{ action.summary }}</p>
+          <dl class="action-fields">
+            @for (f of action.fields; track f.key) {
+              <div>
+                <dt>{{ f.label }}</dt>
+                <dd>{{ f.value || '—' }}</dd>
+              </div>
+            }
+          </dl>
+          @if (action.validationErrors.length) {
+            <ul class="action-errors">
+              @for (e of action.validationErrors; track e) {
+                <li>{{ e }}</li>
+              }
+            </ul>
+          }
+          @if (action.status === 'Pending') {
+            <div class="action-edit">
+              @if (editQty() !== null) {
+                <label>
+                  Qty
+                  <input type="number" [ngModel]="editQty()" (ngModelChange)="editQty.set($event)" name="editQty" />
+                </label>
+              }
+              @if (editRate() !== null) {
+                <label>
+                  Rate
+                  <input type="number" [ngModel]="editRate()" (ngModelChange)="editRate.set($event)" name="editRate" />
+                </label>
+              }
+              @if (editAmount() !== null) {
+                <label>
+                  Amount
+                  <input type="number" [ngModel]="editAmount()" (ngModelChange)="editAmount.set($event)" name="editAmount" />
+                </label>
+              }
+              <button type="button" class="btn" (click)="applyEdits()" [disabled]="loading()">Update preview</button>
+            </div>
+            <div class="action-actions">
+              <button type="button" class="btn btn--primary" (click)="confirmAction()" [disabled]="loading()">
+                Confirm &amp; Create
+              </button>
+              <button type="button" class="btn" (click)="cancelAction()" [disabled]="loading()">Cancel</button>
+            </div>
+          } @else if (action.resultDocumentNo) {
+            <p class="executed">Executed — Document <strong>{{ action.resultDocumentNo }}</strong> (Draft)</p>
+          }
+        </div>
+      }
+
+      @if (lastMeta(); as meta) {
+        <div class="meta">
+          @if (meta.kind) {
+            <span class="chip">{{ meta.kind }}</span>
+          }
+          <span class="chip">Intent: {{ meta.intent }}</span>
+          @for (s of meta.sources; track s) {
+            <span class="chip">{{ s }}</span>
+          }
+          @if (meta.denied) {
+            <span class="chip chip--warn">Denied</span>
+          }
+        </div>
+      }
+
+      <form class="composer" (ngSubmit)="send()">
+        <input
+          type="text"
+          [ngModel]="input()"
+          (ngModelChange)="input.set($event)"
+          name="aiInput"
+          placeholder="Ask a report, draft an action, or run the replenishment agent…"
+          [disabled]="loading()"
+          autocomplete="off"
+        />
+        <button class="btn btn--primary" type="submit" [disabled]="loading() || !input().trim()">
+          {{ loading() ? 'Working…' : 'Send' }}
+        </button>
+      </form>
+    </div>
+  </div>
+</section>

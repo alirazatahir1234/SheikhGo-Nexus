@@ -1,0 +1,289 @@
+.ai {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.ai-layout {
+  display: grid;
+  grid-template-columns: 16rem 1fr;
+  gap: 1rem;
+  min-height: 28rem;
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.85rem 1rem;
+}
+
+.history {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.history-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.history-head h2 {
+  margin: 0;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.history ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  overflow: auto;
+  max-height: 32rem;
+}
+
+.history button {
+  width: 100%;
+  text-align: left;
+  border: 1px solid transparent;
+  background: transparent;
+  padding: 0.45rem 0.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.history button.active,
+.history button:hover {
+  border-color: var(--border);
+  background: var(--bg);
+}
+
+.history small {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+}
+
+.chat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 28rem;
+}
+
+.messages {
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.25rem 0;
+}
+
+.bubble {
+  max-width: 92%;
+  padding: 0.65rem 0.8rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.bubble.user {
+  align-self: flex-end;
+  background: rgba(15, 118, 110, 0.08);
+  border-color: rgba(15, 118, 110, 0.25);
+}
+
+.bubble.assistant {
+  align-self: flex-start;
+}
+
+.role {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin-bottom: 0.25rem;
+}
+
+.bubble pre {
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: inherit;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.chip {
+  font-size: 0.72rem;
+  padding: 0.2rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+}
+
+.chip--warn {
+  border-color: rgba(185, 28, 28, 0.35);
+  color: #b91c1c;
+}
+
+.kind {
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.action-card {
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  padding: 0.75rem 0.9rem;
+  background: rgba(15, 118, 110, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.action-card[data-status='Confirmed'] {
+  border-style: solid;
+  background: rgba(22, 163, 74, 0.06);
+}
+
+.action-card[data-status='Cancelled'],
+.action-card[data-status='Failed'] {
+  background: rgba(185, 28, 28, 0.04);
+}
+
+.action-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.action-summary {
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.action-fields {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+  gap: 0.45rem 0.75rem;
+}
+
+.action-fields dt {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.action-fields dd {
+  margin: 0.1rem 0 0;
+  font-size: 0.9rem;
+}
+
+.action-edit {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: end;
+}
+
+.action-edit label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.action-edit input {
+  width: 6.5rem;
+  padding: 0.35rem 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.action-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.action-errors {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: #b91c1c;
+  font-size: 0.85rem;
+}
+
+.executed {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.agent-steps {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+}
+
+.proposed-pos {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.88rem;
+}
+
+.composer {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.composer input {
+  flex: 1;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.hint {
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.muted {
+  color: var(--text-muted);
+}
+
+@media (max-width: 900px) {
+  .ai-layout {
+    grid-template-columns: 1fr;
+  }
+}

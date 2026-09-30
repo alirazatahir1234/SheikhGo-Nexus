@@ -1,4 +1,4 @@
-namespace SoftaxeERP.Domain.Common;
+namespace SheikhGoNexusERP.Domain.Common;
 
 public abstract class BaseEntity
 {

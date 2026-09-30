@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SoftaxeERP.Application.DTOs;
-using SoftaxeERP.Application.Interfaces;
+using SheikhGoNexusERP.Application.DTOs;
+using SheikhGoNexusERP.Application.Interfaces;
 
-namespace SoftaxeERP.Api.Controllers;
+namespace SheikhGoNexusERP.Api.Controllers;
 
 [ApiController]
 [Authorize]
@@ -65,7 +65,20 @@ public class TenantsController : ControllerBase
 public class ReportsController : ControllerBase
 {
     private readonly IReportService _svc;
-    public ReportsController(IReportService svc) => _svc = svc;
+    private readonly IPermissionService _permissions;
+
+    public ReportsController(IReportService svc, IPermissionService permissions)
+    {
+        _svc = svc;
+        _permissions = permissions;
+    }
+
+    private async Task EnsureFinanceAsync(CancellationToken ct)
+    {
+        if (await _permissions.HasAsync("Reports.Finance.View", ct)) return;
+        if (await _permissions.HasAsync("Finance.Reports.View", ct)) return;
+        await _permissions.EnsureAsync("Reports.Finance.View", ct);
+    }
 
     [HttpGet("ledger")]
     public async Task<ActionResult<LedgerReportDto>> Ledger(
@@ -74,19 +87,70 @@ public class ReportsController : ControllerBase
         [FromQuery] DateTime to,
         CancellationToken ct)
     {
-        try { return Ok(await _svc.GetLedgerAsync(accountId, from, to, ct)); }
+        try
+        {
+            await EnsureFinanceAsync(ct);
+            return Ok(await _svc.GetLedgerAsync(accountId, from, to, ct));
+        }
+        catch (UnauthorizedAccessException ex) { return StatusCode(403, new { message = ex.Message }); }
         catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
     }
 
     [HttpGet("trial-balance")]
-    public async Task<ActionResult<TrialBalanceReportDto>> TrialBalance([FromQuery] DateTime? asOf, CancellationToken ct) =>
-        Ok(await _svc.GetTrialBalanceAsync(asOf ?? DateTime.UtcNow.Date, ct));
+    public async Task<ActionResult<TrialBalanceReportDto>> TrialBalance([FromQuery] DateTime? asOf, CancellationToken ct)
+    {
+        try
+        {
+            await EnsureFinanceAsync(ct);
+            return Ok(await _svc.GetTrialBalanceAsync(asOf ?? DateTime.UtcNow.Date, ct));
+        }
+        catch (UnauthorizedAccessException ex) { return StatusCode(403, new { message = ex.Message }); }
+    }
 
     [HttpGet("aging/receivables")]
-    public async Task<ActionResult<AgingReportDto>> ReceivablesAging([FromQuery] DateTime? asOf, CancellationToken ct) =>
-        Ok(await _svc.GetReceivablesAgingAsync(asOf, ct));
+    public async Task<ActionResult<AgingReportDto>> ReceivablesAging([FromQuery] DateTime? asOf, CancellationToken ct)
+    {
+        try
+        {
+            await EnsureFinanceAsync(ct);
+            return Ok(await _svc.GetReceivablesAgingAsync(asOf, ct));
+        }
+        catch (UnauthorizedAccessException ex) { return StatusCode(403, new { message = ex.Message }); }
+    }
 
     [HttpGet("aging/payables")]
-    public async Task<ActionResult<AgingReportDto>> PayablesAging([FromQuery] DateTime? asOf, CancellationToken ct) =>
-        Ok(await _svc.GetPayablesAgingAsync(asOf, ct));
+    public async Task<ActionResult<AgingReportDto>> PayablesAging([FromQuery] DateTime? asOf, CancellationToken ct)
+    {
+        try
+        {
+            await EnsureFinanceAsync(ct);
+            return Ok(await _svc.GetPayablesAgingAsync(asOf, ct));
+        }
+        catch (UnauthorizedAccessException ex) { return StatusCode(403, new { message = ex.Message }); }
+    }
+
+    [HttpGet("profit-loss")]
+    public async Task<ActionResult<ProfitLossReportDto>> ProfitLoss(
+        [FromQuery] DateTime? from, [FromQuery] DateTime? to, CancellationToken ct)
+    {
+        try
+        {
+            await EnsureFinanceAsync(ct);
+            var f = from ?? new DateTime(DateTime.UtcNow.Year, 1, 1);
+            var t = to ?? DateTime.UtcNow.Date;
+            return Ok(await _svc.GetProfitLossAsync(f, t, ct));
+        }
+        catch (UnauthorizedAccessException ex) { return StatusCode(403, new { message = ex.Message }); }
+    }
+
+    [HttpGet("balance-sheet")]
+    public async Task<ActionResult<BalanceSheetReportDto>> BalanceSheet([FromQuery] DateTime? asOf, CancellationToken ct)
+    {
+        try
+        {
+            await EnsureFinanceAsync(ct);
+            return Ok(await _svc.GetBalanceSheetAsync(asOf ?? DateTime.UtcNow.Date, ct));
+        }
+        catch (UnauthorizedAccessException ex) { return StatusCode(403, new { message = ex.Message }); }
+    }
 }

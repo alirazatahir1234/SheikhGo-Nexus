@@ -1,0 +1,130 @@
+<app-page-header title="Operations" subtitle="Vehicles, drivers, and gate passes.">
+  <button type="button" class="btn btn--primary" (click)="showForm.set(true)">New</button>
+</app-page-header>
+
+<div class="ops">
+  <div class="tabs">
+    <a routerLink="/operations/vehicles" routerLinkActive="active">Vehicles</a>
+    <a routerLink="/operations/drivers" routerLinkActive="active">Drivers</a>
+    <a routerLink="/operations/gate-passes" routerLinkActive="active">Gate passes</a>
+  </div>
+
+  @if (error()) { <div class="alert alert--warn">{{ error() }}</div> }
+
+  @if (showForm() && tab() === 'vehicles') {
+    <section class="panel">
+      <h2>New vehicle</h2>
+      <form class="grid" [formGroup]="vehicleForm" (ngSubmit)="saveVehicle()">
+        <label class="field"><span>Plate / code</span><input formControlName="code" /></label>
+        <label class="field"><span>Type</span>
+          <select formControlName="vehicleTypeId">
+            <option value="">Select…</option>
+            @for (t of types(); track t.id) { <option [value]="t.id">{{ t.code }} — {{ t.name }}</option> }
+          </select>
+        </label>
+        <label class="field"><span>Make</span><input formControlName="make" /></label>
+        <label class="field"><span>Model</span><input formControlName="model" /></label>
+        <div class="form-actions">
+          <button type="button" class="btn btn--ghost" (click)="showForm.set(false)">Cancel</button>
+          <button type="submit" class="btn btn--primary" [disabled]="saving()">Save</button>
+        </div>
+      </form>
+    </section>
+  }
+
+  @if (showForm() && tab() === 'drivers') {
+    <section class="panel">
+      <h2>New driver</h2>
+      <form class="grid" [formGroup]="driverForm" (ngSubmit)="saveDriver()">
+        <label class="field"><span>Code</span><input formControlName="code" /></label>
+        <label class="field"><span>Name</span><input formControlName="name" /></label>
+        <label class="field"><span>License</span><input formControlName="licenseNo" /></label>
+        <div class="form-actions">
+          <button type="button" class="btn btn--ghost" (click)="showForm.set(false)">Cancel</button>
+          <button type="submit" class="btn btn--primary" [disabled]="saving()">Save</button>
+        </div>
+      </form>
+    </section>
+  }
+
+  @if (showForm() && tab() === 'gatepasses') {
+    <section class="panel">
+      <h2>New gate pass</h2>
+      <form class="grid" [formGroup]="gateForm" (ngSubmit)="saveGate()">
+        <label class="field"><span>Direction</span>
+          <select formControlName="direction">
+            <option>Inward</option><option>Outward</option><option>Return</option><option>Transfer</option>
+          </select>
+        </label>
+        <label class="field"><span>Date</span><input type="date" formControlName="passDate" /></label>
+        <label class="field"><span>Vehicle</span>
+          <select formControlName="vehicleId">
+            <option value="">Optional…</option>
+            @for (v of vehicles(); track v.id) { <option [value]="v.id">{{ v.code }}</option> }
+          </select>
+        </label>
+        <label class="field"><span>Remarks</span><input formControlName="remarks" /></label>
+        <div class="form-actions">
+          <button type="button" class="btn btn--ghost" (click)="showForm.set(false)">Cancel</button>
+          <button type="submit" class="btn btn--primary" [disabled]="saving()">Save</button>
+        </div>
+      </form>
+    </section>
+  }
+
+  @if (tab() === 'vehicles') {
+    <section class="panel table-wrap"><table>
+      <thead><tr><th>Code</th><th>Type</th><th>Make</th><th>Model</th><th>Active</th></tr></thead>
+      <tbody>
+        @for (v of vehicles(); track v.id) {
+          <tr>
+            <td>{{ v.code }}</td>
+            <td>{{ v.vehicleTypeName || '—' }}</td>
+            <td>{{ v.make || '—' }}</td>
+            <td>{{ v.model || '—' }}</td>
+            <td>{{ v.isActive ? 'Yes' : 'No' }}</td>
+          </tr>
+        } @empty { <tr><td colspan="5" class="empty">No vehicles.</td></tr> }
+      </tbody>
+    </table></section>
+  }
+
+  @if (tab() === 'drivers') {
+    <section class="panel table-wrap"><table>
+      <thead><tr><th>Code</th><th>Name</th><th>License</th><th>Active</th></tr></thead>
+      <tbody>
+        @for (d of drivers(); track d.id) {
+          <tr>
+            <td>{{ d.code }}</td>
+            <td>{{ d.name }}</td>
+            <td>{{ d.licenseNo || '—' }}</td>
+            <td>{{ d.isActive ? 'Yes' : 'No' }}</td>
+          </tr>
+        } @empty { <tr><td colspan="4" class="empty">No drivers.</td></tr> }
+      </tbody>
+    </table></section>
+  }
+
+  @if (tab() === 'gatepasses') {
+    <section class="panel table-wrap"><table>
+      <thead><tr><th>No</th><th>Date</th><th>Dir</th><th>Vehicle</th><th>Source</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        @for (g of gatePasses(); track g.id) {
+          <tr>
+            <td>{{ g.gatePassNo }}</td>
+            <td>{{ g.passDate | date: 'mediumDate' }}</td>
+            <td>{{ g.direction }}</td>
+            <td>{{ g.vehicleNo || '—' }}</td>
+            <td>{{ g.sourceDocType || '—' }}</td>
+            <td>{{ statusLabel(g.status) }}</td>
+            <td class="actions">
+              <button type="button" class="btn btn--ghost btn--sm" (click)="transition(g.id, 'submit')">Submit</button>
+              <button type="button" class="btn btn--ghost btn--sm" (click)="transition(g.id, 'approve')">Approve</button>
+              <button type="button" class="btn btn--ghost btn--sm" (click)="transition(g.id, 'post')">Post</button>
+            </td>
+          </tr>
+        } @empty { <tr><td colspan="7" class="empty">No gate passes.</td></tr> }
+      </tbody>
+    </table></section>
+  }
+</div>
