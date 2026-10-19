@@ -10,6 +10,7 @@ import { DashboardSummary } from '../../core/models/erp.models';
 import { KpiCardComponent, KpiTrend } from '../../shared/components/kpi-card/kpi-card.component';
 import { DashChartComponent } from '../../shared/components/dash-chart/dash-chart.component';
 import { AuthService } from '../../core/services/auth.service';
+import { PosApiService, PosDailySalesReport, PosOwnerProfitReport } from '../../core/services/pos-api.service';
 import {
   AgingReport,
   CashFlowReport,
@@ -85,6 +86,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   readonly warehouses = signal<WarehouseComparisonLine[]>([]);
   readonly topCustomers = signal<{ name: string; amount: number }[]>([]);
   readonly priceAnalysis = signal<NamedReport | null>(null);
+  readonly posToday = signal<PosDailySalesReport | null>(null);
+  readonly posProfit = signal<PosOwnerProfitReport | null>(null);
 
   readonly welcomeLine = computed(
     () => `Welcome back, ${this.auth.user()?.fullName || 'User'}. Here's what's happening in your business.`,
@@ -123,6 +126,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   constructor(
     private readonly dashboard: DashboardService,
     private readonly reportsApi: ReportsApiService,
+    private readonly posApi: PosApiService,
     private readonly auth: AuthService,
     private readonly fb: FormBuilder,
   ) {
@@ -137,7 +141,23 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadSummary();
+    this.loadPosToday();
     this.reloadBoard();
+  }
+
+  private loadPosToday(): void {
+    const today = this.iso(new Date());
+    this.posApi
+      .dailySales(today)
+      .pipe(catchError(() => of(null)), takeUntil(this.destroy$))
+      .subscribe((r) => {
+        this.posToday.set(r);
+        this.rebuildActions();
+      });
+    this.posApi
+      .ownerProfit(today)
+      .pipe(catchError(() => of(null)), takeUntil(this.destroy$))
+      .subscribe((r) => this.posProfit.set(r));
   }
 
   ngOnDestroy(): void {
@@ -605,6 +625,28 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   private rebuildActions(): void {
     const items: ActionItem[] = [];
+    const pos = this.posToday();
+    if (pos && pos.saleCount > 0) {
+      items.push({
+        label: `POS today — ${this.money.format(pos.netSales)}`,
+        detail: `${pos.saleCount} tickets · cash ${this.money.format(pos.cashTotal)}`,
+        route: '/pos/reports',
+      });
+    } else {
+      items.push({
+        label: 'Open POS terminal',
+        detail: 'Scan-first sweets checkout',
+        route: '/pos/terminal',
+      });
+    }
+    const profit = this.posProfit();
+    if (profit) {
+      items.push({
+        label: `POS gross profit — ${this.money.format(profit.grossProfit)}`,
+        detail: `COGS ${this.money.format(profit.cogs)} · today`,
+        route: '/pos/reports',
+      });
+    }
     // Pending approvals shown in their own table — do not duplicate here
     const low = this.kpiValue(this.executive(), 'inventory', 'low');
     if (low != null && low > 0) {

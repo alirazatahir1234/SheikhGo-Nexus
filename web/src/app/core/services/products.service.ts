@@ -10,8 +10,17 @@ export class ProductsService {
 
   constructor(private readonly http: HttpClient) {}
 
-  getAll(): Observable<Product[]> {
-    return this.http.get<Product[]>(this.url);
+  getAll(search?: string): Observable<Product[]> {
+    const q = search?.trim() ? `?search=${encodeURIComponent(search.trim())}` : '';
+    return this.http.get<Product[]>(`${this.url}${q}`);
+  }
+
+  getByBarcode(barcode: string, warehouseId?: string | null): Observable<Product> {
+    const q =
+      warehouseId && warehouseId.trim()
+        ? `?warehouseId=${encodeURIComponent(warehouseId.trim())}`
+        : '';
+    return this.http.get<Product>(`${this.url}/barcode/${encodeURIComponent(barcode)}${q}`);
   }
 
   create(payload: Partial<Product>): Observable<Product> {

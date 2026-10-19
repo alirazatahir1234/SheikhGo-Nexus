@@ -166,6 +166,8 @@ public class Product : AuditableEntity
 {
     public string Code { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
+    /// <summary>Primary barcode for POS scan (HID scanners).</summary>
+    public string? Barcode { get; set; }
     public Guid? ProductGroupId { get; set; }
     public ProductGroup? ProductGroup { get; set; }
     public Guid? CategoryId { get; set; }
@@ -182,6 +184,8 @@ public class Product : AuditableEntity
     public bool IsActive { get; set; } = true;
     public bool IsRawMaterial { get; set; }
     public bool IsFinishedGood { get; set; } = true;
+    /// <summary>When true, POS expects fractional qty (kg/g); rate is per base UOM.</summary>
+    public bool SellByWeight { get; set; }
     public ICollection<WarehouseStock> Stocks { get; set; } = new List<WarehouseStock>();
 }
 
@@ -1399,14 +1403,18 @@ public class PosSale : AuditableEntity
     public Party? Party { get; set; }
     public DateTime SaleDate { get; set; } = DateTime.UtcNow.Date;
     public decimal SubTotal { get; set; }
+    public decimal Discount { get; set; }
     public decimal GrandTotal { get; set; }
     public DocumentStatus Status { get; set; } = DocumentStatus.Draft;
+    /// <summary>Client-generated key to prevent duplicate POS posts.</summary>
+    public string? IdempotencyKey { get; set; }
     public Guid? SalesOrderId { get; set; }
     public SalesOrder? SalesOrder { get; set; }
     public Guid? DeliveryOrderId { get; set; }
     public DeliveryOrder? DeliveryOrder { get; set; }
     public Guid? SalesInvoiceId { get; set; }
     public SalesInvoice? SalesInvoice { get; set; }
+    public Guid? SaleReturnId { get; set; }
     public string? Remarks { get; set; }
     public ICollection<PosSaleLine> Lines { get; set; } = new List<PosSaleLine>();
     public ICollection<PosPayment> Payments { get; set; } = new List<PosPayment>();

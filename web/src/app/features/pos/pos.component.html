@@ -1,118 +1,450 @@
-<app-page-header title="POS" subtitle="Shift cash control; sales post via SO → DO → SI → CP.">
-  <button type="button" class="btn btn--ghost" (click)="showOpen.set(true)">Open shift</button>
-  @if (openShift()) {
-    <button type="button" class="btn btn--ghost" (click)="closeShift()">Close shift</button>
-  }
-  <button type="button" class="btn btn--primary" (click)="openSaleForm()">New sale</button>
-</app-page-header>
-
-<div class="pos">
-  <div class="tabs">
+<div class="npos">
+  <nav class="npos-tabs" aria-label="POS sections">
+    <a routerLink="/pos/terminal" routerLinkActive="active">POS</a>
     <a routerLink="/pos/sales" routerLinkActive="active">Sales</a>
     <a routerLink="/pos/shifts" routerLinkActive="active">Shifts</a>
-  </div>
+    <a routerLink="/pos/reports" routerLinkActive="active">Reports</a>
+  </nav>
 
-  @if (openShift(); as s) {
-    <div class="banner">Open shift {{ s.shiftNo }} · {{ s.terminalCode }} · Opening cash {{ s.openingCash | currency: 'PKR' : 'symbol' : '1.0-0' }}</div>
-  }
+  @if (error()) { <div class="npos-alert npos-alert--warn">{{ error() }}</div> }
+  @if (notice()) { <div class="npos-alert npos-alert--ok">{{ notice() }}</div> }
 
-  @if (error()) { <div class="alert alert--warn">{{ error() }}</div> }
-
-  @if (showOpen()) {
-    <section class="panel">
-      <h2>Open shift</h2>
-      <form class="grid" [formGroup]="openForm" (ngSubmit)="saveOpen()">
-        <label class="field"><span>Terminal</span>
-          <select formControlName="terminalId">
-            <option value="">Select…</option>
-            @for (t of terminals(); track t.id) { <option [value]="t.id">{{ t.code }} — {{ t.name }}</option> }
-          </select>
+  @if (tab() === 'terminal') {
+    <div class="npos-terminal">
+      <header class="npos-top">
+        <label class="npos-scan">
+          <span class="sr-only">Scan barcode or search</span>
+          <span class="npos-scan__icon" aria-hidden="true">▦</span>
+          <input
+            #barcodeInput
+            type="text"
+            autocomplete="off"
+            inputmode="none"
+            [value]="barcode()"
+            (input)="onScanInput($any($event.target).value)"
+            (keydown)="onScanKeydown($event)"
+            placeholder="Scan barcode or search product… (F2)"
+          />
         </label>
-        <label class="field"><span>Opening cash</span><input type="number" formControlName="openingCash" /></label>
-        <div class="form-actions">
-          <button type="button" class="btn btn--ghost" (click)="showOpen.set(false)">Cancel</button>
-          <button type="submit" class="btn btn--primary" [disabled]="saving()">Open</button>
-        </div>
-      </form>
-    </section>
-  }
-
-  @if (showForm()) {
-    <section class="panel">
-      <h2>POS sale</h2>
-      <form [formGroup]="saleForm" (ngSubmit)="saveSale()">
-        <div class="grid">
-          <label class="field"><span>Date</span><input type="date" formControlName="saleDate" /></label>
-          <label class="field"><span>Cash tender</span><input type="number" formControlName="cashAmount" /></label>
-          <label class="field"><span>Card tender</span><input type="number" formControlName="cardAmount" /></label>
-          <label class="field"><span>Remarks</span><input formControlName="remarks" /></label>
-        </div>
-        <div class="lines" formArrayName="lines">
-          <div class="lines__head"><h3>Lines</h3>
-            <button type="button" class="btn btn--ghost btn--sm" (click)="addLine()">Add</button>
-          </div>
-          @for (l of lines.controls; track $index; let i = $index) {
-            <div class="line-row" [formGroupName]="i">
-              <label class="field"><span>Product</span>
-                <select formControlName="productId" (change)="onProduct(i)">
-                  <option value="">Select…</option>
-                  @for (p of products(); track p.id) { <option [value]="p.id">{{ p.code }} — {{ p.name }}</option> }
-                </select>
-              </label>
-              <label class="field"><span>Qty</span><input type="number" formControlName="qty" (input)="recalc(i)" /></label>
-              <label class="field"><span>Rate</span><input type="number" formControlName="rate" (input)="recalc(i)" /></label>
-              <label class="field"><span>Amount</span><input type="number" formControlName="amount" readonly /></label>
-            </div>
+        <div class="npos-status">
+          <span class="npos-chip">{{ branchLabel }}</span>
+          <span class="npos-chip">{{ activeTerminal()?.code || '—' }}</span>
+          @if (openShift(); as s) {
+            <span class="npos-chip npos-chip--ok">Open · {{ s.shiftNo }}</span>
+            <button type="button" class="npos-btn npos-btn--ghost npos-btn--danger-soft" (click)="openCloseDialog()">Close shift</button>
+          } @else {
+            <span class="npos-chip npos-chip--warn">No shift</span>
+            <button type="button" class="npos-btn npos-btn--primary" (click)="showOpen.set(true)">Open shift</button>
           }
         </div>
-        <div class="form-actions">
-          <button type="button" class="btn btn--ghost" (click)="showForm.set(false)">Cancel</button>
-          <button type="submit" class="btn btn--primary" [disabled]="saving()">Post sale</button>
-        </div>
-      </form>
-    </section>
+      </header>
+
+      <div class="npos-body">
+        <section class="npos-catalog">
+          <div class="npos-cats" role="tablist">
+            @for (c of categories(); track c) {
+              <button
+                type="button"
+                role="tab"
+                class="npos-cat"
+                [class.active]="category() === c"
+                (click)="selectCategory(c)"
+              >{{ c }}</button>
+            }
+          </div>
+
+          <div class="npos-grid">
+            @for (p of catalog(); track p.id) {
+              <button type="button" class="npos-card" (click)="p.sellByWeight ? openProductDetail(p) : addProduct(p, 1)">
+                <div class="npos-card__media" aria-hidden="true">{{ initials(p.name) }}</div>
+                <div class="npos-card__body">
+                  <strong>{{ p.name }}</strong>
+                  <span class="npos-card__price">Rs. {{ p.salePrice | number: '1.0-0' }} <small>/ {{ p.unit }}</small></span>
+                  @if (p.sellByWeight) { <em>By weight</em> }
+                </div>
+              </button>
+            } @empty {
+              <p class="npos-empty">No products match. Scan a barcode or clear search.</p>
+            }
+          </div>
+        </section>
+
+        <aside class="npos-order">
+          <div class="npos-order__head">
+            <h2>Current Order</h2>
+            <button type="button" class="npos-btn npos-btn--ghost" (click)="openHolds()" [disabled]="!heldSales().length && !cart().length">
+              Holds ({{ heldSales().length }})
+            </button>
+          </div>
+
+          <ul class="npos-lines">
+            @for (l of cart(); track l.productId; let i = $index) {
+              <li class="npos-line">
+                <div class="npos-line__meta">
+                  <strong>{{ l.productName }}</strong>
+                  <span>{{ fmtQty(l.qty) }} {{ l.unit }} · Rs. {{ l.rate | number: '1.0-0' }}</span>
+                </div>
+                <div class="npos-line__controls">
+                  <div class="npos-line__qty">
+                    <button type="button" class="npos-qtybtn" (click)="bumpLine(i, -1)" aria-label="Decrease">−</button>
+                    <input
+                      type="number"
+                      inputmode="decimal"
+                      [attr.step]="l.sellByWeight ? '0.001' : '1'"
+                      [value]="l.qty"
+                      (change)="setQty(i, +$any($event.target).value)"
+                    />
+                    <button type="button" class="npos-qtybtn" (click)="bumpLine(i, 1)" aria-label="Increase">+</button>
+                  </div>
+                  <div class="npos-line__amt">
+                    <strong>{{ lineAmount(l) | currency: 'PKR' : 'symbol' : '1.0-0' }}</strong>
+                    <button type="button" class="npos-remove" (click)="removeLine(i)" aria-label="Remove line">Remove</button>
+                  </div>
+                </div>
+              </li>
+            } @empty {
+              <li class="npos-empty">Scan or tap a product to start.</li>
+            }
+          </ul>
+
+          <div class="npos-totals">
+            <div class="row"><span>Subtotal</span><span>{{ subtotal() | currency: 'PKR' : 'symbol' : '1.0-0' }}</span></div>
+            <label class="npos-disc">
+              <span>Discount {{ discountPct() ? '%' : 'Rs' }}</span>
+              <input type="number" inputmode="decimal" [value]="discount()" (input)="setDiscount(+$any($event.target).value)" />
+              <button type="button" class="npos-btn npos-btn--ghost" (click)="toggleDiscountMode()">
+                {{ discountPct() ? 'Rs' : '%' }}
+              </button>
+            </label>
+            <div class="row total"><span>Total</span><strong>{{ grandTotal() | currency: 'PKR' : 'symbol' : '1.0-0' }}</strong></div>
+          </div>
+
+          <div class="npos-tenders" role="group" aria-label="Tender type">
+            <button type="button" [class.active]="tenderMode()==='Cash'" (click)="setTenderMode('Cash')">Cash</button>
+            <button type="button" [class.active]="tenderMode()==='Card'" (click)="setTenderMode('Card')">Card</button>
+            <button type="button" [class.active]="tenderMode()==='Other'" (click)="setTenderMode('Other')">Other</button>
+          </div>
+
+          <div class="npos-actions">
+            <button type="button" class="npos-btn npos-btn--ghost npos-btn--secondary" (click)="holdSale()" [disabled]="!cart().length">Hold sale</button>
+            <button
+              type="button"
+              class="npos-btn npos-btn--primary npos-btn--pay"
+              (click)="openPayment()"
+              [disabled]="saving() || !cart().length"
+            >
+              {{ saving() ? 'Posting…' : 'Complete Sale (F5)' }}
+            </button>
+          </div>
+        </aside>
+      </div>
+    </div>
   }
 
   @if (tab() === 'sales') {
-    <section class="panel table-wrap"><table>
-      <thead><tr><th>Sale #</th><th>Date</th><th>Party</th><th class="num">Total</th><th>Status</th><th>Links</th></tr></thead>
-      <tbody>
-        @for (b of sales(); track b.id) {
+    <section class="npos-panel">
+      <table>
+        <thead>
           <tr>
-            <td>{{ b.saleNo }}</td>
-            <td>{{ b.saleDate | date: 'mediumDate' }}</td>
-            <td>{{ b.partyName || 'CUS-POS' }}</td>
-            <td class="num">{{ b.grandTotal | currency: 'PKR' : 'symbol' : '1.0-0' }}</td>
-            <td>{{ statusLabel(b.status) }}</td>
-            <td class="muted">SO/DO/SI linked</td>
+            <th>Sale #</th><th>Date</th><th class="num">Subtotal</th><th class="num">Discount</th>
+            <th class="num">Total</th><th>Status</th><th></th>
           </tr>
-        } @empty { <tr><td colspan="6" class="empty">No POS sales yet.</td></tr> }
-      </tbody>
-    </table></section>
+        </thead>
+        <tbody>
+          @for (b of sales(); track b.id) {
+            <tr>
+              <td>{{ b.saleNo }}</td>
+              <td>{{ b.saleDate | date: 'mediumDate' }}</td>
+              <td class="num">{{ b.subTotal | currency: 'PKR' : 'symbol' : '1.0-0' }}</td>
+              <td class="num">{{ (b.discount || 0) | currency: 'PKR' : 'symbol' : '1.0-0' }}</td>
+              <td class="num">{{ b.grandTotal | currency: 'PKR' : 'symbol' : '1.0-0' }}</td>
+              <td>{{ b.saleReturnId ? 'Returned' : statusLabel(b.status) }}</td>
+              <td class="actions">
+                <button type="button" class="npos-btn npos-btn--ghost" (click)="printReceipt(b)">Receipt</button>
+                @if (!b.saleReturnId) {
+                  <button type="button" class="npos-btn npos-btn--ghost npos-btn--danger-soft" (click)="openReturn(b)">Return</button>
+                }
+              </td>
+            </tr>
+          } @empty { <tr><td colspan="7" class="npos-empty">No POS sales yet.</td></tr> }
+        </tbody>
+      </table>
+    </section>
   }
 
   @if (tab() === 'shifts') {
-    <section class="panel table-wrap"><table>
-      <thead>
-        <tr>
-          <th>Shift</th><th>Terminal</th><th>Opened</th><th class="num">Opening</th>
-          <th class="num">Expected</th><th class="num">Actual</th><th class="num">Variance</th><th>Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (s of shifts(); track s.id) {
+    <section class="npos-panel">
+      <div class="npos-panel__actions">
+        <button type="button" class="npos-btn npos-btn--primary" (click)="showOpen.set(true)">Open shift</button>
+        @if (openShift()) {
+          <button type="button" class="npos-btn npos-btn--ghost npos-btn--danger-soft" (click)="openCloseDialog()">Close shift</button>
+        }
+      </div>
+      <table>
+        <thead>
           <tr>
-            <td>{{ s.shiftNo }}</td>
-            <td>{{ s.terminalCode }}</td>
-            <td>{{ s.openedAt | date: 'short' }}</td>
-            <td class="num">{{ s.openingCash | currency: 'PKR' : 'symbol' : '1.0-0' }}</td>
-            <td class="num">{{ s.expectedCash != null ? (s.expectedCash | currency: 'PKR' : 'symbol' : '1.0-0') : '—' }}</td>
-            <td class="num">{{ s.actualCash != null ? (s.actualCash | currency: 'PKR' : 'symbol' : '1.0-0') : '—' }}</td>
-            <td class="num">{{ s.variance != null ? (s.variance | currency: 'PKR' : 'symbol' : '1.0-0') : '—' }}</td>
-            <td>{{ s.status }}</td>
+            <th>Shift</th><th>Terminal</th><th>Opened</th><th class="num">Opening</th>
+            <th class="num">Expected</th><th class="num">Actual</th><th class="num">Variance</th><th>Status</th>
           </tr>
-        } @empty { <tr><td colspan="8" class="empty">No shifts yet.</td></tr> }
-      </tbody>
-    </table></section>
+        </thead>
+        <tbody>
+          @for (s of shifts(); track s.id) {
+            <tr>
+              <td>{{ s.shiftNo }}</td>
+              <td>{{ s.terminalCode }}</td>
+              <td>{{ s.openedAt | date: 'short' }}</td>
+              <td class="num">{{ s.openingCash | currency: 'PKR' : 'symbol' : '1.0-0' }}</td>
+              <td class="num">{{ s.expectedCash != null ? (s.expectedCash | currency: 'PKR' : 'symbol' : '1.0-0') : '—' }}</td>
+              <td class="num">{{ s.actualCash != null ? (s.actualCash | currency: 'PKR' : 'symbol' : '1.0-0') : '—' }}</td>
+              <td class="num" [class.var-bad]="(s.variance ?? 0) !== 0 && s.status === 'Closed'">
+                {{ s.variance != null ? (s.variance | currency: 'PKR' : 'symbol' : '1.0-0') : '—' }}
+              </td>
+              <td>{{ s.status }}</td>
+            </tr>
+          } @empty { <tr><td colspan="8" class="npos-empty">No shifts yet.</td></tr> }
+        </tbody>
+      </table>
+    </section>
+  }
+
+  @if (tab() === 'reports') {
+    <section class="npos-panel reports">
+      <div class="reports__head">
+        <label class="field"><span>Date</span>
+          <input type="date" [value]="reportDate()" (change)="reportDate.set($any($event.target).value); loadReports()" />
+        </label>
+        <button type="button" class="npos-btn npos-btn--ghost" (click)="loadReports()">Refresh</button>
+      </div>
+      @if (dailyReport(); as r) {
+        <h3>Daily sales</h3>
+        <div class="kpi-grid">
+          <div class="kpi"><span>Gross</span><strong>{{ r.grossSales | currency: 'PKR' : 'symbol' : '1.0-0' }}</strong></div>
+          <div class="kpi"><span>Discounts</span><strong>{{ r.discounts | currency: 'PKR' : 'symbol' : '1.0-0' }}</strong></div>
+          <div class="kpi"><span>Net sales</span><strong>{{ r.netSales | currency: 'PKR' : 'symbol' : '1.0-0' }}</strong></div>
+          <div class="kpi"><span>Tickets</span><strong>{{ r.saleCount }}</strong></div>
+          <div class="kpi"><span>Cash</span><strong>{{ r.cashTotal | currency: 'PKR' : 'symbol' : '1.0-0' }}</strong></div>
+          <div class="kpi"><span>Card</span><strong>{{ r.cardTotal | currency: 'PKR' : 'symbol' : '1.0-0' }}</strong></div>
+          <div class="kpi"><span>Returns</span><strong>{{ r.returnedSaleCount ?? 0 }}</strong></div>
+          <div class="kpi"><span>Cash refunds (excluded)</span><strong>{{ (r.cashRefundsExcluded ?? 0) | currency: 'PKR' : 'symbol' : '1.0-0' }}</strong></div>
+        </div>
+        <h3>By cashier</h3>
+        <table>
+          <thead><tr><th>Cashier</th><th class="num">Sales</th><th class="num">Net</th></tr></thead>
+          <tbody>
+            @for (c of r.byCashier; track c.userId) {
+              <tr><td>{{ c.userName || c.userId }}</td><td class="num">{{ c.saleCount }}</td><td class="num">{{ c.netSales | currency: 'PKR' : 'symbol' : '1.0-0' }}</td></tr>
+            } @empty { <tr><td colspan="3" class="npos-empty">No cashier breakdown.</td></tr> }
+          </tbody>
+        </table>
+        <h3>Top products</h3>
+        <table>
+          <thead><tr><th>Product</th><th class="num">Qty</th><th class="num">Amount</th></tr></thead>
+          <tbody>
+            @for (p of r.topProducts; track p.productId) {
+              <tr><td>{{ p.productName }}</td><td class="num">{{ p.qty | number: '1.0-3' }}</td><td class="num">{{ p.amount | currency: 'PKR' : 'symbol' : '1.0-0' }}</td></tr>
+            } @empty { <tr><td colspan="3" class="npos-empty">No product sales.</td></tr> }
+          </tbody>
+        </table>
+      }
+      @if (profitReport(); as pr) {
+        <h3>Owner profit (COGS-aware)</h3>
+        <div class="kpi-grid">
+          <div class="kpi"><span>Net sales</span><strong>{{ pr.netSales | currency: 'PKR' : 'symbol' : '1.0-0' }}</strong></div>
+          <div class="kpi"><span>COGS</span><strong>{{ pr.cogs | currency: 'PKR' : 'symbol' : '1.0-0' }}</strong></div>
+          <div class="kpi"><span>Gross profit</span><strong>{{ pr.grossProfit | currency: 'PKR' : 'symbol' : '1.0-0' }}</strong></div>
+          <div class="kpi"><span>Expenses</span><strong>{{ pr.expenses | currency: 'PKR' : 'symbol' : '1.0-0' }}</strong></div>
+          <div class="kpi"><span>Operating profit</span><strong>{{ pr.operatingProfit | currency: 'PKR' : 'symbol' : '1.0-0' }}</strong></div>
+        </div>
+      }
+    </section>
   }
 </div>
+
+<!-- Modals -->
+@if (showOpen()) {
+  <div class="npos-modal" role="dialog" aria-modal="true" aria-labelledby="openShiftTitle">
+    <div class="npos-modal__card">
+      <h2 id="openShiftTitle">Open shift</h2>
+      <form [formGroup]="openForm" (ngSubmit)="saveOpen()">
+        <label class="field"><span>Terminal</span>
+          <select formControlName="terminalId">
+            <option value="">Select…</option>
+            @for (t of terminals(); track t.id) {
+              <option [value]="t.id">{{ t.code }} — {{ t.name }}</option>
+            }
+          </select>
+        </label>
+        <label class="field"><span>Opening cash</span>
+          <input type="number" inputmode="decimal" formControlName="openingCash" />
+        </label>
+        <p class="muted">{{ nowLabel }}</p>
+        <div class="npos-modal__actions">
+          <button type="button" class="npos-btn npos-btn--ghost" (click)="cancelOpen()">Cancel</button>
+          <button type="submit" class="npos-btn npos-btn--primary npos-btn--xl" [disabled]="saving()">Open shift</button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+@if (showClose()) {
+  <div class="npos-modal" role="dialog" aria-modal="true">
+    <div class="npos-modal__card npos-modal__card--wide">
+      <h2>Close shift — cash reconciliation</h2>
+      @if (recon(); as r) {
+        <div class="npos-recon">
+          <div class="row"><span>Opening cash</span><strong>{{ r.openingCash | currency: 'PKR' : 'symbol' : '1.0-0' }}</strong></div>
+          <div class="row"><span>Cash sales ({{ r.saleCount }} tickets)</span><strong>{{ r.cashSales | currency: 'PKR' : 'symbol' : '1.0-0' }}</strong></div>
+          <div class="row"><span>Card sales</span><strong>{{ r.cardSales | currency: 'PKR' : 'symbol' : '1.0-0' }}</strong></div>
+          <div class="row"><span>Other tenders</span><strong>{{ r.otherSales | currency: 'PKR' : 'symbol' : '1.0-0' }}</strong></div>
+          <div class="row"><span>Cash returns handed back</span><strong>{{ r.returnedSaleCount }} ticket(s) · {{ r.cashRefunds | currency: 'PKR' : 'symbol' : '1.0-0' }}</strong></div>
+          <div class="row total"><span>Expected drawer</span><strong>{{ r.expectedCash | currency: 'PKR' : 'symbol' : '1.0-0' }}</strong></div>
+        </div>
+        <p class="muted">Expected = opening + cash sales (returned cash tickets already excluded). Hand back cash on returns at the counter. Card / other are not in the drawer.</p>
+      }
+      <label class="field"><span>Actual cash counted</span>
+        <input type="number" inputmode="decimal" [value]="closeActualCash()" (input)="closeActualCash.set(+$any($event.target).value)" />
+      </label>
+      @if (recon(); as r) {
+        <p class="npos-change">
+          Difference
+          <strong [class.var-bad]="(closeActualCash() - r.expectedCash) !== 0">
+            {{ (closeActualCash() - r.expectedCash) | currency: 'PKR' : 'symbol' : '1.0-0' }}
+          </strong>
+        </p>
+      }
+      <div class="npos-modal__actions">
+        <button type="button" class="npos-btn npos-btn--ghost" (click)="cancelClose()">Cancel</button>
+        <button type="button" class="npos-btn npos-btn--primary npos-btn--xl" (click)="confirmClose()">Close shift</button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (showReturn()) {
+  @if (returnSaleDraft(); as sale) {
+    <div class="npos-modal" role="dialog" aria-modal="true">
+      <div class="npos-modal__card npos-modal__card--wide">
+        <h2>Return {{ sale.saleNo }}</h2>
+        <label class="field"><span>Reason</span>
+          <select [value]="returnReason()" (change)="returnReason.set($any($event.target).value)">
+            @for (r of returnReasons; track r) {
+              <option [value]="r">{{ r }}</option>
+            }
+          </select>
+        </label>
+        <ul class="npos-holds">
+          @for (l of sale.lines; track l.productId) {
+            <li>
+              <label class="npos-check">
+                <input
+                  type="checkbox"
+                  [checked]="returnLineIds().has(l.productId)"
+                  (change)="toggleReturnLine(l.productId)"
+                />
+                <span>
+                  <strong>{{ l.productName }}</strong>
+                  {{ l.qty | number: '1.0-3' }} × {{ l.rate | currency: 'PKR' : 'symbol' : '1.0-0' }}
+                </span>
+              </label>
+              <strong>{{ l.amount | currency: 'PKR' : 'symbol' : '1.0-0' }}</strong>
+            </li>
+          }
+        </ul>
+        <p class="muted">
+          Stock is restored for selected lines and the ticket is marked returned (one return per ticket).
+          Cash tender is excluded from shift cash sales — hand cash back from the drawer. Posted invoice/payment reversal is not wired yet (stock-only return).
+        </p>
+        <div class="npos-modal__actions">
+          <button type="button" class="npos-btn npos-btn--ghost" (click)="cancelReturn()">Cancel</button>
+          <button type="button" class="npos-btn npos-btn--primary npos-btn--xl npos-btn--danger-soft" (click)="confirmReturn()">Confirm return</button>
+        </div>
+      </div>
+    </div>
+  }
+}
+
+@if (showProduct(); as _) {
+  @if (productDraft(); as p) {
+    <div class="npos-modal" role="dialog" aria-modal="true">
+      <div class="npos-modal__card npos-modal__card--product">
+        <div class="npos-prodmedia" aria-hidden="true">{{ initials(p.name) }}</div>
+        <h2>{{ p.name }}</h2>
+        <p class="npos-stock" [class.ok]="p.stockQty > 0">
+          {{ p.stockQty > 0 ? 'In stock' : 'Out of stock' }} · Rs. {{ p.salePrice | number: '1.0-0' }} / {{ p.unit }}
+        </p>
+        <div class="npos-line__qty npos-line__qty--lg">
+          <button type="button" class="npos-qtybtn" (click)="bumpProductQty(-1)">−</button>
+          <input type="number" inputmode="decimal" step="0.001" [value]="productQty()" (change)="setProductQty(+$any($event.target).value)" />
+          <button type="button" class="npos-qtybtn" (click)="bumpProductQty(1)">+</button>
+        </div>
+        <p class="npos-prod-total">{{ productDraftTotal() | currency: 'PKR' : 'symbol' : '1.0-0' }}</p>
+        <div class="npos-modal__actions">
+          <button type="button" class="npos-btn npos-btn--ghost" (click)="cancelProductDetail()">Cancel</button>
+          <button type="button" class="npos-btn npos-btn--primary npos-btn--xl" (click)="confirmProductDetail()">Add to cart</button>
+        </div>
+      </div>
+    </div>
+  }
+}
+
+@if (showHolds()) {
+  <div class="npos-modal" role="dialog" aria-modal="true">
+    <div class="npos-modal__card npos-modal__card--wide">
+      <h2>Hold sales</h2>
+      <ul class="npos-holds">
+        @for (h of heldSales(); track h.id) {
+          <li>
+            <div>
+              <strong>#{{ h.id }}</strong>
+              <span>{{ h.cart.length }} items · {{ heldTotal(h) | currency: 'PKR' : 'symbol' : '1.0-0' }}</span>
+              <span class="muted">{{ h.heldAt | date: 'short' }}</span>
+            </div>
+            <div class="actions">
+              <button type="button" class="npos-btn npos-btn--primary" (click)="loadHeld(h)">Load</button>
+              <button type="button" class="npos-btn npos-btn--ghost npos-btn--danger-soft" (click)="deleteHeld(h)">Delete</button>
+            </div>
+          </li>
+        } @empty {
+          <li class="npos-empty">No held sales.</li>
+        }
+      </ul>
+      <div class="npos-modal__actions">
+        <button type="button" class="npos-btn npos-btn--ghost" (click)="showHolds.set(false); focusBarcode()">Close</button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (showPay()) {
+  <div class="npos-modal" role="dialog" aria-modal="true">
+    <div class="npos-modal__card npos-modal__card--pay">
+      <h2>Payment</h2>
+      <p class="npos-pay-total">{{ grandTotal() | currency: 'PKR' : 'symbol' : '1.0-0' }}</p>
+      <div class="npos-tenders">
+        <button type="button" [class.active]="tenderMode()==='Cash'" (click)="setTenderMode('Cash')">Cash</button>
+        <button type="button" [class.active]="tenderMode()==='Card'" (click)="setTenderMode('Card')">Card</button>
+        <button type="button" [class.active]="tenderMode()==='Other'" (click)="setTenderMode('Other')">Other</button>
+      </div>
+      @if (tenderMode() === 'Cash') {
+        <label class="field"><span>Cash received</span>
+          <input type="number" inputmode="decimal" [value]="cashReceived()" (input)="setCashReceived(+$any($event.target).value)" />
+        </label>
+        <div class="npos-quick">
+          @for (a of cashQuickAmounts(); track a) {
+            <button type="button" class="npos-quick__btn" (click)="setCashReceived(a)">
+              {{ a | number: '1.0-0' }}
+            </button>
+          }
+        </div>
+        <p class="npos-change">Change <strong>{{ changeDue() | currency: 'PKR' : 'symbol' : '1.0-0' }}</strong></p>
+      }
+      <div class="npos-modal__actions">
+        <button type="button" class="npos-btn npos-btn--ghost" (click)="cancelPay()">Cancel</button>
+        <button type="button" class="npos-btn npos-btn--primary npos-btn--pay" [disabled]="saving()" (click)="confirmPayment()">
+          {{ saving() ? 'Posting…' : 'Confirm payment' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

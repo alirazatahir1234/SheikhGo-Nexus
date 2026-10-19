@@ -1,4 +1,4 @@
-<app-page-header title="Products" subtitle="Feed, grain, and finished goods catalog.">
+<app-page-header title="Products" subtitle="Catalog with barcode and sell-by-weight for POS.">
   <app-search-box placeholder="Search products…" [value]="search()" (valueChange)="search.set($event)" />
   <button type="button" class="btn btn--primary" (click)="openCreate()">Add product</button>
 </app-page-header>
@@ -13,12 +13,14 @@
     <form class="form-grid" [formGroup]="form" (ngSubmit)="save()">
       <label class="field"><span>Code</span><input formControlName="code" /></label>
       <label class="field"><span>Name</span><input formControlName="name" /></label>
+      <label class="field"><span>Barcode</span><input formControlName="barcode" placeholder="Scan or type" /></label>
       <label class="field"><span>Category</span><input formControlName="category" /></label>
       <label class="field"><span>Unit</span><input formControlName="unit" /></label>
       <label class="field"><span>Sale price</span><input type="number" formControlName="salePrice" /></label>
       <label class="field"><span>Purchase price</span><input type="number" formControlName="purchasePrice" /></label>
       <label class="field"><span>Stock qty</span><input type="number" formControlName="stockQty" /></label>
       <label class="field"><span>Reorder level</span><input type="number" formControlName="reorderLevel" /></label>
+      <label class="field checkbox"><span><input type="checkbox" formControlName="sellByWeight" /> Sell by weight</span></label>
       <div class="form-actions span-2">
         <button type="button" class="btn btn--ghost" (click)="showForm.set(false)">Cancel</button>
         <button type="submit" class="btn btn--primary" [disabled]="saving()">{{ saving() ? 'Saving…' : 'Save' }}</button>
@@ -33,9 +35,11 @@
       <thead>
         <tr>
           <th>Code</th>
+          <th>Barcode</th>
           <th>Name</th>
           <th>Category</th>
           <th>Unit</th>
+          <th>By wt</th>
           <th class="num">Sale</th>
           <th class="num">Purchase</th>
           <th class="num">Stock</th>
@@ -46,9 +50,11 @@
         @for (p of filtered(); track p.id) {
           <tr>
             <td>{{ p.code }}</td>
+            <td>{{ p.barcode || '—' }}</td>
             <td>{{ p.name }}</td>
             <td>{{ p.category }}</td>
             <td>{{ p.unit }}</td>
+            <td>{{ p.sellByWeight ? 'Yes' : '—' }}</td>
             <td class="num">{{ p.salePrice | currency: 'PKR' : 'symbol' : '1.0-2' }}</td>
             <td class="num">{{ p.purchasePrice | currency: 'PKR' : 'symbol' : '1.0-2' }}</td>
             <td class="num">{{ p.stockQty | number: '1.0-2' }}</td>
@@ -58,7 +64,7 @@
             </td>
           </tr>
         } @empty {
-          <tr><td colspan="8" class="empty">{{ loading() ? 'Loading…' : 'No products found.' }}</td></tr>
+          <tr><td colspan="10" class="empty">{{ loading() ? 'Loading…' : 'No products found.' }}</td></tr>
         }
       </tbody>
     </table>

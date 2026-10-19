@@ -1,0 +1,31 @@
+.store { display:flex; flex-direction:column; gap:1.25rem; }
+.store__hero {
+  display:flex; justify-content:space-between; align-items:flex-end; gap:1rem;
+  padding:1.5rem; border-radius:var(--radius);
+  background: linear-gradient(135deg, rgba(15,118,110,.18), rgba(20,184,166,.08));
+  border:1px solid var(--border);
+}
+.eyebrow { text-transform:uppercase; letter-spacing:.08em; font-size:.7rem; color:var(--text-muted); margin:0; }
+.store__hero h1 { margin:.2rem 0; font-size:clamp(1.8rem, 3vw, 2.4rem); }
+.lede { margin:0; color:var(--text-muted); max-width:36ch; }
+.store__grid { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(280px,.9fr); gap:1rem; align-items:start; }
+.cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:.75rem; }
+.card {
+  border:1px solid var(--border); border-radius:var(--radius-sm); padding:.9rem; background:var(--surface);
+}
+.card h3 { margin:0 0 .35rem; font-size:1rem; }
+.card__row { display:flex; justify-content:space-between; align-items:center; margin-top:.75rem; }
+.panel { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:1rem; position:sticky; top:1rem; }
+.cart-line { display:grid; grid-template-columns:1fr 4.5rem auto; gap:.5rem; align-items:center; margin-bottom:.65rem; }
+.cart-line input { padding:.4rem; border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--surface); }
+.total { display:flex; justify-content:space-between; margin:1rem 0; font-size:1.15rem; border-top:1px solid var(--border); padding-top:.75rem; }
+.field { display:flex; flex-direction:column; gap:.3rem; margin-bottom:.65rem; font-size:.85rem; }
+.field span { color:var(--text-muted); }
+.field input { padding:.55rem .65rem; border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--surface); }
+.muted { color:var(--text-muted); }
+.tiny { font-size:.75rem; margin-top:.75rem; }
+.alert--ok { background:rgba(16,185,129,.12); border:1px solid rgba(16,185,129,.35); padding:.65rem .9rem; border-radius:var(--radius-sm); }
+@media (max-width:900px) {
+  .store__grid { grid-template-columns:1fr; }
+  .panel { position:static; }
+}

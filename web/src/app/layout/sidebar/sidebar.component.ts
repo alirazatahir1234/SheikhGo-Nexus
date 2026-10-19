@@ -98,11 +98,11 @@ import { NavIconComponent } from '../../core/nav/nav-icon.component';
       .sidebar {
         width: var(--sidebar-width);
         height: 100%;
-        background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
-        color: #d7e4ea;
+        background: linear-gradient(180deg, #ffffff 0%, #f3f8f9 100%);
+        color: var(--text);
         display: flex;
         flex-direction: column;
-        border-right: 1px solid rgba(255, 255, 255, 0.06);
+        border-right: 1px solid var(--border);
         transition: width 0.2s ease;
         overflow: hidden;
       }
@@ -114,7 +114,7 @@ import { NavIconComponent } from '../../core/nav/nav-icon.component';
         align-items: center;
         gap: 0.75rem;
         padding: 1.25rem 1rem;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        border-bottom: 1px solid var(--border);
       }
       .sidebar__mark {
         width: 2.4rem;
@@ -134,11 +134,11 @@ import { NavIconComponent } from '../../core/nav/nav-icon.component';
         font-family: var(--font-display);
         font-size: 0.95rem;
         letter-spacing: -0.02em;
-        color: #fff;
+        color: var(--slate-900);
         line-height: 1.2;
       }
       .sidebar__brand small {
-        color: #5eead4;
+        color: var(--teal-600);
         font-size: 0.65rem;
         letter-spacing: 0.1em;
         text-transform: uppercase;
@@ -147,7 +147,7 @@ import { NavIconComponent } from '../../core/nav/nav-icon.component';
         font-size: 0.65rem;
         letter-spacing: 0.1em;
         text-transform: uppercase;
-        color: #64748b;
+        color: var(--text-muted);
         padding: 0.85rem 0.75rem 0.35rem;
       }
       .sidebar__nav {
@@ -167,7 +167,7 @@ import { NavIconComponent } from '../../core/nav/nav-icon.component';
         gap: 0.7rem;
         padding: 0.65rem 0.75rem;
         border-radius: var(--radius-sm);
-        color: #b7c8d1;
+        color: var(--slate-700);
         text-decoration: none;
         font-size: 0.9rem;
         font-weight: 500;
@@ -181,12 +181,13 @@ import { NavIconComponent } from '../../core/nav/nav-icon.component';
       }
       a:hover,
       .sidebar__group-btn:hover {
-        background: rgba(255, 255, 255, 0.06);
-        color: #fff;
+        background: color-mix(in srgb, var(--teal-500) 10%, transparent);
+        color: var(--slate-900);
       }
       a.is-active {
-        background: rgba(20, 184, 166, 0.2);
-        color: #fff;
+        background: color-mix(in srgb, var(--teal-500) 16%, transparent);
+        color: var(--teal-600);
+        font-weight: 600;
       }
       .sidebar__label {
         flex: 1;

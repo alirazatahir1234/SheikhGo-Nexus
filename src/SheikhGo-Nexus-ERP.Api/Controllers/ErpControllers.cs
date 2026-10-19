@@ -109,15 +109,30 @@ public class ProductsController : ControllerBase
     public async Task<ActionResult<IReadOnlyList<ProductDto>>> GetAll([FromQuery] string? search, CancellationToken ct) =>
         Ok(await _svc.GetAllAsync(search, ct));
 
+    [HttpGet("barcode/{barcode}")]
+    public async Task<ActionResult<ProductDto>> GetByBarcode(
+        string barcode, [FromQuery] Guid? warehouseId, CancellationToken ct)
+    {
+        var row = await _svc.GetByBarcodeAsync(Uri.UnescapeDataString(barcode), warehouseId, ct);
+        return row is null ? NotFound(new { message = "Unknown barcode." }) : Ok(row);
+    }
+
     [HttpPost]
-    public async Task<ActionResult<ProductDto>> Create([FromBody] ProductUpsertDto dto, CancellationToken ct) =>
-        Ok(await _svc.CreateAsync(dto, ct));
+    public async Task<ActionResult<ProductDto>> Create([FromBody] ProductUpsertDto dto, CancellationToken ct)
+    {
+        try { return Ok(await _svc.CreateAsync(dto, ct)); }
+        catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+    }
 
     [HttpPut("{id:guid}")]
     public async Task<ActionResult<ProductDto>> Update(Guid id, [FromBody] ProductUpsertDto dto, CancellationToken ct)
     {
-        var result = await _svc.UpdateAsync(id, dto, ct);
-        return result is null ? NotFound() : Ok(result);
+        try
+        {
+            var result = await _svc.UpdateAsync(id, dto, ct);
+            return result is null ? NotFound() : Ok(result);
+        }
+        catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
     }
 
     [HttpDelete("{id:guid}")]

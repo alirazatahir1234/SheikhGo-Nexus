@@ -56,8 +56,7 @@ export type KpiTrend = 'up' | 'down' | 'flat';
         font-weight: 600;
         letter-spacing: 0.04em;
         text-transform: uppercase;
-        color: #ffffff;
-        opacity: 0.85;
+        color: var(--text-muted);
       }
       .kpi__delta {
         font-size: 0.75rem;
@@ -75,7 +74,7 @@ export type KpiTrend = 'up' | 'down' | 'flat';
         background: rgba(181, 71, 8, 0.12);
       }
       .kpi__delta--flat {
-        color: #ffffff;
+        color: var(--text-muted);
         background: color-mix(in srgb, var(--slate-600) 14%, transparent);
       }
       .kpi__value {
@@ -83,14 +82,13 @@ export type KpiTrend = 'up' | 'down' | 'flat';
         font-family: var(--font-display);
         font-size: 1.45rem;
         font-weight: 700;
-        color: #ffffff;
+        color: var(--text);
         letter-spacing: -0.02em;
       }
       .kpi__hint {
         margin: 0.2rem 0 0;
         font-size: 0.78rem;
-        color: #ffffff;
-        opacity: 0.75;
+        color: var(--text-muted);
       }
       .kpi__spark {
         margin-top: auto;

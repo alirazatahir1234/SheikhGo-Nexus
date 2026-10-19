@@ -43,6 +43,8 @@ public interface IPartyService
 public interface IProductService
 {
     Task<IReadOnlyList<ProductDto>> GetAllAsync(string? search = null, CancellationToken ct = default);
+    /// <param name="warehouseId">When set, <see cref="ProductDto.StockQty"/> is scoped to that warehouse (POS terminal stock).</param>
+    Task<ProductDto?> GetByBarcodeAsync(string barcode, Guid? warehouseId = null, CancellationToken ct = default);
     Task<ProductDto> CreateAsync(ProductUpsertDto dto, CancellationToken ct = default);
     Task<ProductDto?> UpdateAsync(Guid id, ProductUpsertDto dto, CancellationToken ct = default);
     Task<bool> DeleteAsync(Guid id, CancellationToken ct = default);
@@ -501,9 +503,14 @@ public interface IPosService
     Task<PosTerminalDto> CreateTerminalAsync(PosTerminalDto dto, CancellationToken ct = default);
     Task<IReadOnlyList<PosShiftDto>> GetShiftsAsync(CancellationToken ct = default);
     Task<PosShiftDto> OpenShiftAsync(PosShiftOpenDto dto, CancellationToken ct = default);
+    Task<PosShiftReconciliationDto?> GetShiftReconciliationAsync(Guid id, CancellationToken ct = default);
     Task<PosShiftDto?> CloseShiftAsync(Guid id, PosShiftCloseDto dto, CancellationToken ct = default);
     Task<IReadOnlyList<PosSaleDto>> GetAllAsync(CancellationToken ct = default);
+    Task<PosSaleDto?> GetSaleByIdAsync(Guid id, CancellationToken ct = default);
     Task<PosSaleDto> CreateAsync(PosSaleCreateDto dto, CancellationToken ct = default);
+    Task<PosSaleDto> CreateReturnAsync(PosSaleReturnCreateDto dto, CancellationToken ct = default);
+    Task<PosDailySalesReportDto> GetDailySalesReportAsync(DateTime? date, CancellationToken ct = default);
+    Task<PosOwnerProfitReportDto> GetOwnerProfitReportAsync(DateTime? date, CancellationToken ct = default);
 }
 
 public interface IOperationsService

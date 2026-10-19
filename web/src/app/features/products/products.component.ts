@@ -28,7 +28,8 @@ export class ProductsComponent implements OnInit {
         !q ||
         p.code.toLowerCase().includes(q) ||
         p.name.toLowerCase().includes(q) ||
-        p.category.toLowerCase().includes(q),
+        (p.barcode || '').toLowerCase().includes(q) ||
+        (p.category || '').toLowerCase().includes(q),
     );
   });
 
@@ -41,12 +42,16 @@ export class ProductsComponent implements OnInit {
     this.form = this.fb.nonNullable.group({
       code: ['', Validators.required],
       name: ['', Validators.required],
+      barcode: [''],
       category: ['', Validators.required],
       unit: ['KG', Validators.required],
       salePrice: [0, [Validators.required, Validators.min(0)]],
       purchasePrice: [0, [Validators.required, Validators.min(0)]],
       stockQty: [0, [Validators.min(0)]],
       reorderLevel: [0, [Validators.min(0)]],
+      sellByWeight: [false],
+      isRawMaterial: [false],
+      isFinishedGood: [true],
     });
   }
 
@@ -74,19 +79,29 @@ export class ProductsComponent implements OnInit {
     this.form.reset({
       code: '',
       name: '',
+      barcode: '',
       category: '',
       unit: 'KG',
       salePrice: 0,
       purchasePrice: 0,
       stockQty: 0,
       reorderLevel: 0,
+      sellByWeight: false,
+      isRawMaterial: false,
+      isFinishedGood: true,
     });
     this.showForm.set(true);
   }
 
   openEdit(product: Product): void {
     this.editingId.set(product.id);
-    this.form.patchValue(product);
+    this.form.patchValue({
+      ...product,
+      barcode: product.barcode || '',
+      sellByWeight: !!product.sellByWeight,
+      isRawMaterial: !!product.isRawMaterial,
+      isFinishedGood: product.isFinishedGood !== false,
+    });
     this.showForm.set(true);
   }
 

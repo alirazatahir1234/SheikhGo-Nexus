@@ -23,6 +23,7 @@ export const NAV_TREE: NavItem[] = [
     section: 'Overview',
     children: [
       { id: 'dashboard', label: 'Dashboard', icon: 'layout-dashboard', route: '/dashboard' },
+      { id: 'store', label: 'Online store', icon: 'shopping-bag', route: '/store' },
       { id: 'ai', label: 'AI Assistant', icon: 'sparkles', route: '/ai', permissions: ['Ai.Chat.View'] },
       { id: 'reports', label: 'Reports', icon: 'bar-chart-3', route: '/reports', permissions: ['Reports.Executive.View', 'Reports.Finance.View', 'Reports.Sales.View', 'Reports.Procurement.View', 'Reports.Inventory.View', 'Finance.Reports.View', 'Inventory.Reports.View'] },
     ],
@@ -154,8 +155,10 @@ export const NAV_TREE: NavItem[] = [
         permissions: ['POS.Sale.View', 'POS.Shift.View'],
         modules: ['pos'],
         children: [
-          { id: 'pos-sales', label: 'Sales', icon: 'shopping-bag', route: '/pos/sales' },
+          { id: 'pos-terminal', label: 'Terminal', icon: 'shopping-bag', route: '/pos/terminal' },
+          { id: 'pos-sales', label: 'Sales', icon: 'receipt', route: '/pos/sales' },
           { id: 'pos-shifts', label: 'Shifts', icon: 'clock', route: '/pos/shifts' },
+          { id: 'pos-reports', label: 'Reports', icon: 'bar-chart-3', route: '/pos/reports' },
         ],
       },
     ],

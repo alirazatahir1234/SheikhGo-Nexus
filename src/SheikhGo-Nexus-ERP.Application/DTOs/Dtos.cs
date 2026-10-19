@@ -69,12 +69,13 @@ public record ProductDto(
     Guid Id, string Code, string Name, string? Category, string Unit,
     decimal SalePrice, decimal PurchasePrice, decimal StockQty,
     decimal ReorderLevel, bool IsActive, bool IsRawMaterial, bool IsFinishedGood,
-    decimal AverageCost = 0);
+    decimal AverageCost = 0, string? Barcode = null, bool SellByWeight = false);
 
 public record ProductUpsertDto(
     string Code, string Name, string? Category, string Unit,
     decimal SalePrice, decimal PurchasePrice, decimal StockQty,
-    decimal ReorderLevel, bool IsRawMaterial, bool IsFinishedGood);
+    decimal ReorderLevel, bool IsRawMaterial, bool IsFinishedGood,
+    string? Barcode = null, bool SellByWeight = false);
 
 public record VoucherLineDto(Guid? Id, Guid AccountId, string? AccountName, decimal Debit, decimal Credit, string? Remarks);
 public record VoucherListDto(Guid Id, string VoucherNo, string VoucherType, DateTime Date, string? Narration, decimal TotalDebit, decimal TotalCredit, string Status);
@@ -426,10 +427,43 @@ public record PosTerminalDto(Guid Id, string Code, string Name, Guid WarehouseId
 public record PosShiftDto(Guid Id, string ShiftNo, Guid TerminalId, string? TerminalCode, DateTime OpenedAt, decimal OpeningCash, DateTime? ClosedAt, decimal? ExpectedCash, decimal? ActualCash, decimal? Variance, string Status);
 public record PosShiftOpenDto(Guid TerminalId, decimal OpeningCash);
 public record PosShiftCloseDto(decimal ActualCash);
+/// <summary>Cashier drawer reconciliation preview for an open (or closed) shift.</summary>
+public record PosShiftReconciliationDto(
+    Guid ShiftId,
+    string ShiftNo,
+    string Status,
+    decimal OpeningCash,
+    decimal CashSales,
+    decimal CardSales,
+    decimal OtherSales,
+    decimal CashRefunds,
+    int SaleCount,
+    int ReturnedSaleCount,
+    decimal ExpectedCash,
+    decimal? ActualCash,
+    decimal? Variance);
 public record PosSaleLineDto(Guid? Id, Guid ProductId, string? ProductName, decimal Qty, decimal Rate, decimal Amount);
 public record PosPaymentDto(Guid? Id, string Tender, decimal Amount, Guid? CashBankAccountId, Guid? CustomerPaymentId);
-public record PosSaleDto(Guid Id, string SaleNo, Guid ShiftId, Guid TerminalId, Guid PartyId, string? PartyName, DateTime SaleDate, decimal SubTotal, decimal GrandTotal, DocumentStatus Status, Guid? SalesOrderId, Guid? DeliveryOrderId, Guid? SalesInvoiceId, string? Remarks, IReadOnlyList<PosSaleLineDto> Lines, IReadOnlyList<PosPaymentDto> Payments);
-public record PosSaleCreateDto(Guid ShiftId, DateTime? SaleDate, string? Remarks, IReadOnlyList<PosSaleLineDto> Lines, IReadOnlyList<PosPaymentDto> Payments);
+public record PosSaleDto(Guid Id, string SaleNo, Guid ShiftId, Guid TerminalId, Guid PartyId, string? PartyName, DateTime SaleDate, decimal SubTotal, decimal Discount, decimal GrandTotal, DocumentStatus Status, Guid? SalesOrderId, Guid? DeliveryOrderId, Guid? SalesInvoiceId, string? Remarks, IReadOnlyList<PosSaleLineDto> Lines, IReadOnlyList<PosPaymentDto> Payments, string? IdempotencyKey = null, Guid? SaleReturnId = null);
+public record PosSaleCreateDto(Guid ShiftId, DateTime? SaleDate, string? Remarks, IReadOnlyList<PosSaleLineDto> Lines, IReadOnlyList<PosPaymentDto> Payments, string? IdempotencyKey = null, decimal Discount = 0);
+public record PosSaleReturnCreateDto(Guid PosSaleId, string? Remarks, IReadOnlyList<PosSaleLineDto>? Lines = null);
+public record PosDailySalesReportDto(
+    DateTime Date,
+    int SaleCount,
+    decimal GrossSales,
+    decimal Discounts,
+    decimal NetSales,
+    decimal CashTotal,
+    decimal CardTotal,
+    decimal OtherTotal,
+    IReadOnlyList<PosCashierSalesDto> ByCashier,
+    IReadOnlyList<PosProductSalesDto> TopProducts,
+    int ReturnedSaleCount = 0,
+    decimal CashRefundsExcluded = 0);
+public record PosCashierSalesDto(Guid UserId, string? UserName, int SaleCount, decimal NetSales);
+public record PosProductSalesDto(Guid ProductId, string? ProductName, decimal Qty, decimal Amount);
+public record PosOwnerProfitReportDto(
+    DateTime Date, decimal NetSales, decimal Cogs, decimal GrossProfit, decimal Expenses, decimal OperatingProfit);
 
 // Legacy aliases
 public record PosSaleLegacyCreateDto(DateTime Date, Guid? PartyId, string PaymentMode, decimal Discount, decimal Tax, string? Remarks, IReadOnlyList<PosSaleLineDto> Lines);

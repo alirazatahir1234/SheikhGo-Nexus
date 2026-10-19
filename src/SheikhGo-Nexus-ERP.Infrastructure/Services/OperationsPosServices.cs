@@ -363,8 +363,11 @@ public class PosService(
     IAuditService audit,
     IPermissionService permissions,
     ISalesService sales,
+    IStockAdjustmentService adjustments,
     ITenantContext tenant) : IPosService
 {
+    private static decimal RoundMoney(decimal v) => Math.Round(v, 2, MidpointRounding.AwayFromZero);
+    private static decimal RoundQty(decimal v) => Math.Round(v, 3, MidpointRounding.AwayFromZero);
     public async Task<IReadOnlyList<PosTerminalDto>> GetTerminalsAsync(CancellationToken ct = default)
     {
         await permissions.EnsureAsync("POS.Terminal.View", ct);
@@ -427,21 +430,24 @@ public class PosService(
         return (await GetShiftsAsync(ct)).First(x => x.Id == shift.Id);
     }
 
+    public async Task<PosShiftReconciliationDto?> GetShiftReconciliationAsync(Guid id, CancellationToken ct = default)
+    {
+        await permissions.EnsureAsync("POS.Shift.View", ct);
+        var shift = await db.PosShifts.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, ct);
+        if (shift is null) return null;
+        return await BuildReconciliationAsync(shift, ct);
+    }
+
     public async Task<PosShiftDto?> CloseShiftAsync(Guid id, PosShiftCloseDto dto, CancellationToken ct = default)
     {
         await permissions.EnsureAsync("POS.Shift.Close", ct);
-        var shift = await db.PosShifts
-            .Include(x => x.Sales).ThenInclude(s => s.Payments)
-            .FirstOrDefaultAsync(x => x.Id == id, ct);
+        var shift = await db.PosShifts.FirstOrDefaultAsync(x => x.Id == id, ct);
         if (shift is null) return null;
         if (shift.Status != PosShiftStatus.Open)
             throw new InvalidOperationException("Shift is not open.");
-        var cashSales = await db.PosPayments
-            .Where(p => p.PosSale!.ShiftId == shift.Id
-                        && p.PosSale.Status == DocumentStatus.Posted
-                        && p.Tender == PosTenderType.Cash)
-            .SumAsync(p => (decimal?)p.Amount, ct) ?? 0m;
-        var expected = shift.OpeningCash + cashSales;
+
+        var recon = await BuildReconciliationAsync(shift, ct);
+        var expected = recon.ExpectedCash;
         var userId = tenant.UserId ?? await db.Users.Select(x => x.Id).FirstAsync(ct);
         shift.ExpectedCash = expected;
         shift.ActualCash = dto.ActualCash;
@@ -451,14 +457,52 @@ public class PosService(
         shift.Status = PosShiftStatus.Closed;
         await db.SaveChangesAsync(ct);
         await audit.WriteAsync(nameof(PosShift), shift.Id, "Closed",
-            $"Expected={expected}", $"Actual={dto.ActualCash};Variance={shift.Variance}", ct);
+            $"Expected={expected};CashSales={recon.CashSales};Refunds={recon.CashRefunds}",
+            $"Actual={dto.ActualCash};Variance={shift.Variance}", ct);
         return (await GetShiftsAsync(ct)).First(x => x.Id == id);
+    }
+
+    private async Task<PosShiftReconciliationDto> BuildReconciliationAsync(PosShift shift, CancellationToken ct)
+    {
+        var sales = await db.PosSales.AsNoTracking()
+            .Include(s => s.Payments)
+            .Where(s => s.ShiftId == shift.Id && s.Status == DocumentStatus.Posted)
+            .ToListAsync(ct);
+
+        var active = sales.Where(s => s.SaleReturnId is null).ToList();
+        var returned = sales.Where(s => s.SaleReturnId is not null).ToList();
+
+        decimal SumTender(IEnumerable<PosSale> rows, PosTenderType tender) =>
+            rows.SelectMany(s => s.Payments).Where(p => p.Tender == tender).Sum(p => p.Amount);
+
+        var cashSales = SumTender(active, PosTenderType.Cash);
+        var cardSales = SumTender(active, PosTenderType.Card);
+        var otherSales = active.SelectMany(s => s.Payments)
+            .Where(p => p.Tender != PosTenderType.Cash && p.Tender != PosTenderType.Card)
+            .Sum(p => p.Amount);
+        // Cash returns: returned tickets are excluded from cashSales so expected drawer
+        // = Opening + active cash only. CashRefunds is informational (original cash tender
+        // on returned tickets) — cashier should have handed that cash back to the customer.
+        var cashRefunds = SumTender(returned, PosTenderType.Cash);
+        var expected = shift.OpeningCash + cashSales;
+
+        return new PosShiftReconciliationDto(
+            shift.Id, shift.ShiftNo, shift.Status.ToString(),
+            shift.OpeningCash, cashSales, cardSales, otherSales, cashRefunds,
+            active.Count, returned.Count, expected,
+            shift.ActualCash, shift.Variance);
     }
 
     public async Task<IReadOnlyList<PosSaleDto>> GetAllAsync(CancellationToken ct = default)
     {
         await permissions.EnsureAsync("POS.Sale.View", ct);
         return await MapSalesAsync(ct);
+    }
+
+    public async Task<PosSaleDto?> GetSaleByIdAsync(Guid id, CancellationToken ct = default)
+    {
+        await permissions.EnsureAsync("POS.Sale.View", ct);
+        return (await MapSalesAsync(ct)).FirstOrDefault(x => x.Id == id);
     }
 
     public async Task<PosSaleDto> CreateAsync(PosSaleCreateDto dto, CancellationToken ct = default)
@@ -468,6 +512,17 @@ public class PosService(
             throw new InvalidOperationException("At least one line is required.");
         if (dto.Payments is null || dto.Payments.Count == 0)
             throw new InvalidOperationException("At least one payment is required.");
+        if (dto.Discount < 0)
+            throw new InvalidOperationException("Discount cannot be negative.");
+
+        var idem = string.IsNullOrWhiteSpace(dto.IdempotencyKey) ? null : dto.IdempotencyKey.Trim();
+        if (idem is not null)
+        {
+            var existing = await db.PosSales.AsNoTracking()
+                .FirstOrDefaultAsync(x => x.IdempotencyKey == idem, ct);
+            if (existing is not null)
+                return (await MapSalesAsync(ct)).First(x => x.Id == existing.Id);
+        }
 
         var shift = await db.PosShifts.Include(x => x.Terminal)
             .FirstOrDefaultAsync(x => x.Id == dto.ShiftId, ct)
@@ -478,10 +533,32 @@ public class PosService(
         var party = await db.Parties.FirstOrDefaultAsync(x => x.Code == "CUS-POS", ct)
             ?? throw new InvalidOperationException("Walk-in party CUS-POS is not seeded.");
 
-        var sub = dto.Lines.Sum(l => l.Qty * l.Rate);
-        var payTotal = dto.Payments.Sum(p => p.Amount);
-        if (Math.Abs(payTotal - sub) > 0.01m)
-            throw new InvalidOperationException("Payments must equal sale total.");
+        decimal sub = 0;
+        var validatedLines = new List<(Guid ProductId, decimal Qty, decimal Rate, decimal Amount)>();
+        foreach (var l in dto.Lines)
+        {
+            var product = await db.Products.Include(p => p.Stocks)
+                .FirstOrDefaultAsync(p => p.Id == l.ProductId && p.IsActive, ct)
+                ?? throw new InvalidOperationException($"Product {l.ProductId} not found or inactive.");
+            var qty = RoundQty(l.Qty);
+            if (qty <= 0) throw new InvalidOperationException($"Invalid quantity for {product.Name}.");
+            if (!product.SellByWeight && qty != Math.Floor(qty))
+                throw new InvalidOperationException($"{product.Name} does not allow fractional quantity.");
+            var rate = RoundMoney(product.SalePrice); // server price of record
+            var amount = RoundMoney(qty * rate);
+            var stock = product.Stocks.Where(s => s.WarehouseId == terminal.WarehouseId).Sum(s => s.Quantity);
+            if (stock < qty)
+                throw new InvalidOperationException($"Insufficient stock for {product.Name}. Available {stock}.");
+            sub += amount;
+            validatedLines.Add((product.Id, qty, rate, amount));
+        }
+        sub = RoundMoney(sub);
+        var discount = RoundMoney(dto.Discount);
+        if (discount > sub) throw new InvalidOperationException("Discount cannot exceed subtotal.");
+        var grand = RoundMoney(sub - discount);
+        var payTotal = RoundMoney(dto.Payments.Sum(p => p.Amount));
+        if (Math.Abs(payTotal - grand) > 0.01m)
+            throw new InvalidOperationException("Payments must equal sale total (after discount).");
 
         var cashBankCash = await db.CashBankAccounts.FirstOrDefaultAsync(x => x.Code == "CASH", ct);
         var cashBankCard = await db.CashBankAccounts.FirstOrDefaultAsync(x => x.Code == "CARD", ct)
@@ -511,13 +588,15 @@ public class PosService(
             PartyId = party.Id,
             SaleDate = (dto.SaleDate ?? DateTime.UtcNow).Date,
             SubTotal = sub,
-            GrandTotal = sub,
+            Discount = discount,
+            GrandTotal = grand,
+            IdempotencyKey = idem,
             Status = DocumentStatus.Draft,
             Remarks = dto.Remarks,
             Document = document
         };
         var lineNo = 1;
-        foreach (var l in dto.Lines)
+        foreach (var l in validatedLines)
         {
             sale.Lines.Add(new PosSaleLine
             {
@@ -525,11 +604,12 @@ public class PosService(
                 ProductId = l.ProductId,
                 Qty = l.Qty,
                 Rate = l.Rate,
-                Amount = l.Qty * l.Rate
+                Amount = l.Amount
             });
         }
         foreach (var p in dto.Payments)
         {
+            if (p.Amount <= 0) continue;
             if (!Enum.TryParse<PosTenderType>(p.Tender, true, out var tender))
                 tender = PosTenderType.Cash;
             Guid? bankId = p.CashBankAccountId;
@@ -545,10 +625,12 @@ public class PosService(
             sale.Payments.Add(new PosPayment
             {
                 Tender = tender,
-                Amount = p.Amount,
+                Amount = RoundMoney(p.Amount),
                 CashBankAccountId = bankId
             });
         }
+        if (sale.Payments.Count == 0)
+            throw new InvalidOperationException("At least one payment with amount > 0 is required.");
         db.PosSales.Add(sale);
         await db.SaveChangesAsync(ct);
 
@@ -561,7 +643,7 @@ public class PosService(
             sale.SaleDate, party.Id, terminal.WarehouseId, so.Id, $"POS {sale.SaleNo}", true, doLines), ct);
 
         var si = await sales.CreateInvoiceAsync(new SalesInvoiceDocCreateDto(
-            sale.SaleDate, party.Id, 0, 0, $"POS {sale.SaleNo}", true, doLines, delivery.Id, so.Id), ct);
+            sale.SaleDate, party.Id, discount, 0, $"POS {sale.SaleNo}", true, doLines, delivery.Id, so.Id), ct);
 
         foreach (var pay in sale.Payments)
         {
@@ -583,6 +665,148 @@ public class PosService(
         return (await MapSalesAsync(ct)).First(x => x.Id == sale.Id);
     }
 
+    public async Task<PosSaleDto> CreateReturnAsync(PosSaleReturnCreateDto dto, CancellationToken ct = default)
+    {
+        await permissions.EnsureAsync("POS.Sale.Create", ct);
+        var sale = await db.PosSales
+            .Include(x => x.Lines).ThenInclude(l => l.Product)
+            .Include(x => x.Payments)
+            .Include(x => x.Terminal)
+            .FirstOrDefaultAsync(x => x.Id == dto.PosSaleId, ct)
+            ?? throw new InvalidOperationException("POS sale not found.");
+        if (sale.Status != DocumentStatus.Posted)
+            throw new InvalidOperationException("Only posted sales can be returned.");
+        if (sale.SaleReturnId is not null)
+            throw new InvalidOperationException("Sale already returned.");
+
+        var terminal = sale.Terminal ?? await db.PosTerminals.FirstAsync(x => x.Id == sale.TerminalId, ct);
+        List<PosSaleLineDto> returnLines;
+        if (dto.Lines is { Count: > 0 })
+        {
+            returnLines = new List<PosSaleLineDto>();
+            foreach (var l in dto.Lines)
+            {
+                var orig = sale.Lines.FirstOrDefault(x => x.ProductId == l.ProductId)
+                    ?? throw new InvalidOperationException($"Product {l.ProductId} was not on the original sale.");
+                var qty = RoundQty(l.Qty);
+                if (qty <= 0) throw new InvalidOperationException($"Invalid return qty for {orig.ProductId}.");
+                if (qty > orig.Qty)
+                    throw new InvalidOperationException($"Return qty exceeds sold qty for line ({orig.Qty} max).");
+                returnLines.Add(new PosSaleLineDto(orig.Id, orig.ProductId, orig.Product?.Name, qty, orig.Rate,
+                    RoundMoney(qty * orig.Rate)));
+            }
+        }
+        else
+        {
+            returnLines = sale.Lines.Select(l =>
+                new PosSaleLineDto(l.Id, l.ProductId, null, l.Qty, l.Rate, l.Amount)).ToList();
+        }
+
+        // Stock-only return (no reverse CustomerPayment / credit note):
+        // Reversing posted SO→DO→SI→CP tenders would require a full sales-credit path that
+        // does not exist yet. Instead we restore warehouse stock, mark the ticket returned,
+        // and exclude it from shift cashSales / daily net so drawer expected cash drops by
+        // the original cash tender. Cashier hands cash back at the counter; CashRefunds on
+        // reconciliation reports that amount for audit.
+        var cashTender = sale.Payments.Where(p => p.Tender == PosTenderType.Cash).Sum(p => p.Amount);
+        var cardTender = sale.Payments.Where(p => p.Tender == PosTenderType.Card).Sum(p => p.Amount);
+        var returnAmount = RoundMoney(returnLines.Sum(l => l.Amount));
+        var reason = string.IsNullOrWhiteSpace(dto.Remarks) ? "Customer return" : dto.Remarks.Trim();
+        var adjLines = returnLines.Select(l =>
+            new StockAdjustmentLineDto(null, l.ProductId, null, RoundQty(l.Qty), null, $"POS return {sale.SaleNo}")).ToList();
+        var adj = await adjustments.CreateAsync(new StockAdjustmentDocCreateDto(
+            DateTime.UtcNow.Date, terminal.WarehouseId, $"POS return {sale.SaleNo}",
+            reason, true, adjLines), ct);
+
+        sale.SaleReturnId = adj.Id;
+        var tenderNote = cashTender > 0
+            ? $"CashRefundHint={cashTender:0.##} (hand back from drawer; excluded from shift cashSales)"
+            : cardTender > 0
+                ? $"CardTender={cardTender:0.##} (no drawer cash; card refund is out-of-band)"
+                : "NoCashTender";
+        var note = $"Returned via {adj.AdjustmentNo}; StockRestore; ReturnAmt={returnAmount:0.##}; {tenderNote}; Reason: {reason}";
+        sale.Remarks = string.IsNullOrWhiteSpace(sale.Remarks) ? note : $"{sale.Remarks}; {note}";
+        await db.SaveChangesAsync(ct);
+        await audit.WriteAsync(nameof(PosSale), sale.Id, "Returned", null,
+            $"SA={adj.AdjustmentNo};ReturnAmt={returnAmount};CashHint={cashTender};Reason={reason}", ct);
+        return (await MapSalesAsync(ct)).First(x => x.Id == sale.Id);
+    }
+
+    public async Task<PosDailySalesReportDto> GetDailySalesReportAsync(DateTime? date, CancellationToken ct = default)
+    {
+        await permissions.EnsureAsync("POS.Sale.View", ct);
+        var day = (date ?? DateTime.UtcNow).Date;
+        var daySales = await db.PosSales
+            .Include(x => x.Payments)
+            .Include(x => x.Lines).ThenInclude(l => l.Product)
+            .Include(x => x.Shift)
+            .Where(x => x.SaleDate == day && x.Status == DocumentStatus.Posted)
+            .ToListAsync(ct);
+
+        var sales = daySales.Where(x => x.SaleReturnId is null).ToList();
+        var returned = daySales.Where(x => x.SaleReturnId is not null).ToList();
+        var cashRefundsExcluded = returned.SelectMany(s => s.Payments)
+            .Where(p => p.Tender == PosTenderType.Cash).Sum(p => p.Amount);
+
+        var cash = sales.SelectMany(s => s.Payments).Where(p => p.Tender == PosTenderType.Cash).Sum(p => p.Amount);
+        var card = sales.SelectMany(s => s.Payments).Where(p => p.Tender == PosTenderType.Card).Sum(p => p.Amount);
+        var other = sales.SelectMany(s => s.Payments).Where(p => p.Tender != PosTenderType.Cash && p.Tender != PosTenderType.Card).Sum(p => p.Amount);
+        var gross = sales.Sum(s => s.SubTotal);
+        var discounts = sales.Sum(s => s.Discount);
+        var net = sales.Sum(s => s.GrandTotal);
+
+        var openerIds = sales.Select(s => s.Shift?.OpenedByUserId).Where(id => id is Guid).Cast<Guid>().Distinct().ToList();
+        var users = await db.Users.Where(u => openerIds.Contains(u.Id))
+            .Select(u => new { u.Id, u.FullName }).ToListAsync(ct);
+        var byCashier = sales
+            .GroupBy(s => s.Shift?.OpenedByUserId ?? Guid.Empty)
+            .Select(g =>
+            {
+                var name = users.FirstOrDefault(u => u.Id == g.Key)?.FullName;
+                return new PosCashierSalesDto(g.Key, name, g.Count(), g.Sum(x => x.GrandTotal));
+            })
+            .OrderByDescending(x => x.NetSales)
+            .ToList();
+
+        var topProducts = sales.SelectMany(s => s.Lines)
+            .GroupBy(l => l.ProductId)
+            .Select(g => new PosProductSalesDto(
+                g.Key, g.First().Product?.Name, g.Sum(x => x.Qty), g.Sum(x => x.Amount)))
+            .OrderByDescending(x => x.Amount)
+            .Take(20)
+            .ToList();
+
+        return new PosDailySalesReportDto(
+            day, sales.Count, gross, discounts, net, cash, card, other, byCashier, topProducts,
+            returned.Count, cashRefundsExcluded);
+    }
+
+    public async Task<PosOwnerProfitReportDto> GetOwnerProfitReportAsync(DateTime? date, CancellationToken ct = default)
+    {
+        await permissions.EnsureAsync("POS.Sale.View", ct);
+        var day = (date ?? DateTime.UtcNow).Date;
+        var sales = await db.PosSales
+            .Include(x => x.Lines).ThenInclude(l => l.Product)
+            .Where(x => x.SaleDate == day && x.Status == DocumentStatus.Posted && x.SaleReturnId == null)
+            .ToListAsync(ct);
+        var netSales = sales.Sum(s => s.GrandTotal);
+        var cogs = sales.SelectMany(s => s.Lines).Sum(l =>
+        {
+            var unitCost = l.Product?.AverageCost > 0 ? l.Product.AverageCost : l.Product?.PurchasePrice ?? 0;
+            return Math.Round(unitCost * l.Qty, 2);
+        });
+        var gross = netSales - cogs;
+        var expenses = await db.JournalEntryLines
+            .Where(l => l.JournalEntry != null
+                        && l.JournalEntry.PostingDate == day
+                        && l.JournalEntry.Status == DocumentStatus.Posted
+                        && l.Account != null
+                        && l.Account.AccountType == AccountType.Expense)
+            .SumAsync(l => (decimal?)(l.Debit - l.Credit), ct) ?? 0m;
+        if (expenses < 0) expenses = 0;
+        return new PosOwnerProfitReportDto(day, netSales, cogs, gross, expenses, gross - expenses);
+    }
+
     private async Task<IReadOnlyList<PosSaleDto>> MapSalesAsync(CancellationToken ct)
     {
         var rows = await db.PosSales
@@ -590,12 +814,14 @@ public class PosService(
             .Include(x => x.Lines).ThenInclude(l => l.Product)
             .Include(x => x.Payments)
             .OrderByDescending(x => x.SaleDate)
+            .ThenByDescending(x => x.CreatedAt)
             .ToListAsync(ct);
         return rows.Select(x => new PosSaleDto(
             x.Id, x.SaleNo, x.ShiftId, x.TerminalId, x.PartyId, x.Party?.Name, x.SaleDate,
-            x.SubTotal, x.GrandTotal, x.Status, x.SalesOrderId, x.DeliveryOrderId, x.SalesInvoiceId, x.Remarks,
+            x.SubTotal, x.Discount, x.GrandTotal, x.Status, x.SalesOrderId, x.DeliveryOrderId, x.SalesInvoiceId, x.Remarks,
             x.Lines.Select(l => new PosSaleLineDto(l.Id, l.ProductId, l.Product?.Name, l.Qty, l.Rate, l.Amount)).ToList(),
-            x.Payments.Select(p => new PosPaymentDto(p.Id, p.Tender.ToString(), p.Amount, p.CashBankAccountId, p.CustomerPaymentId)).ToList()
+            x.Payments.Select(p => new PosPaymentDto(p.Id, p.Tender.ToString(), p.Amount, p.CashBankAccountId, p.CustomerPaymentId)).ToList(),
+            x.IdempotencyKey, x.SaleReturnId
         )).ToList();
     }
 

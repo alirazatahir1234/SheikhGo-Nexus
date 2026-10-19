@@ -148,6 +148,13 @@ public class PosController(IPosService svc) : ControllerBase
         catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
     }
 
+    [HttpGet("shifts/{id:guid}/reconciliation")]
+    public async Task<ActionResult<PosShiftReconciliationDto>> ShiftReconciliation(Guid id, CancellationToken ct)
+    {
+        var row = await svc.GetShiftReconciliationAsync(id, ct);
+        return row is null ? NotFound() : Ok(row);
+    }
+
     [HttpPost("shifts/{id:guid}/close")]
     public async Task<IActionResult> CloseShift(Guid id, [FromBody] PosShiftCloseDto dto, CancellationToken ct)
     {
@@ -164,11 +171,44 @@ public class PosController(IPosService svc) : ControllerBase
     public async Task<ActionResult<IReadOnlyList<PosSaleDto>>> Sales(CancellationToken ct) =>
         Ok(await svc.GetAllAsync(ct));
 
+    [HttpGet("sales/{id:guid}")]
+    public async Task<ActionResult<PosSaleDto>> SaleById(Guid id, CancellationToken ct)
+    {
+        var row = await svc.GetSaleByIdAsync(id, ct);
+        return row is null ? NotFound() : Ok(row);
+    }
+
     [HttpPost("sales")]
     [HttpPost]
     public async Task<ActionResult<PosSaleDto>> CreateSale([FromBody] PosSaleCreateDto dto, CancellationToken ct)
     {
         try { return Ok(await svc.CreateAsync(dto, ct)); }
+        catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+    }
+
+    [HttpPost("sales/{id:guid}/returns")]
+    public async Task<ActionResult<PosSaleDto>> ReturnSale(Guid id, [FromBody] PosSaleReturnCreateDto? dto, CancellationToken ct)
+    {
+        try
+        {
+            var body = dto ?? new PosSaleReturnCreateDto(id, null, null);
+            if (body.PosSaleId == Guid.Empty) body = body with { PosSaleId = id };
+            return Ok(await svc.CreateReturnAsync(body, ct));
+        }
+        catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+    }
+
+    [HttpGet("reports/daily-sales")]
+    public async Task<ActionResult<PosDailySalesReportDto>> DailySales([FromQuery] DateTime? date, CancellationToken ct)
+    {
+        try { return Ok(await svc.GetDailySalesReportAsync(date, ct)); }
+        catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+    }
+
+    [HttpGet("reports/owner-profit")]
+    public async Task<ActionResult<PosOwnerProfitReportDto>> OwnerProfit([FromQuery] DateTime? date, CancellationToken ct)
+    {
+        try { return Ok(await svc.GetOwnerProfitReportAsync(date, ct)); }
         catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
     }
 }

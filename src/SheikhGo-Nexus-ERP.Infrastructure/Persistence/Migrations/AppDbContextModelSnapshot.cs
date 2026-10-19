@@ -3666,11 +3666,17 @@ namespace SheikhGoNexusERP.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("DeliveryOrderId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<decimal>("Discount")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<Guid?>("DocumentId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<decimal>("GrandTotal")
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("IdempotencyKey")
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
@@ -3687,6 +3693,9 @@ namespace SheikhGoNexusERP.Infrastructure.Persistence.Migrations
                     b.Property<string>("SaleNo")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
+
+                    b.Property<Guid?>("SaleReturnId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid?>("SalesInvoiceId")
                         .HasColumnType("uniqueidentifier");
@@ -3730,6 +3739,10 @@ namespace SheikhGoNexusERP.Infrastructure.Persistence.Migrations
                     b.HasIndex("ShiftId");
 
                     b.HasIndex("TerminalId");
+
+                    b.HasIndex("TenantId", "IdempotencyKey")
+                        .IsUnique()
+                        .HasFilter("[IdempotencyKey] IS NOT NULL AND [IdempotencyKey] <> ''");
 
                     b.HasIndex("TenantId", "SaleNo")
                         .IsUnique();
@@ -3916,6 +3929,9 @@ namespace SheikhGoNexusERP.Infrastructure.Persistence.Migrations
                     b.Property<decimal>("AverageCost")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<string>("Barcode")
+                        .HasColumnType("nvarchar(450)");
+
                     b.Property<Guid?>("BrandId")
                         .HasColumnType("uniqueidentifier");
 
@@ -3960,6 +3976,9 @@ namespace SheikhGoNexusERP.Infrastructure.Persistence.Migrations
                     b.Property<decimal>("SalePrice")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<bool>("SellByWeight")
+                        .HasColumnType("bit");
+
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uniqueidentifier");
 
@@ -3981,6 +4000,10 @@ namespace SheikhGoNexusERP.Infrastructure.Persistence.Migrations
                     b.HasIndex("ProductGroupId");
 
                     b.HasIndex("UnitOfMeasureId");
+
+                    b.HasIndex("TenantId", "Barcode")
+                        .IsUnique()
+                        .HasFilter("[Barcode] IS NOT NULL AND [Barcode] <> ''");
 
                     b.HasIndex("TenantId", "Code")
                         .IsUnique();

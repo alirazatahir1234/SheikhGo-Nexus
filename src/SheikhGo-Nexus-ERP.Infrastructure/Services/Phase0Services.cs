@@ -375,12 +375,32 @@ public class ProductService : IProductService
     {
         var q = _db.Products.Include(x => x.Category).Include(x => x.UnitOfMeasure).Include(x => x.Stocks).AsQueryable();
         if (!string.IsNullOrWhiteSpace(search))
-            q = q.Where(x => x.Name.Contains(search) || x.Code.Contains(search));
+            q = q.Where(x => x.Name.Contains(search) || x.Code.Contains(search)
+                || (x.Barcode != null && x.Barcode.Contains(search)));
         return await q.OrderBy(x => x.Name).Select(x => new ProductDto(
             x.Id, x.Code, x.Name, x.Category != null ? x.Category.Name : null,
             x.UnitOfMeasure != null ? x.UnitOfMeasure.Code : "BAG",
             x.SalePrice, x.PurchasePrice, x.Stocks.Sum(s => s.Quantity),
-            x.ReorderLevel, x.IsActive, x.IsRawMaterial, x.IsFinishedGood, x.AverageCost)).ToListAsync(ct);
+            x.ReorderLevel, x.IsActive, x.IsRawMaterial, x.IsFinishedGood, x.AverageCost,
+            x.Barcode, x.SellByWeight)).ToListAsync(ct);
+    }
+
+    public async Task<ProductDto?> GetByBarcodeAsync(string barcode, Guid? warehouseId = null, CancellationToken ct = default)
+    {
+        var code = barcode.Trim();
+        if (string.IsNullOrEmpty(code)) return null;
+        var x = await _db.Products.Include(p => p.Category).Include(p => p.UnitOfMeasure).Include(p => p.Stocks)
+            .FirstOrDefaultAsync(p => p.Barcode == code || p.Code == code, ct);
+        if (x is null) return null;
+        var stockQty = warehouseId is Guid wh
+            ? x.Stocks.Where(s => s.WarehouseId == wh).Sum(s => s.Quantity)
+            : x.Stocks.Sum(s => s.Quantity);
+        return new ProductDto(
+            x.Id, x.Code, x.Name, x.Category?.Name,
+            x.UnitOfMeasure != null ? x.UnitOfMeasure.Code : "BAG",
+            x.SalePrice, x.PurchasePrice, stockQty,
+            x.ReorderLevel, x.IsActive, x.IsRawMaterial, x.IsFinishedGood, x.AverageCost,
+            x.Barcode, x.SellByWeight);
     }
 
     public async Task<ProductDto> CreateAsync(ProductUpsertDto dto, CancellationToken ct = default)
@@ -398,16 +418,20 @@ public class ProductService : IProductService
                 await _db.SaveChangesAsync(ct);
             }
         }
+        var barcode = string.IsNullOrWhiteSpace(dto.Barcode) ? null : dto.Barcode.Trim();
+        if (barcode is not null && await _db.Products.AnyAsync(x => x.Barcode == barcode, ct))
+            throw new InvalidOperationException($"Barcode '{barcode}' is already assigned.");
         var p = new Product
         {
             Code = dto.Code, Name = dto.Name, CategoryId = cat?.Id, UnitOfMeasureId = uom.Id,
             SalePrice = dto.SalePrice, PurchasePrice = dto.PurchasePrice,
             AverageCost = dto.PurchasePrice,
-            ReorderLevel = dto.ReorderLevel, IsRawMaterial = dto.IsRawMaterial, IsFinishedGood = dto.IsFinishedGood
+            ReorderLevel = dto.ReorderLevel, IsRawMaterial = dto.IsRawMaterial, IsFinishedGood = dto.IsFinishedGood,
+            Barcode = barcode, SellByWeight = dto.SellByWeight
         };
         _db.Products.Add(p);
         await _db.SaveChangesAsync(ct);
-        return new ProductDto(p.Id, p.Code, p.Name, cat?.Name, uom.Code, p.SalePrice, p.PurchasePrice, 0, p.ReorderLevel, true, p.IsRawMaterial, p.IsFinishedGood, p.AverageCost);
+        return new ProductDto(p.Id, p.Code, p.Name, cat?.Name, uom.Code, p.SalePrice, p.PurchasePrice, 0, p.ReorderLevel, true, p.IsRawMaterial, p.IsFinishedGood, p.AverageCost, p.Barcode, p.SellByWeight);
     }
 
     public async Task<ProductDto?> UpdateAsync(Guid id, ProductUpsertDto dto, CancellationToken ct = default)
@@ -415,11 +439,15 @@ public class ProductService : IProductService
         var p = await _db.Products.Include(x => x.Category).Include(x => x.UnitOfMeasure).Include(x => x.Stocks)
             .FirstOrDefaultAsync(x => x.Id == id, ct);
         if (p is null) return null;
+        var barcode = string.IsNullOrWhiteSpace(dto.Barcode) ? null : dto.Barcode.Trim();
+        if (barcode is not null && await _db.Products.AnyAsync(x => x.Barcode == barcode && x.Id != id, ct))
+            throw new InvalidOperationException($"Barcode '{barcode}' is already assigned.");
         p.Code = dto.Code; p.Name = dto.Name; p.SalePrice = dto.SalePrice; p.PurchasePrice = dto.PurchasePrice;
         p.ReorderLevel = dto.ReorderLevel; p.IsRawMaterial = dto.IsRawMaterial; p.IsFinishedGood = dto.IsFinishedGood;
+        p.Barcode = barcode; p.SellByWeight = dto.SellByWeight;
         await _db.SaveChangesAsync(ct);
         return new ProductDto(p.Id, p.Code, p.Name, p.Category?.Name, p.UnitOfMeasure?.Code ?? dto.Unit,
-            p.SalePrice, p.PurchasePrice, p.Stocks.Sum(s => s.Quantity), p.ReorderLevel, p.IsActive, p.IsRawMaterial, p.IsFinishedGood, p.AverageCost);
+            p.SalePrice, p.PurchasePrice, p.Stocks.Sum(s => s.Quantity), p.ReorderLevel, p.IsActive, p.IsRawMaterial, p.IsFinishedGood, p.AverageCost, p.Barcode, p.SellByWeight);
     }
 
     public async Task<bool> DeleteAsync(Guid id, CancellationToken ct = default)

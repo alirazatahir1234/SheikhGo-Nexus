@@ -14,6 +14,9 @@ export interface Product {
   isActive?: boolean;
   isRawMaterial?: boolean;
   isFinishedGood?: boolean;
+  barcode?: string | null;
+  sellByWeight?: boolean;
+  averageCost?: number;
 }
 
 export interface Account {

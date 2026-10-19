@@ -223,6 +223,8 @@ public static class DbSeeder
         if (!await db.Tenants.IgnoreQueryFilters().AnyAsync())
             await SeedCoreAsync(db, tenant);
 
+        await EnsureDemoAdminPasswordAsync(db);
+        await EnsureSweetsPosCatalogAsync(db);
         await SeedPermissionsAsync(db);
         await EnsureDocumentTypeFlagsAsync(db);
         await EnsureSalesDocumentTypesAsync(db);
@@ -234,6 +236,119 @@ public static class DbSeeder
         await EnsureFarmQualityPhase7Async(db);
         await EnsureOperationsPosPhase8Async(db);
         await EnsureBiPhase9Async(db);
+    }
+
+    /// <summary>Keep demo admin login working: admin@softaxe.local / Admin@123.</summary>
+    public static async Task EnsureDemoAdminPasswordAsync(AppDbContext db)
+    {
+        var admin = await db.Users.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(u => u.Email == "admin@softaxe.local");
+        if (admin is null) return;
+
+        admin.PasswordHash = AuthService.HashPassword("Admin@123");
+        admin.IsActive = true;
+        admin.IsDeleted = false;
+        await db.SaveChangesAsync();
+    }
+
+    /// <summary>Demo sweets SKUs with barcodes for POS scan testing.</summary>
+    public static async Task EnsureSweetsPosCatalogAsync(AppDbContext db)
+    {
+        var tenantId = await db.Tenants.IgnoreQueryFilters().Select(x => x.Id).FirstOrDefaultAsync();
+        if (tenantId == Guid.Empty) return;
+
+        var sweetsCat = await db.ProductCategories.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(x => x.TenantId == tenantId && x.Name == "Sweets");
+        if (sweetsCat is null)
+        {
+            sweetsCat = new ProductCategory { TenantId = tenantId, Name = "Sweets" };
+            db.ProductCategories.Add(sweetsCat);
+            await db.SaveChangesAsync();
+        }
+
+        var kg = await db.UnitsOfMeasure.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(x => x.TenantId == tenantId && x.Code == "KG");
+        if (kg is null)
+        {
+            kg = new UnitOfMeasure { TenantId = tenantId, Code = "KG", Name = "Kilogram" };
+            db.UnitsOfMeasure.Add(kg);
+            await db.SaveChangesAsync();
+        }
+        var pcs = await db.UnitsOfMeasure.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(x => x.TenantId == tenantId && x.Code == "PCS");
+        if (pcs is null)
+        {
+            pcs = new UnitOfMeasure { TenantId = tenantId, Code = "PCS", Name = "Piece" };
+            db.UnitsOfMeasure.Add(pcs);
+            await db.SaveChangesAsync();
+        }
+
+        var mainWh = await db.Warehouses.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(x => x.TenantId == tenantId && (x.Code == "MAIN" || x.IsDefault));
+
+        var items = new (string Code, string Name, string Barcode, bool ByWeight, Guid UomId, decimal Sale, decimal Cost, decimal Stock)[]
+        {
+            ("SWT-GJ", "Gulab Jamun", "8901001000001", true, kg.Id, 1200m, 700m, 50m),
+            ("SWT-BF", "Barfi", "8901001000002", true, kg.Id, 2000m, 1100m, 40m),
+            ("SWT-LD", "Laddu", "8901001000003", true, kg.Id, 1500m, 800m, 35m),
+            ("SWT-BOX", "Mixed Sweets Box", "8901001000004", false, pcs.Id, 2500m, 1400m, 80m),
+        };
+
+        foreach (var item in items)
+        {
+            var p = await db.Products.IgnoreQueryFilters()
+                .FirstOrDefaultAsync(x => x.TenantId == tenantId && x.Code == item.Code);
+            if (p is null)
+            {
+                p = new Product
+                {
+                    TenantId = tenantId,
+                    Code = item.Code,
+                    Name = item.Name,
+                    Barcode = item.Barcode,
+                    CategoryId = sweetsCat.Id,
+                    UnitOfMeasureId = item.UomId,
+                    SalePrice = item.Sale,
+                    PurchasePrice = item.Cost,
+                    AverageCost = item.Cost,
+                    SellByWeight = item.ByWeight,
+                    IsFinishedGood = true,
+                    IsRawMaterial = false,
+                    IsActive = true,
+                    ReorderLevel = 5
+                };
+                db.Products.Add(p);
+                await db.SaveChangesAsync();
+            }
+            else
+            {
+                p.Barcode ??= item.Barcode;
+                p.SellByWeight = item.ByWeight;
+                p.SalePrice = item.Sale;
+                p.AverageCost = item.Cost;
+            }
+
+            if (mainWh is null) continue;
+            var stock = await db.WarehouseStocks.IgnoreQueryFilters()
+                .FirstOrDefaultAsync(x => x.TenantId == tenantId && x.ProductId == p.Id && x.WarehouseId == mainWh.Id);
+            if (stock is null)
+            {
+                db.WarehouseStocks.Add(new WarehouseStock
+                {
+                    TenantId = tenantId,
+                    ProductId = p.Id,
+                    WarehouseId = mainWh.Id,
+                    Quantity = item.Stock,
+                    QualityStatus = StockQualityStatus.Unrestricted
+                });
+            }
+            else if (stock.Quantity < 5)
+            {
+                stock.Quantity = item.Stock;
+            }
+        }
+
+        await db.SaveChangesAsync();
     }
 
     /// <summary>Phase 9: COGS GL mapping for P&amp;L (account 5100).</summary>

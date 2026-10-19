@@ -209,6 +209,10 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Product>().ToTable("Products", "inventory")
             .HasIndex(x => new { x.TenantId, x.Code }).IsUnique();
         modelBuilder.Entity<Product>()
+            .HasIndex(x => new { x.TenantId, x.Barcode })
+            .IsUnique()
+            .HasFilter("[Barcode] IS NOT NULL AND [Barcode] <> ''");
+        modelBuilder.Entity<Product>()
             .HasOne(x => x.ProductGroup).WithMany(x => x.Products).HasForeignKey(x => x.ProductGroupId).OnDelete(DeleteBehavior.SetNull);
         modelBuilder.Entity<Product>()
             .HasOne(x => x.Category).WithMany(x => x.Products).HasForeignKey(x => x.CategoryId).OnDelete(DeleteBehavior.SetNull);
@@ -779,6 +783,10 @@ public class AppDbContext : DbContext
             .HasOne(x => x.ClosedByUser).WithMany().HasForeignKey(x => x.ClosedByUserId).OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<PosSale>().ToTable("PosSales", "pos")
             .HasIndex(x => new { x.TenantId, x.SaleNo }).IsUnique();
+        modelBuilder.Entity<PosSale>()
+            .HasIndex(x => new { x.TenantId, x.IdempotencyKey })
+            .IsUnique()
+            .HasFilter("[IdempotencyKey] IS NOT NULL AND [IdempotencyKey] <> ''");
         modelBuilder.Entity<PosSale>()
             .HasOne(x => x.Document).WithMany().HasForeignKey(x => x.DocumentId).OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<PosSale>()

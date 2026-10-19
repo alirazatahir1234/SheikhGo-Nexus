@@ -1,0 +1,63 @@
+<div class="store">
+  <header class="store__hero">
+    <div>
+      <p class="eyebrow">SheikhGo Nexus</p>
+      <h1>Sweets shop</h1>
+      <p class="lede">Order fresh sweets online — same inventory as the POS.</p>
+    </div>
+    <a routerLink="/pos/terminal" class="btn btn--ghost">Staff POS</a>
+  </header>
+
+  @if (error()) { <div class="alert alert--warn">{{ error() }}</div> }
+  @if (notice()) { <div class="alert alert--ok">{{ notice() }}</div> }
+
+  <div class="store__grid">
+    <section class="catalog">
+      <h2>Catalog</h2>
+      @if (loading()) {
+        <p class="muted">Loading…</p>
+      } @else {
+        <div class="cards">
+          @for (p of products(); track p.id) {
+            <article class="card">
+              <h3>{{ p.name }}</h3>
+              <p class="muted">{{ p.category || 'Sweets' }} · {{ p.unit }} · stock {{ p.stockQty | number: '1.0-2' }}</p>
+              <div class="card__row">
+                <strong>{{ p.salePrice | currency: 'PKR' : 'symbol' : '1.0-0' }}</strong>
+                <button type="button" class="btn btn--primary btn--sm" (click)="add(p)" [disabled]="p.stockQty <= 0">Add</button>
+              </div>
+            </article>
+          } @empty {
+            <p class="muted">No products published yet.</p>
+          }
+        </div>
+      }
+    </section>
+
+    <aside class="cart panel">
+      <h2>Your cart</h2>
+      @for (l of cart(); track l.product.id; let i = $index) {
+        <div class="cart-line">
+          <div>
+            <strong>{{ l.product.name }}</strong>
+            <div class="muted">{{ l.product.salePrice | currency: 'PKR' : 'symbol' : '1.0-0' }} / {{ l.product.unit }}</div>
+          </div>
+          <input type="number" [step]="l.product.sellByWeight ? 0.001 : 1" [ngModel]="l.qty" (ngModelChange)="setQty(i, $event)" />
+          <button type="button" class="btn btn--ghost btn--sm" (click)="remove(i)">×</button>
+        </div>
+      } @empty {
+        <p class="muted">Cart is empty.</p>
+      }
+      <div class="total"><span>Total</span><strong>{{ total() | currency: 'PKR' : 'symbol' : '1.0-0' }}</strong></div>
+
+      <label class="field"><span>Name</span><input [(ngModel)]="customerName" /></label>
+      <label class="field"><span>Phone</span><input [(ngModel)]="phone" /></label>
+      <label class="field"><span>Delivery address</span><input [(ngModel)]="address" /></label>
+      <label class="field"><span>Notes</span><input [(ngModel)]="notes" /></label>
+      <button type="button" class="btn btn--primary" (click)="checkout()" [disabled]="placing() || !cart().length">
+        {{ placing() ? 'Placing…' : 'Place order' }}
+      </button>
+      <p class="muted tiny">Checkout uses your signed-in session so stock stays consistent with ERP.</p>
+    </aside>
+  </div>
+</div>

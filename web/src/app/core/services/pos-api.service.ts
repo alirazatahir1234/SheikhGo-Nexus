@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { API_BASE_URL } from '../models/api.constants';
 
@@ -49,6 +49,7 @@ export interface PosSale {
   partyName?: string;
   saleDate: string;
   subTotal: number;
+  discount: number;
   grandTotal: number;
   status: number | string;
   salesOrderId?: string;
@@ -57,6 +58,45 @@ export interface PosSale {
   remarks?: string;
   lines: PosSaleLine[];
   payments: PosPayment[];
+  idempotencyKey?: string;
+  saleReturnId?: string;
+}
+export interface PosDailySalesReport {
+  date: string;
+  saleCount: number;
+  grossSales: number;
+  discounts: number;
+  netSales: number;
+  cashTotal: number;
+  cardTotal: number;
+  otherTotal: number;
+  byCashier: { userId: string; userName?: string; saleCount: number; netSales: number }[];
+  topProducts: { productId: string; productName?: string; qty: number; amount: number }[];
+  returnedSaleCount?: number;
+  cashRefundsExcluded?: number;
+}
+export interface PosOwnerProfitReport {
+  date: string;
+  netSales: number;
+  cogs: number;
+  grossProfit: number;
+  expenses: number;
+  operatingProfit: number;
+}
+export interface PosShiftReconciliation {
+  shiftId: string;
+  shiftNo: string;
+  status: string;
+  openingCash: number;
+  cashSales: number;
+  cardSales: number;
+  otherSales: number;
+  cashRefunds: number;
+  saleCount: number;
+  returnedSaleCount: number;
+  expectedCash: number;
+  actualCash?: number | null;
+  variance?: number | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -79,16 +119,44 @@ export class PosApiService {
   closeShift(id: string, actualCash: number): Observable<PosShift> {
     return this.http.post<PosShift>(`${this.base}/shifts/${id}/close`, { actualCash });
   }
+  shiftReconciliation(id: string): Observable<PosShiftReconciliation> {
+    return this.http.get<PosShiftReconciliation>(`${this.base}/shifts/${id}/reconciliation`);
+  }
   getSales(): Observable<PosSale[]> {
     return this.http.get<PosSale[]>(`${this.base}/sales`);
+  }
+  getSale(id: string): Observable<PosSale> {
+    return this.http.get<PosSale>(`${this.base}/sales/${id}`);
   }
   createSale(payload: {
     shiftId: string;
     saleDate?: string;
     remarks?: string;
+    discount?: number;
+    idempotencyKey?: string;
     lines: PosSaleLine[];
     payments: PosPayment[];
   }): Observable<PosSale> {
     return this.http.post<PosSale>(`${this.base}/sales`, payload);
+  }
+  returnSale(
+    id: string,
+    payload?: { remarks?: string; lines?: PosSaleLine[] },
+  ): Observable<PosSale> {
+    return this.http.post<PosSale>(`${this.base}/sales/${id}/returns`, {
+      posSaleId: id,
+      remarks: payload?.remarks ?? null,
+      lines: payload?.lines ?? null,
+    });
+  }
+  dailySales(date?: string): Observable<PosDailySalesReport> {
+    let params = new HttpParams();
+    if (date) params = params.set('date', date);
+    return this.http.get<PosDailySalesReport>(`${this.base}/reports/daily-sales`, { params });
+  }
+  ownerProfit(date?: string): Observable<PosOwnerProfitReport> {
+    let params = new HttpParams();
+    if (date) params = params.set('date', date);
+    return this.http.get<PosOwnerProfitReport>(`${this.base}/reports/owner-profit`, { params });
   }
 }

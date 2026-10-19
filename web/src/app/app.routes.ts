@@ -51,6 +51,11 @@ export const routes: Routes = [
           import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent),
       },
       {
+        path: 'store',
+        loadComponent: () =>
+          import('./features/storefront/storefront.component').then((m) => m.StorefrontComponent),
+      },
+      {
         path: 'ai',
         canActivate: [permissionGuard],
         data: { permission: 'Ai.Chat.View' },
@@ -412,10 +417,12 @@ export const routes: Routes = [
           posLoad,
           'PosComponent',
           [
+            { path: 'terminal', tab: 'terminal' },
             { path: 'sales', tab: 'sales' },
             { path: 'shifts', tab: 'shifts' },
+            { path: 'reports', tab: 'reports' },
           ],
-          'sales',
+          'terminal',
         ),
       },
       {

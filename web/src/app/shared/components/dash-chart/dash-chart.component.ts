@@ -77,10 +77,9 @@ export class DashChartComponent implements AfterViewInit, OnDestroy {
     const data = this.data();
     const seriesCount = data.datasets?.length ?? 0;
 
-    const isDark =
-      typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const tickColor = isDark ? '#ffffff' : undefined;
-    const gridColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(15, 28, 36, 0.06)';
+    // App is light-themed; do not follow OS dark preference for chart ink.
+    const tickColor = '#5c7380';
+    const gridColor = 'rgba(15, 28, 36, 0.06)';
 
     const defaults: ChartOptions = {
       responsive: true,
