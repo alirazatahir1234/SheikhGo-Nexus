@@ -124,7 +124,7 @@ public class WeighbridgeController(IWeighbridgeService svc) : ControllerBase
 [ApiController]
 [Authorize]
 [Route("api/pos")]
-public class PosController(IPosService svc) : ControllerBase
+public class PosController(IPosService svc, Services.PosNotifyPublisher notify) : ControllerBase
 {
     [HttpGet("terminals")]
     public async Task<ActionResult<IReadOnlyList<PosTerminalDto>>> Terminals(CancellationToken ct) =>
@@ -161,7 +161,9 @@ public class PosController(IPosService svc) : ControllerBase
         try
         {
             var row = await svc.CloseShiftAsync(id, dto, ct);
-            return row is null ? NotFound() : Ok(row);
+            if (row is null) return NotFound();
+            await notify.ShiftClosedAsync(row.ShiftNo, row.Variance, ct);
+            return Ok(row);
         }
         catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
     }
@@ -182,7 +184,19 @@ public class PosController(IPosService svc) : ControllerBase
     [HttpPost]
     public async Task<ActionResult<PosSaleDto>> CreateSale([FromBody] PosSaleCreateDto dto, CancellationToken ct)
     {
-        try { return Ok(await svc.CreateAsync(dto, ct)); }
+        try
+        {
+            var sale = await svc.CreateAsync(dto, ct);
+            var terminal = (await svc.GetTerminalsAsync(ct)).FirstOrDefault(t => t.Id == sale.TerminalId);
+            if (terminal is not null && sale.Lines is { Count: > 0 })
+            {
+                await notify.LowStockAfterSaleAsync(
+                    sale.Lines.Select(l => l.ProductId),
+                    terminal.WarehouseId,
+                    ct);
+            }
+            return Ok(sale);
+        }
         catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
     }
 

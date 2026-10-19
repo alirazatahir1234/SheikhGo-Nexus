@@ -134,6 +134,7 @@ export class PosApiService {
     remarks?: string;
     discount?: number;
     idempotencyKey?: string;
+    partyId?: string | null;
     lines: PosSaleLine[];
     payments: PosPayment[];
   }): Observable<PosSale> {

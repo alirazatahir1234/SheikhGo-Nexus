@@ -23,7 +23,7 @@ export const NAV_TREE: NavItem[] = [
     section: 'Overview',
     children: [
       { id: 'dashboard', label: 'Dashboard', icon: 'layout-dashboard', route: '/dashboard' },
-      { id: 'store', label: 'Online store', icon: 'shopping-bag', route: '/store' },
+      { id: 'store', label: 'Online store', icon: 'shopping-bag', route: '/shop' },
       { id: 'ai', label: 'AI Assistant', icon: 'sparkles', route: '/ai', permissions: ['Ai.Chat.View'] },
       { id: 'reports', label: 'Reports', icon: 'bar-chart-3', route: '/reports', permissions: ['Reports.Executive.View', 'Reports.Finance.View', 'Reports.Sales.View', 'Reports.Procurement.View', 'Reports.Inventory.View', 'Finance.Reports.View', 'Inventory.Reports.View'] },
     ],

@@ -6,41 +6,88 @@
     <a routerLink="/pos/reports" routerLinkActive="active">Reports</a>
   </nav>
 
-  @if (error()) { <div class="npos-alert npos-alert--warn">{{ error() }}</div> }
-  @if (notice()) { <div class="npos-alert npos-alert--ok">{{ notice() }}</div> }
+  @if (error()) {
+    <div class="npos-alert npos-alert--warn" role="alert">{{ error() }}</div>
+  }
+  @if (notice()) {
+    <div class="npos-alert npos-alert--ok" role="status">{{ notice() }}</div>
+  }
 
   @if (tab() === 'terminal') {
     <div class="npos-terminal">
       <header class="npos-top">
+        <div class="npos-brand">
+          <div class="npos-brand__mark" aria-hidden="true">SG</div>
+          <div class="npos-brand__text">
+            <strong>{{ brandTitle }}</strong>
+            <span>Touch POS</span>
+          </div>
+        </div>
+
         <label class="npos-scan">
           <span class="sr-only">Scan barcode or search</span>
-          <span class="npos-scan__icon" aria-hidden="true">▦</span>
+          <span class="npos-scan__icon" aria-hidden="true">⌕</span>
           <input
             #barcodeInput
             type="text"
             autocomplete="off"
+            autocorrect="off"
+            autocapitalize="off"
+            spellcheck="false"
             inputmode="none"
+            enterkeyhint="done"
+            autofocus
             [value]="barcode()"
             (input)="onScanInput($any($event.target).value)"
             (keydown)="onScanKeydown($event)"
-            placeholder="Scan barcode or search product… (F2)"
+            (blur)="onScanBlur()"
+            placeholder="Search product by name, barcode or code… (F2)"
           />
+          <kbd class="npos-kbd">F2</kbd>
         </label>
+
         <div class="npos-status">
-          <span class="npos-chip">{{ branchLabel }}</span>
-          <span class="npos-chip">{{ activeTerminal()?.code || '—' }}</span>
-          @if (openShift(); as s) {
-            <span class="npos-chip npos-chip--ok">Open · {{ s.shiftNo }}</span>
-            <button type="button" class="npos-btn npos-btn--ghost npos-btn--danger-soft" (click)="openCloseDialog()">Close shift</button>
-          } @else {
-            <span class="npos-chip npos-chip--warn">No shift</span>
-            <button type="button" class="npos-btn npos-btn--primary" (click)="showOpen.set(true)">Open shift</button>
-          }
+          <div class="npos-meta">
+            <span class="npos-chip">{{ branchLabel() }}</span>
+            <span class="npos-chip">{{ activeTerminal()?.code || 'Terminal' }}</span>
+            @if (offline.badge(); as badge) {
+              <span class="npos-chip npos-chip--warn" title="Offline queue">{{ badge }}</span>
+              <button
+                type="button"
+                class="npos-btn npos-btn--ghost npos-btn--sm"
+                (click)="syncPendingSales()"
+                [disabled]="syncing() || !offline.online()"
+              >
+                {{ syncing() ? 'Syncing…' : 'Sync' }}
+              </button>
+            }
+            @if (openShift(); as s) {
+              <span class="npos-chip npos-chip--ok">
+                <span class="npos-dot" aria-hidden="true"></span>
+                Open · {{ s.shiftNo }}
+              </span>
+              <button type="button" class="npos-btn npos-btn--ghost npos-btn--sm npos-btn--danger-soft" (click)="openCloseDialog()">
+                Close shift
+              </button>
+            } @else {
+              <span class="npos-chip npos-chip--warn">No shift</span>
+              <button type="button" class="npos-btn npos-btn--primary npos-btn--sm" (click)="showOpen.set(true)">
+                Open shift
+              </button>
+            }
+          </div>
+          <div class="npos-cashier" title="{{ cashierName() }}">
+            <span class="npos-cashier__avatar" aria-hidden="true">{{ initials(cashierName()) }}</span>
+            <div class="npos-cashier__meta">
+              <strong>{{ cashierName() }}</strong>
+              <span>Cashier</span>
+            </div>
+          </div>
         </div>
       </header>
 
       <div class="npos-body">
-        <section class="npos-catalog">
+        <section class="npos-catalog" aria-label="Product catalog">
           <div class="npos-cats" role="tablist">
             @for (c of categories(); track c) {
               <button
@@ -49,18 +96,36 @@
                 class="npos-cat"
                 [class.active]="category() === c"
                 (click)="selectCategory(c)"
-              >{{ c }}</button>
+              >
+                {{ c }}
+              </button>
             }
           </div>
 
           <div class="npos-grid">
             @for (p of catalog(); track p.id) {
-              <button type="button" class="npos-card" (click)="p.sellByWeight ? openProductDetail(p) : addProduct(p, 1)">
-                <div class="npos-card__media" aria-hidden="true">{{ initials(p.name) }}</div>
+              <button
+                type="button"
+                class="npos-card"
+                [class.npos-card--out]="stockTone(p) === 'out'"
+                (click)="p.sellByWeight ? openProductDetail(p) : addProduct(p, 1)"
+              >
+                <div
+                  class="npos-card__media"
+                  aria-hidden="true"
+                  [style.background]="categoryHue(p.category)"
+                >
+                  <span>{{ initials(p.name) }}</span>
+                </div>
                 <div class="npos-card__body">
                   <strong>{{ p.name }}</strong>
-                  <span class="npos-card__price">Rs. {{ p.salePrice | number: '1.0-0' }} <small>/ {{ p.unit }}</small></span>
-                  @if (p.sellByWeight) { <em>By weight</em> }
+                  <span class="npos-card__price">
+                    Rs. {{ p.salePrice | number: '1.0-0' }}
+                    <small>/ {{ p.unit }}</small>
+                  </span>
+                  <span class="npos-stock-badge" [attr.data-tone]="stockTone(p)">
+                    {{ stockLabel(p) }}
+                  </span>
                 </div>
               </button>
             } @empty {
@@ -69,36 +134,71 @@
           </div>
         </section>
 
-        <aside class="npos-order">
+        <aside class="npos-order" aria-label="Current order">
           <div class="npos-order__head">
-            <h2>Current Order</h2>
-            <button type="button" class="npos-btn npos-btn--ghost" (click)="openHolds()" [disabled]="!heldSales().length && !cart().length">
-              Holds ({{ heldSales().length }})
-            </button>
+            <h2>Current Order <span>({{ cartCount() }})</span></h2>
+            <div class="npos-order__tools">
+              <button
+                type="button"
+                class="npos-iconbtn npos-iconbtn--danger"
+                (click)="requestClearCart()"
+                [disabled]="!cart().length"
+                aria-label="Clear cart"
+                title="Clear cart"
+              >
+                ⌫
+              </button>
+              <button
+                type="button"
+                class="npos-btn npos-btn--ghost npos-btn--sm"
+                (click)="cart().length ? holdSale() : openHolds()"
+              >
+                {{ cart().length ? 'Hold' : 'Holds (' + heldSales().length + ')' }}
+              </button>
+            </div>
           </div>
 
           <ul class="npos-lines">
             @for (l of cart(); track l.productId; let i = $index) {
-              <li class="npos-line">
-                <div class="npos-line__meta">
-                  <strong>{{ l.productName }}</strong>
-                  <span>{{ fmtQty(l.qty) }} {{ l.unit }} · Rs. {{ l.rate | number: '1.0-0' }}</span>
+              <li
+                class="npos-line"
+                [class.npos-line--active]="selectedLine() === i"
+                (click)="selectLine(i)"
+              >
+                <div
+                  class="npos-line__thumb"
+                  aria-hidden="true"
+                  [style.background]="categoryHue(l.category)"
+                >
+                  {{ initials(l.productName) }}
                 </div>
-                <div class="npos-line__controls">
-                  <div class="npos-line__qty">
-                    <button type="button" class="npos-qtybtn" (click)="bumpLine(i, -1)" aria-label="Decrease">−</button>
-                    <input
-                      type="number"
-                      inputmode="decimal"
-                      [attr.step]="l.sellByWeight ? '0.001' : '1'"
-                      [value]="l.qty"
-                      (change)="setQty(i, +$any($event.target).value)"
-                    />
-                    <button type="button" class="npos-qtybtn" (click)="bumpLine(i, 1)" aria-label="Increase">+</button>
+                <div class="npos-line__main">
+                  <div class="npos-line__meta">
+                    <strong>{{ l.productName }}</strong>
+                    <span>Rs. {{ l.rate | number: '1.0-0' }} / {{ l.unit }}</span>
                   </div>
-                  <div class="npos-line__amt">
-                    <strong>{{ lineAmount(l) | currency: 'PKR' : 'symbol' : '1.0-0' }}</strong>
-                    <button type="button" class="npos-remove" (click)="removeLine(i)" aria-label="Remove line">Remove</button>
+                  <div class="npos-line__controls" (click)="$event.stopPropagation()">
+                    <div class="npos-line__qty">
+                      <button type="button" class="npos-qtybtn" (click)="bumpLine(i, -1)" aria-label="Decrease">−</button>
+                      <input
+                        type="number"
+                        inputmode="decimal"
+                        [attr.step]="l.sellByWeight ? '0.001' : '1'"
+                        [value]="l.qty"
+                        (change)="setQty(i, +$any($event.target).value)"
+                        [attr.aria-label]="'Quantity for ' + l.productName"
+                      />
+                      <button type="button" class="npos-qtybtn" (click)="bumpLine(i, 1)" aria-label="Increase">+</button>
+                    </div>
+                    <strong class="npos-line__amt">{{ lineAmount(l) | currency: 'PKR' : 'symbol' : '1.0-0' }}</strong>
+                    <button
+                      type="button"
+                      class="npos-iconbtn npos-iconbtn--danger"
+                      (click)="removeLine(i)"
+                      aria-label="Remove {{ l.productName }}"
+                    >
+                      ×
+                    </button>
                   </div>
                 </div>
               </li>
@@ -107,33 +207,130 @@
             }
           </ul>
 
+          <div class="npos-customer">
+            <button type="button" class="npos-customer__main" (click)="showCustomer.set(true)">
+              <span class="npos-customer__icon" aria-hidden="true">◎</span>
+              @if (customerLabel()) {
+                <strong>{{ customerLabel() }}</strong>
+              } @else {
+                <span>Add customer (optional)</span>
+              }
+            </button>
+            @if (customerLabel()) {
+              <button type="button" class="npos-customer__clear" (click)="clearCustomer()">Clear</button>
+            }
+          </div>
+
           <div class="npos-totals">
             <div class="row"><span>Subtotal</span><span>{{ subtotal() | currency: 'PKR' : 'symbol' : '1.0-0' }}</span></div>
             <label class="npos-disc">
-              <span>Discount {{ discountPct() ? '%' : 'Rs' }}</span>
-              <input type="number" inputmode="decimal" [value]="discount()" (input)="setDiscount(+$any($event.target).value)" />
-              <button type="button" class="npos-btn npos-btn--ghost" (click)="toggleDiscountMode()">
-                {{ discountPct() ? 'Rs' : '%' }}
-              </button>
+              <span>Discount</span>
+              <div class="npos-disc__controls">
+                <button
+                  type="button"
+                  class="npos-pill"
+                  [class.active]="discountPct()"
+                  (click)="discountPct.set(true); syncTenderToTotal()"
+                >
+                  %
+                </button>
+                <button
+                  type="button"
+                  class="npos-pill"
+                  [class.active]="!discountPct()"
+                  (click)="discountPct.set(false); syncTenderToTotal()"
+                >
+                  Rs
+                </button>
+                <input
+                  type="number"
+                  inputmode="decimal"
+                  [value]="discount()"
+                  (input)="setDiscount(+$any($event.target).value)"
+                  aria-label="Discount value"
+                />
+              </div>
+              <span class="npos-disc__amt">−{{ discountAmount() | currency: 'PKR' : 'symbol' : '1.0-0' }}</span>
             </label>
-            <div class="row total"><span>Total</span><strong>{{ grandTotal() | currency: 'PKR' : 'symbol' : '1.0-0' }}</strong></div>
+            @if (taxRate > 0) {
+              <div class="row">
+                <span>Tax ({{ taxRate * 100 }}%)</span>
+                <span>{{ taxAmount() | currency: 'PKR' : 'symbol' : '1.0-0' }}</span>
+              </div>
+            }
+            <div class="row total">
+              <span>Total</span>
+              <strong>{{ grandTotal() | currency: 'PKR' : 'symbol' : '1.0-0' }}</strong>
+            </div>
+          </div>
+
+          <div class="npos-order-tools" role="group" aria-label="Order tools">
+            <button type="button" class="npos-btn npos-btn--ghost npos-btn--sm" (click)="showCustomer.set(true)">
+              Customer
+            </button>
+            <button type="button" class="npos-btn npos-btn--ghost npos-btn--sm" (click)="showNote.set(true)">
+              Note
+            </button>
+            <button
+              type="button"
+              class="npos-btn npos-btn--ghost npos-btn--sm"
+              (click)="openHolds()"
+              [disabled]="!heldSales().length && !cart().length"
+            >
+              Holds ({{ heldSales().length }})
+            </button>
+          </div>
+
+          <div class="npos-keypad" aria-label="Quantity keypad">
+            <div class="npos-keypad__modes" role="group" aria-label="Keypad mode">
+              <button type="button" [class.active]="keypadMode() === 'qty'" (click)="setKeypadMode('qty')">Qty</button>
+              <button type="button" [class.active]="keypadMode() === 'pct'" (click)="setKeypadMode('pct')">%</button>
+              <button
+                type="button"
+                [class.active]="keypadMode() === 'price'"
+                (click)="setKeypadMode('price')"
+                title="Unit price is controlled by product master"
+              >
+                Price
+              </button>
+            </div>
+            <div class="npos-keypad__grid">
+              @for (d of ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'back']; track d) {
+                <button type="button" class="npos-keypad__key" (click)="orderPadDigit(d)">
+                  {{ d === 'back' ? '⌫' : d }}
+                </button>
+              }
+            </div>
+            <p class="npos-keypad__hint">
+              @if (keypadMode() === 'qty') {
+                @if (selectedLine() >= 0) {
+                  Editing qty · buffer {{ orderPadBuffer() || '—' }}
+                } @else {
+                  Tap a cart line, then type quantity
+                }
+              } @else if (keypadMode() === 'pct') {
+                Discount % · {{ orderPadBuffer() || discount() }}
+              } @else {
+                Price locked to product master
+              }
+            </p>
           </div>
 
           <div class="npos-tenders" role="group" aria-label="Tender type">
-            <button type="button" [class.active]="tenderMode()==='Cash'" (click)="setTenderMode('Cash')">Cash</button>
-            <button type="button" [class.active]="tenderMode()==='Card'" (click)="setTenderMode('Card')">Card</button>
-            <button type="button" [class.active]="tenderMode()==='Other'" (click)="setTenderMode('Other')">Other</button>
+            <button type="button" [class.active]="tenderMode() === 'Cash'" (click)="setTenderMode('Cash')">Cash</button>
+            <button type="button" [class.active]="tenderMode() === 'Card'" (click)="setTenderMode('Card')">Card</button>
+            <button type="button" [class.active]="tenderMode() === 'Other'" (click)="setTenderMode('Other')">Other</button>
           </div>
 
           <div class="npos-actions">
-            <button type="button" class="npos-btn npos-btn--ghost npos-btn--secondary" (click)="holdSale()" [disabled]="!cart().length">Hold sale</button>
             <button
               type="button"
               class="npos-btn npos-btn--primary npos-btn--pay"
               (click)="openPayment()"
-              [disabled]="saving() || !cart().length"
+              [disabled]="saving() || !cart().length || !openShift()"
             >
-              {{ saving() ? 'Posting…' : 'Complete Sale (F5)' }}
+              {{ saving() ? 'Posting…' : 'Payment' }}
+              <span class="npos-pay-amt">{{ grandTotal() | currency: 'PKR' : 'symbol' : '1.0-0' }}</span>
             </button>
           </div>
         </aside>
@@ -146,8 +343,13 @@
       <table>
         <thead>
           <tr>
-            <th>Sale #</th><th>Date</th><th class="num">Subtotal</th><th class="num">Discount</th>
-            <th class="num">Total</th><th>Status</th><th></th>
+            <th>Sale #</th>
+            <th>Date</th>
+            <th class="num">Subtotal</th>
+            <th class="num">Discount</th>
+            <th class="num">Total</th>
+            <th>Status</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
@@ -162,11 +364,17 @@
               <td class="actions">
                 <button type="button" class="npos-btn npos-btn--ghost" (click)="printReceipt(b)">Receipt</button>
                 @if (!b.saleReturnId) {
-                  <button type="button" class="npos-btn npos-btn--ghost npos-btn--danger-soft" (click)="openReturn(b)">Return</button>
+                  <button type="button" class="npos-btn npos-btn--ghost npos-btn--danger-soft" (click)="openReturn(b)">
+                    Return
+                  </button>
                 }
               </td>
             </tr>
-          } @empty { <tr><td colspan="7" class="npos-empty">No POS sales yet.</td></tr> }
+          } @empty {
+            <tr>
+              <td colspan="7" class="npos-empty">No POS sales yet.</td>
+            </tr>
+          }
         </tbody>
       </table>
     </section>
@@ -177,14 +385,22 @@
       <div class="npos-panel__actions">
         <button type="button" class="npos-btn npos-btn--primary" (click)="showOpen.set(true)">Open shift</button>
         @if (openShift()) {
-          <button type="button" class="npos-btn npos-btn--ghost npos-btn--danger-soft" (click)="openCloseDialog()">Close shift</button>
+          <button type="button" class="npos-btn npos-btn--ghost npos-btn--danger-soft" (click)="openCloseDialog()">
+            Close shift
+          </button>
         }
       </div>
       <table>
         <thead>
           <tr>
-            <th>Shift</th><th>Terminal</th><th>Opened</th><th class="num">Opening</th>
-            <th class="num">Expected</th><th class="num">Actual</th><th class="num">Variance</th><th>Status</th>
+            <th>Shift</th>
+            <th>Terminal</th>
+            <th>Opened</th>
+            <th class="num">Opening</th>
+            <th class="num">Expected</th>
+            <th class="num">Actual</th>
+            <th class="num">Variance</th>
+            <th>Status</th>
           </tr>
         </thead>
         <tbody>
@@ -194,14 +410,22 @@
               <td>{{ s.terminalCode }}</td>
               <td>{{ s.openedAt | date: 'short' }}</td>
               <td class="num">{{ s.openingCash | currency: 'PKR' : 'symbol' : '1.0-0' }}</td>
-              <td class="num">{{ s.expectedCash != null ? (s.expectedCash | currency: 'PKR' : 'symbol' : '1.0-0') : '—' }}</td>
-              <td class="num">{{ s.actualCash != null ? (s.actualCash | currency: 'PKR' : 'symbol' : '1.0-0') : '—' }}</td>
+              <td class="num">
+                {{ s.expectedCash != null ? (s.expectedCash | currency: 'PKR' : 'symbol' : '1.0-0') : '—' }}
+              </td>
+              <td class="num">
+                {{ s.actualCash != null ? (s.actualCash | currency: 'PKR' : 'symbol' : '1.0-0') : '—' }}
+              </td>
               <td class="num" [class.var-bad]="(s.variance ?? 0) !== 0 && s.status === 'Closed'">
                 {{ s.variance != null ? (s.variance | currency: 'PKR' : 'symbol' : '1.0-0') : '—' }}
               </td>
               <td>{{ s.status }}</td>
             </tr>
-          } @empty { <tr><td colspan="8" class="npos-empty">No shifts yet.</td></tr> }
+          } @empty {
+            <tr>
+              <td colspan="8" class="npos-empty">No shifts yet.</td>
+            </tr>
+          }
         </tbody>
       </table>
     </section>
@@ -210,8 +434,13 @@
   @if (tab() === 'reports') {
     <section class="npos-panel reports">
       <div class="reports__head">
-        <label class="field"><span>Date</span>
-          <input type="date" [value]="reportDate()" (change)="reportDate.set($any($event.target).value); loadReports()" />
+        <label class="field">
+          <span>Date</span>
+          <input
+            type="date"
+            [value]="reportDate()"
+            (change)="reportDate.set($any($event.target).value); loadReports()"
+          />
         </label>
         <button type="button" class="npos-btn npos-btn--ghost" (click)="loadReports()">Refresh</button>
       </div>
@@ -225,24 +454,55 @@
           <div class="kpi"><span>Cash</span><strong>{{ r.cashTotal | currency: 'PKR' : 'symbol' : '1.0-0' }}</strong></div>
           <div class="kpi"><span>Card</span><strong>{{ r.cardTotal | currency: 'PKR' : 'symbol' : '1.0-0' }}</strong></div>
           <div class="kpi"><span>Returns</span><strong>{{ r.returnedSaleCount ?? 0 }}</strong></div>
-          <div class="kpi"><span>Cash refunds (excluded)</span><strong>{{ (r.cashRefundsExcluded ?? 0) | currency: 'PKR' : 'symbol' : '1.0-0' }}</strong></div>
+          <div class="kpi">
+            <span>Cash refunds (excluded)</span>
+            <strong>{{ (r.cashRefundsExcluded ?? 0) | currency: 'PKR' : 'symbol' : '1.0-0' }}</strong>
+          </div>
         </div>
         <h3>By cashier</h3>
         <table>
-          <thead><tr><th>Cashier</th><th class="num">Sales</th><th class="num">Net</th></tr></thead>
+          <thead>
+            <tr>
+              <th>Cashier</th>
+              <th class="num">Sales</th>
+              <th class="num">Net</th>
+            </tr>
+          </thead>
           <tbody>
             @for (c of r.byCashier; track c.userId) {
-              <tr><td>{{ c.userName || c.userId }}</td><td class="num">{{ c.saleCount }}</td><td class="num">{{ c.netSales | currency: 'PKR' : 'symbol' : '1.0-0' }}</td></tr>
-            } @empty { <tr><td colspan="3" class="npos-empty">No cashier breakdown.</td></tr> }
+              <tr>
+                <td>{{ c.userName || c.userId }}</td>
+                <td class="num">{{ c.saleCount }}</td>
+                <td class="num">{{ c.netSales | currency: 'PKR' : 'symbol' : '1.0-0' }}</td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="3" class="npos-empty">No cashier breakdown.</td>
+              </tr>
+            }
           </tbody>
         </table>
         <h3>Top products</h3>
         <table>
-          <thead><tr><th>Product</th><th class="num">Qty</th><th class="num">Amount</th></tr></thead>
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th class="num">Qty</th>
+              <th class="num">Amount</th>
+            </tr>
+          </thead>
           <tbody>
             @for (p of r.topProducts; track p.productId) {
-              <tr><td>{{ p.productName }}</td><td class="num">{{ p.qty | number: '1.0-3' }}</td><td class="num">{{ p.amount | currency: 'PKR' : 'symbol' : '1.0-0' }}</td></tr>
-            } @empty { <tr><td colspan="3" class="npos-empty">No product sales.</td></tr> }
+              <tr>
+                <td>{{ p.productName }}</td>
+                <td class="num">{{ p.qty | number: '1.0-3' }}</td>
+                <td class="num">{{ p.amount | currency: 'PKR' : 'symbol' : '1.0-0' }}</td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="3" class="npos-empty">No product sales.</td>
+              </tr>
+            }
           </tbody>
         </table>
       }
@@ -253,20 +513,24 @@
           <div class="kpi"><span>COGS</span><strong>{{ pr.cogs | currency: 'PKR' : 'symbol' : '1.0-0' }}</strong></div>
           <div class="kpi"><span>Gross profit</span><strong>{{ pr.grossProfit | currency: 'PKR' : 'symbol' : '1.0-0' }}</strong></div>
           <div class="kpi"><span>Expenses</span><strong>{{ pr.expenses | currency: 'PKR' : 'symbol' : '1.0-0' }}</strong></div>
-          <div class="kpi"><span>Operating profit</span><strong>{{ pr.operatingProfit | currency: 'PKR' : 'symbol' : '1.0-0' }}</strong></div>
+          <div class="kpi">
+            <span>Operating profit</span>
+            <strong>{{ pr.operatingProfit | currency: 'PKR' : 'symbol' : '1.0-0' }}</strong>
+          </div>
         </div>
       }
     </section>
   }
 </div>
 
-<!-- Modals -->
+<!-- Open shift -->
 @if (showOpen()) {
   <div class="npos-modal" role="dialog" aria-modal="true" aria-labelledby="openShiftTitle">
     <div class="npos-modal__card">
       <h2 id="openShiftTitle">Open shift</h2>
       <form [formGroup]="openForm" (ngSubmit)="saveOpen()">
-        <label class="field"><span>Terminal</span>
+        <label class="field">
+          <span>Terminal</span>
           <select formControlName="terminalId">
             <option value="">Select…</option>
             @for (t of terminals(); track t.id) {
@@ -274,7 +538,8 @@
             }
           </select>
         </label>
-        <label class="field"><span>Opening cash</span>
+        <label class="field">
+          <span>Opening cash</span>
           <input type="number" inputmode="decimal" formControlName="openingCash" />
         </label>
         <p class="muted">{{ nowLabel }}</p>
@@ -287,6 +552,7 @@
   </div>
 }
 
+<!-- Close shift -->
 @if (showClose()) {
   <div class="npos-modal" role="dialog" aria-modal="true">
     <div class="npos-modal__card npos-modal__card--wide">
@@ -294,16 +560,33 @@
       @if (recon(); as r) {
         <div class="npos-recon">
           <div class="row"><span>Opening cash</span><strong>{{ r.openingCash | currency: 'PKR' : 'symbol' : '1.0-0' }}</strong></div>
-          <div class="row"><span>Cash sales ({{ r.saleCount }} tickets)</span><strong>{{ r.cashSales | currency: 'PKR' : 'symbol' : '1.0-0' }}</strong></div>
+          <div class="row">
+            <span>Cash sales ({{ r.saleCount }} tickets)</span>
+            <strong>{{ r.cashSales | currency: 'PKR' : 'symbol' : '1.0-0' }}</strong>
+          </div>
           <div class="row"><span>Card sales</span><strong>{{ r.cardSales | currency: 'PKR' : 'symbol' : '1.0-0' }}</strong></div>
           <div class="row"><span>Other tenders</span><strong>{{ r.otherSales | currency: 'PKR' : 'symbol' : '1.0-0' }}</strong></div>
-          <div class="row"><span>Cash returns handed back</span><strong>{{ r.returnedSaleCount }} ticket(s) · {{ r.cashRefunds | currency: 'PKR' : 'symbol' : '1.0-0' }}</strong></div>
-          <div class="row total"><span>Expected drawer</span><strong>{{ r.expectedCash | currency: 'PKR' : 'symbol' : '1.0-0' }}</strong></div>
+          <div class="row">
+            <span>Cash returns handed back</span>
+            <strong>{{ r.returnedSaleCount }} ticket(s) · {{ r.cashRefunds | currency: 'PKR' : 'symbol' : '1.0-0' }}</strong>
+          </div>
+          <div class="row total">
+            <span>Expected drawer</span>
+            <strong>{{ r.expectedCash | currency: 'PKR' : 'symbol' : '1.0-0' }}</strong>
+          </div>
         </div>
-        <p class="muted">Expected = opening + cash sales (returned cash tickets already excluded). Hand back cash on returns at the counter. Card / other are not in the drawer.</p>
+        <p class="muted">
+          Expected = opening + cash sales (returned cash tickets already excluded). Card / other are not in the drawer.
+        </p>
       }
-      <label class="field"><span>Actual cash counted</span>
-        <input type="number" inputmode="decimal" [value]="closeActualCash()" (input)="closeActualCash.set(+$any($event.target).value)" />
+      <label class="field">
+        <span>Actual cash counted</span>
+        <input
+          type="number"
+          inputmode="decimal"
+          [value]="closeActualCash()"
+          (input)="closeActualCash.set(+$any($event.target).value)"
+        />
       </label>
       @if (recon(); as r) {
         <p class="npos-change">
@@ -321,12 +604,14 @@
   </div>
 }
 
+<!-- Return -->
 @if (showReturn()) {
   @if (returnSaleDraft(); as sale) {
     <div class="npos-modal" role="dialog" aria-modal="true">
       <div class="npos-modal__card npos-modal__card--wide">
         <h2>Return {{ sale.saleNo }}</h2>
-        <label class="field"><span>Reason</span>
+        <label class="field">
+          <span>Reason</span>
           <select [value]="returnReason()" (change)="returnReason.set($any($event.target).value)">
             @for (r of returnReasons; track r) {
               <option [value]="r">{{ r }}</option>
@@ -352,42 +637,58 @@
           }
         </ul>
         <p class="muted">
-          Stock is restored for selected lines and the ticket is marked returned (one return per ticket).
-          Cash tender is excluded from shift cash sales — hand cash back from the drawer. Posted invoice/payment reversal is not wired yet (stock-only return).
+          Stock is restored for selected lines. Cash tender is excluded from shift cash sales — hand cash back from the
+          drawer.
         </p>
         <div class="npos-modal__actions">
           <button type="button" class="npos-btn npos-btn--ghost" (click)="cancelReturn()">Cancel</button>
-          <button type="button" class="npos-btn npos-btn--primary npos-btn--xl npos-btn--danger-soft" (click)="confirmReturn()">Confirm return</button>
+          <button
+            type="button"
+            class="npos-btn npos-btn--primary npos-btn--xl npos-btn--danger-soft"
+            (click)="confirmReturn()"
+          >
+            Confirm return
+          </button>
         </div>
       </div>
     </div>
   }
 }
 
-@if (showProduct(); as _) {
+<!-- Product detail (weighted) -->
+@if (showProduct()) {
   @if (productDraft(); as p) {
     <div class="npos-modal" role="dialog" aria-modal="true">
       <div class="npos-modal__card npos-modal__card--product">
         <div class="npos-prodmedia" aria-hidden="true">{{ initials(p.name) }}</div>
         <h2>{{ p.name }}</h2>
-        <p class="npos-stock" [class.ok]="p.stockQty > 0">
-          {{ p.stockQty > 0 ? 'In stock' : 'Out of stock' }} · Rs. {{ p.salePrice | number: '1.0-0' }} / {{ p.unit }}
+        <p class="npos-stock" [attr.data-tone]="stockTone(p)">
+          {{ stockLabel(p) }} · Rs. {{ p.salePrice | number: '1.0-0' }} / {{ p.unit }}
         </p>
         <div class="npos-line__qty npos-line__qty--lg">
-          <button type="button" class="npos-qtybtn" (click)="bumpProductQty(-1)">−</button>
-          <input type="number" inputmode="decimal" step="0.001" [value]="productQty()" (change)="setProductQty(+$any($event.target).value)" />
-          <button type="button" class="npos-qtybtn" (click)="bumpProductQty(1)">+</button>
+          <button type="button" class="npos-qtybtn" (click)="bumpProductQty(-1)" aria-label="Decrease">−</button>
+          <input
+            type="number"
+            inputmode="decimal"
+            step="0.001"
+            [value]="productQty()"
+            (change)="setProductQty(+$any($event.target).value)"
+          />
+          <button type="button" class="npos-qtybtn" (click)="bumpProductQty(1)" aria-label="Increase">+</button>
         </div>
         <p class="npos-prod-total">{{ productDraftTotal() | currency: 'PKR' : 'symbol' : '1.0-0' }}</p>
         <div class="npos-modal__actions">
           <button type="button" class="npos-btn npos-btn--ghost" (click)="cancelProductDetail()">Cancel</button>
-          <button type="button" class="npos-btn npos-btn--primary npos-btn--xl" (click)="confirmProductDetail()">Add to cart</button>
+          <button type="button" class="npos-btn npos-btn--primary npos-btn--xl" (click)="confirmProductDetail()">
+            Add to cart
+          </button>
         </div>
       </div>
     </div>
   }
 }
 
+<!-- Held sales -->
 @if (showHolds()) {
   <div class="npos-modal" role="dialog" aria-modal="true">
     <div class="npos-modal__card npos-modal__card--wide">
@@ -402,7 +703,9 @@
             </div>
             <div class="actions">
               <button type="button" class="npos-btn npos-btn--primary" (click)="loadHeld(h)">Load</button>
-              <button type="button" class="npos-btn npos-btn--ghost npos-btn--danger-soft" (click)="deleteHeld(h)">Delete</button>
+              <button type="button" class="npos-btn npos-btn--ghost npos-btn--danger-soft" (click)="deleteHeld(h)">
+                Delete
+              </button>
             </div>
           </li>
         } @empty {
@@ -410,39 +713,199 @@
         }
       </ul>
       <div class="npos-modal__actions">
-        <button type="button" class="npos-btn npos-btn--ghost" (click)="showHolds.set(false); focusBarcode()">Close</button>
+        <button type="button" class="npos-btn npos-btn--ghost" (click)="showHolds.set(false); focusBarcode()">
+          Close
+        </button>
       </div>
     </div>
   </div>
 }
 
-@if (showPay()) {
-  <div class="npos-modal" role="dialog" aria-modal="true">
-    <div class="npos-modal__card npos-modal__card--pay">
-      <h2>Payment</h2>
-      <p class="npos-pay-total">{{ grandTotal() | currency: 'PKR' : 'symbol' : '1.0-0' }}</p>
-      <div class="npos-tenders">
-        <button type="button" [class.active]="tenderMode()==='Cash'" (click)="setTenderMode('Cash')">Cash</button>
-        <button type="button" [class.active]="tenderMode()==='Card'" (click)="setTenderMode('Card')">Card</button>
-        <button type="button" [class.active]="tenderMode()==='Other'" (click)="setTenderMode('Other')">Other</button>
+<!-- Customer from Party master -->
+@if (showCustomer()) {
+  <div class="npos-modal" role="dialog" aria-modal="true" aria-labelledby="custTitle">
+    <div class="npos-modal__card npos-modal__card--wide">
+      <h2 id="custTitle">Select customer</h2>
+      <label class="field">
+        <span>Search name, code, or phone</span>
+        <input
+          type="search"
+          [value]="customerQuery()"
+          (input)="customerQuery.set($any($event.target).value)"
+          placeholder="Type to filter customers…"
+          autofocus
+        />
+      </label>
+      <ul class="npos-holds npos-party-list">
+        <li>
+          <div>
+            <strong>Walk-in (CUS-POS)</strong>
+            <span class="muted">Default cash customer</span>
+          </div>
+          <button type="button" class="npos-btn npos-btn--ghost" (click)="clearCustomer(); showCustomer.set(false)">
+            Use walk-in
+          </button>
+        </li>
+        @for (p of filteredCustomers(); track p.id) {
+          <li [class.npos-party--active]="selectedPartyId() === p.id">
+            <div>
+              <strong>{{ p.name }}</strong>
+              <span>{{ p.code }}@if (p.phone) { · {{ p.phone }} }</span>
+              @if (p.creditLimit > 0) {
+                <span class="muted">Credit limit Rs. {{ p.creditLimit | number: '1.0-0' }}</span>
+              }
+            </div>
+            <button type="button" class="npos-btn npos-btn--primary" (click)="selectParty(p)">Select</button>
+          </li>
+        } @empty {
+          <li class="npos-empty">No matching customers.</li>
+        }
+      </ul>
+      <label class="field">
+        <span>Or walk-in label (not linked to Party)</span>
+        <input
+          type="text"
+          #custInput
+          [value]="customerLabel()"
+          (keydown.enter)="applyCustomer($any(custInput).value)"
+          placeholder="Optional name on receipt"
+        />
+      </label>
+      <div class="npos-modal__actions">
+        <button type="button" class="npos-btn npos-btn--ghost" (click)="showCustomer.set(false)">Cancel</button>
+        <button type="button" class="npos-btn npos-btn--primary npos-btn--xl" (click)="applyCustomer($any(custInput).value)">
+          Save label
+        </button>
       </div>
-      @if (tenderMode() === 'Cash') {
-        <label class="field"><span>Cash received</span>
-          <input type="number" inputmode="decimal" [value]="cashReceived()" (input)="setCashReceived(+$any($event.target).value)" />
-        </label>
-        <div class="npos-quick">
-          @for (a of cashQuickAmounts(); track a) {
-            <button type="button" class="npos-quick__btn" (click)="setCashReceived(a)">
-              {{ a | number: '1.0-0' }}
-            </button>
+    </div>
+  </div>
+}
+
+@if (showNote()) {
+  <div class="npos-modal" role="dialog" aria-modal="true">
+    <div class="npos-modal__card">
+      <h2>Order note</h2>
+      <label class="field">
+        <span>Note (saved on sale remarks)</span>
+        <textarea
+          rows="3"
+          [value]="orderNote()"
+          (input)="orderNote.set($any($event.target).value)"
+          placeholder="Packing / delivery / gift message…"
+        ></textarea>
+      </label>
+      <div class="npos-modal__actions">
+        <button type="button" class="npos-btn npos-btn--ghost" (click)="showNote.set(false); focusBarcode()">
+          Cancel
+        </button>
+        <button type="button" class="npos-btn npos-btn--primary npos-btn--xl" (click)="showNote.set(false); focusBarcode()">
+          Save note
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Clear cart confirm -->
+@if (showClearConfirm()) {
+  <div class="npos-modal" role="dialog" aria-modal="true">
+    <div class="npos-modal__card">
+      <h2>Clear current order?</h2>
+      <p class="muted">This removes all {{ cartCount() }} line(s) from the cart. This cannot be undone.</p>
+      <div class="npos-modal__actions">
+        <button type="button" class="npos-btn npos-btn--ghost" (click)="cancelClearCart()">Cancel</button>
+        <button type="button" class="npos-btn npos-btn--primary npos-btn--xl npos-btn--danger-soft" (click)="confirmClearCart()">
+          Clear order
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Payment -->
+@if (showPay()) {
+  <div class="npos-modal" role="dialog" aria-modal="true" aria-labelledby="payTitle">
+    <div class="npos-modal__card npos-modal__card--pay">
+      <div class="npos-pay-head">
+        <h2 id="payTitle">Payment</h2>
+        <button type="button" class="npos-iconbtn" (click)="cancelPay()" aria-label="Close">×</button>
+      </div>
+
+      <div class="npos-pay-grid">
+        <div class="npos-pay-methods" role="tablist" aria-label="Payment method">
+          <button type="button" role="tab" [class.active]="tenderMode() === 'Cash'" (click)="setTenderMode('Cash')">
+            Cash
+          </button>
+          <button type="button" role="tab" [class.active]="tenderMode() === 'Card'" (click)="setTenderMode('Card')">
+            Card
+          </button>
+          <button type="button" role="tab" [class.active]="tenderMode() === 'Other'" (click)="setTenderMode('Other')">
+            Other
+          </button>
+        </div>
+
+        <div class="npos-pay-main">
+          <div class="npos-pay-total-block">
+            <span>Total amount</span>
+            <strong>{{ grandTotal() | currency: 'PKR' : 'symbol' : '1.0-0' }}</strong>
+          </div>
+
+          @if (tenderMode() === 'Cash') {
+            <label class="field">
+              <span>Cash received</span>
+              <input
+                type="number"
+                inputmode="decimal"
+                [value]="cashReceived()"
+                (input)="setCashReceived(+$any($event.target).value)"
+              />
+            </label>
+            <div class="npos-quick">
+              @for (a of cashQuickAmounts(); track a) {
+                <button type="button" class="npos-quick__btn" (click)="setCashReceived(a)">
+                  {{ a | number: '1.0-0' }}
+                </button>
+              }
+            </div>
+            <p class="npos-change">
+              Change <strong>{{ changeDue() | currency: 'PKR' : 'symbol' : '1.0-0' }}</strong>
+            </p>
+          } @else {
+            <p class="muted">
+              Record a verified {{ tenderMode().toLowerCase() }} payment of
+              {{ grandTotal() | currency: 'PKR' : 'symbol' : '1.0-0' }} after the terminal confirms.
+            </p>
           }
         </div>
-        <p class="npos-change">Change <strong>{{ changeDue() | currency: 'PKR' : 'symbol' : '1.0-0' }}</strong></p>
-      }
+
+        @if (tenderMode() === 'Cash') {
+          <div class="npos-pay-pad" aria-label="Cash keypad">
+            <div class="npos-pad-grid">
+              @for (d of ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'back']; track d) {
+                <button type="button" class="npos-pad-key" (click)="payPadDigit(d)">
+                  {{ d === 'back' ? '⌫' : d }}
+                </button>
+              }
+            </div>
+            <div class="npos-pad-bumps">
+              <button type="button" (click)="bumpCashReceived(10)">+10</button>
+              <button type="button" (click)="bumpCashReceived(20)">+20</button>
+              <button type="button" (click)="bumpCashReceived(50)">+50</button>
+              <button type="button" (click)="bumpCashReceived(100)">+100</button>
+            </div>
+          </div>
+        }
+      </div>
+
       <div class="npos-modal__actions">
-        <button type="button" class="npos-btn npos-btn--ghost" (click)="cancelPay()">Cancel</button>
-        <button type="button" class="npos-btn npos-btn--primary npos-btn--pay" [disabled]="saving()" (click)="confirmPayment()">
-          {{ saving() ? 'Posting…' : 'Confirm payment' }}
+        <button type="button" class="npos-btn npos-btn--ghost" (click)="cancelPay()">Back</button>
+        <button
+          type="button"
+          class="npos-btn npos-btn--primary npos-btn--pay"
+          [disabled]="saving()"
+          (click)="confirmPayment()"
+        >
+          {{ saving() ? 'Posting…' : 'Validate payment' }}
         </button>
       </div>
     </div>

@@ -4,7 +4,9 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using SheikhGoNexusERP.Api.Hubs;
 using SheikhGoNexusERP.Api.Middleware;
+using SheikhGoNexusERP.Api.Services;
 using SheikhGoNexusERP.Application.Interfaces;
 using SheikhGoNexusERP.Infrastructure;
 using SheikhGoNexusERP.Infrastructure.Persistence;
@@ -18,6 +20,8 @@ builder.Services.AddControllers()
     {
         o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
+builder.Services.AddSignalR();
+builder.Services.AddScoped<PosNotifyPublisher>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -58,6 +62,18 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidAudience = builder.Configuration["Jwt:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
         };
+        // SignalR browser clients send JWT as ?access_token=
+        opt.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = ctx =>
+            {
+                var accessToken = ctx.Request.Query["access_token"];
+                var path = ctx.HttpContext.Request.Path;
+                if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+                    ctx.Token = accessToken;
+                return Task.CompletedTask;
+            }
+        };
     });
 builder.Services.AddAuthorization();
 
@@ -66,7 +82,8 @@ builder.Services.AddCors(opt =>
     opt.AddPolicy("web", p => p
         .WithOrigins("http://localhost:4200", "http://127.0.0.1:4200")
         .AllowAnyHeader()
-        .AllowAnyMethod());
+        .AllowAnyMethod()
+        .AllowCredentials());
 });
 
 var app = builder.Build();
@@ -94,5 +111,6 @@ app.UseAuthentication();
 app.UseMiddleware<TenantMiddleware>();
 app.UseAuthorization();
 app.MapControllers();
+app.MapHub<PosNotifyHub>("/hubs/pos-notify");
 
 app.Run();

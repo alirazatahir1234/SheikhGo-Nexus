@@ -1,20 +1,25 @@
 #!/usr/bin/env python3
-"""Sweets Shop POS Release 1 — API acceptance + physical scanner checklist.
+"""Sweets Shop POS — API acceptance + physical counter hardware pilot.
 
 Usage:
   python3 scripts/sweets-pos-pilot-acceptance.py
   API_BASE=http://localhost:5080/api python3 scripts/sweets-pos-pilot-acceptance.py
 
-Physical scanner checklist (manual on Angular /pos/terminal):
-  [ ] USB HID scanner wedges into focused barcode field
+Full step-by-step counter runbook (sign-off table):
+  scripts/pos-hardware-pilot-checklist.md
+
+Physical scanner / printer / shift checklist (manual on Angular /pos/terminal):
+  [ ] USB HID scanner wedges into focused barcode field (F2 / autofocus recovery)
   [ ] Scanner sends Enter suffix; line adds to cart
   [ ] Unknown barcode shows error and refocuses scan box
   [ ] After clicking cart qty, next scan still lands in barcode (document key redirect)
   [ ] Window/tab refocus restores barcode focus
   [ ] Sell-by-weight item defaults to 0.25; cashier edits scale weight
+  [ ] Cash tender: cash received > total shows change due
   [ ] Complete sale posts SO→DO→SI→CP; 80mm browser receipt opens
-  [ ] Allow pop-ups if receipt blocked
+  [ ] Allow pop-ups if receipt blocked; reprint from Sales works
   [ ] Open shift → sell → return → close shift → daily report
+  NOTE: Physical USB/thermal gear must be verified by Ali on the counter.
 """
 
 from __future__ import annotations

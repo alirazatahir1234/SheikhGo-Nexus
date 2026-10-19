@@ -38,6 +38,13 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/login/login.component').then((m) => m.LoginComponent),
   },
+  /** Public customer shop — no ERP auth / shell chrome */
+  {
+    path: 'shop',
+    loadComponent: () =>
+      import('./features/storefront/storefront.component').then((m) => m.StorefrontComponent),
+  },
+  { path: 'storefront', pathMatch: 'full', redirectTo: 'shop' },
   {
     path: '',
     canActivate: [authGuard],
@@ -52,8 +59,8 @@ export const routes: Routes = [
       },
       {
         path: 'store',
-        loadComponent: () =>
-          import('./features/storefront/storefront.component').then((m) => m.StorefrontComponent),
+        pathMatch: 'full',
+        redirectTo: '/shop',
       },
       {
         path: 'ai',

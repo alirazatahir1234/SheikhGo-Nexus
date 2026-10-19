@@ -2,6 +2,7 @@ import {
   Component,
   ElementRef,
   HostListener,
+  OnDestroy,
   OnInit,
   ViewChild,
   computed,
@@ -22,12 +23,17 @@ import {
   PosTerminal,
 } from '../../core/services/pos-api.service';
 import { ProductsService } from '../../core/services/products.service';
-import { Product } from '../../core/models/erp.models';
+import { PartiesService } from '../../core/services/parties.service';
+import { Party, Product } from '../../core/models/erp.models';
 import { statusLabel } from '../../shared/documents/document-status-stepper.component';
 import { bindTabFromRoute, navigateModuleTab } from '../../core/nav/route-tabs';
+import { PosOfflineStore } from '../../core/services/pos-offline.store';
+import { AuthService } from '../../core/services/auth.service';
 
 type PosTab = 'terminal' | 'sales' | 'shifts' | 'reports';
 type TenderMode = 'Cash' | 'Card' | 'Other';
+type StockTone = 'ok' | 'low' | 'out';
+type KeypadMode = 'qty' | 'pct' | 'price';
 
 interface CartLine {
   productId: string;
@@ -37,6 +43,7 @@ interface CartLine {
   qty: number;
   rate: number;
   stockQty?: number;
+  category?: string;
 }
 
 interface HeldSale {
@@ -44,9 +51,13 @@ interface HeldSale {
   heldAt: string;
   cart: CartLine[];
   discount: number;
+  discountPct?: boolean;
   tenderMode: TenderMode;
   cashAmount: number;
   cardAmount: number;
+  orderNote?: string;
+  partyId?: string | null;
+  customerLabel?: string;
 }
 
 const POS_TAB_ROUTE: Record<PosTab, string> = {
@@ -58,7 +69,8 @@ const POS_TAB_ROUTE: Record<PosTab, string> = {
 
 const HOLD_LIST_KEY = 'nexus.pos.heldSales';
 const LEGACY_HOLD_KEY = 'nexus.pos.heldSale';
-const SHOP_NAME = 'SheikhGo Sweets';
+const SHOP_NAME = 'SheikhGo Nexus';
+const BRAND_TITLE = 'SheikhGo Nexus';
 const BRANCH_LABEL = 'Main Branch';
 
 @Component({
@@ -68,11 +80,14 @@ const BRANCH_LABEL = 'Main Branch';
   templateUrl: './pos.component.html',
   styleUrl: './pos.component.scss',
 })
-export class PosComponent implements OnInit {
+export class PosComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
+  readonly offline = inject(PosOfflineStore);
   @ViewChild('barcodeInput') barcodeInput?: ElementRef<HTMLInputElement>;
 
   readonly tab = signal<PosTab>('terminal');
+  readonly offlineBadge = this.offline.badge;
+  readonly offlinePending = this.offline.pendingCount;
   readonly terminals = signal<PosTerminal[]>([]);
   readonly shifts = signal<PosShift[]>([]);
   readonly sales = signal<PosSale[]>([]);
@@ -113,8 +128,28 @@ export class PosComponent implements OnInit {
   readonly statusLabel = statusLabel;
   readonly today = new Date().toISOString().slice(0, 10);
   readonly shopName = SHOP_NAME;
-  readonly branchLabel = BRANCH_LABEL;
+  readonly brandTitle = BRAND_TITLE;
   readonly nowLabel = new Date().toLocaleString();
+  readonly orderNote = signal('');
+  readonly showClearConfirm = signal(false);
+  readonly showCustomer = signal(false);
+  readonly showNote = signal(false);
+  readonly customers = signal<Party[]>([]);
+  readonly customerQuery = signal('');
+  readonly selectedPartyId = signal<string | null>(null);
+  readonly customerLabel = signal('');
+  readonly payPadBuffer = signal('');
+  readonly orderPadBuffer = signal('');
+  readonly selectedLine = signal(-1);
+  readonly keypadMode = signal<KeypadMode>('qty');
+  /** Display-only until POS tax rules are posted by the Document Engine. */
+  readonly taxRate = 0;
+
+  private readonly auth = inject(AuthService);
+  readonly cashierName = computed(() => this.auth.user()?.fullName || this.auth.user()?.email || 'Cashier');
+  readonly branchLabel = computed(
+    () => this.auth.branch()?.name || this.auth.company()?.name || 'Main Branch',
+  );
 
   readonly openShift = computed(() => this.shifts().find((s) => s.status === 'Open') ?? null);
   readonly activeTerminal = computed(() => {
@@ -159,8 +194,17 @@ export class PosComponent implements OnInit {
     }
     return Math.min(this.subtotal(), Math.max(0, raw));
   });
+  readonly taxAmount = computed(
+    () =>
+      Math.round(
+        Math.max(0, this.subtotal() - this.discountAmount()) * this.taxRate * 100,
+      ) / 100,
+  );
   readonly grandTotal = computed(
-    () => Math.round(Math.max(0, this.subtotal() - this.discountAmount()) * 100) / 100,
+    () =>
+      Math.round(
+        Math.max(0, this.subtotal() - this.discountAmount() + this.taxAmount()) * 100,
+      ) / 100,
   );
   readonly changeDue = computed(() => {
     if (this.tenderMode() !== 'Cash') return 0;
@@ -177,11 +221,33 @@ export class PosComponent implements OnInit {
     return Array.from(new Set([t, ...bumps].filter((n) => n >= t))).slice(0, 5);
   });
 
+  readonly filteredCustomers = computed(() => {
+    const q = this.customerQuery().toLowerCase().trim();
+    const rows = this.customers().filter(
+      (p) =>
+        p.isActive !== false &&
+        (p.partyType === 'Customer' || p.partyType === 'Both') &&
+        p.code !== 'CUS-POS',
+    );
+    if (!q) return rows.slice(0, 40);
+    return rows
+      .filter(
+        (p) =>
+          p.name.toLowerCase().includes(q) ||
+          p.code.toLowerCase().includes(q) ||
+          (p.phone || '').toLowerCase().includes(q),
+      )
+      .slice(0, 40);
+  });
+
   readonly openForm;
+  readonly syncing = signal(false);
+  private onlineHandler = () => void this.syncPendingSales();
 
   constructor(
     private readonly api: PosApiService,
     private readonly productsApi: ProductsService,
+    private readonly partiesApi: PartiesService,
     private readonly fb: FormBuilder,
   ) {
     this.openForm = this.fb.nonNullable.group({
@@ -197,10 +263,35 @@ export class PosComponent implements OnInit {
       if (tab === 'reports') this.loadReports();
       if (tab === 'terminal') setTimeout(() => this.focusBarcode(), 50);
     });
-    this.productsApi.getAll().subscribe({ next: (p) => this.products.set(p.filter((x) => x.isActive !== false)) });
+    const cached = this.offline.readCatalog();
+    if (cached?.length) this.products.set(cached.filter((x) => x.isActive !== false));
+    this.productsApi.getAll().subscribe({
+      next: (p) => {
+        const active = p.filter((x) => x.isActive !== false);
+        this.products.set(active);
+        this.offline.cacheCatalog(active);
+      },
+      error: () => {
+        if (!this.products().length) this.error.set('Could not load products (offline cache empty).');
+      },
+    });
+    this.partiesApi.getAll().subscribe({
+      next: (rows) => this.customers.set(rows),
+      error: () => undefined,
+    });
     this.reload();
     this.loadHeldSales();
     this.migrateLegacyHold();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('online', this.onlineHandler);
+    }
+    void this.syncPendingSales();
+  }
+
+  ngOnDestroy(): void {
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('online', this.onlineHandler);
+    }
   }
 
   private modalOpen(): boolean {
@@ -210,7 +301,10 @@ export class PosComponent implements OnInit {
       this.showHolds() ||
       this.showPay() ||
       this.showProduct() ||
-      this.showReturn()
+      this.showReturn() ||
+      this.showClearConfirm() ||
+      this.showCustomer() ||
+      this.showNote()
     );
   }
 
@@ -243,8 +337,23 @@ export class PosComponent implements OnInit {
   }
 
   focusBarcode(): void {
-    this.barcodeInput?.nativeElement?.focus();
-    this.barcodeInput?.nativeElement?.select();
+    const el = this.barcodeInput?.nativeElement;
+    if (!el) return;
+    el.focus({ preventScroll: true });
+    el.select();
+  }
+
+  /** Soft recovery when cashier taps elsewhere then scans (HID wedge). */
+  onScanBlur(): void {
+    if (this.tab() !== 'terminal' || this.modalOpen() || this.scanning() || this.saving()) return;
+    setTimeout(() => {
+      if (this.tab() !== 'terminal' || this.modalOpen()) return;
+      const active = document.activeElement as HTMLElement | null;
+      if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT' || active.isContentEditable)) {
+        return;
+      }
+      this.focusBarcode();
+    }, 120);
   }
 
   @HostListener('window:focus')
@@ -377,11 +486,13 @@ export class PosComponent implements OnInit {
     } else if (Number.isFinite(stock) && stock < qty) {
       this.notice.set(`Low stock: ${p.name} has ${stock} ${p.unit}.`);
     }
+    let focusIdx = 0;
     this.cart.update((lines) => {
       const idx = lines.findIndex((l) => l.productId === p.id);
       if (idx >= 0 && !p.sellByWeight) {
         const copy = [...lines];
         copy[idx] = { ...copy[idx], qty: copy[idx].qty + qty, stockQty: stock };
+        focusIdx = idx;
         return copy;
       }
       if (idx >= 0 && p.sellByWeight) {
@@ -391,8 +502,10 @@ export class PosComponent implements OnInit {
           qty: Math.round((copy[idx].qty + qty) * 1000) / 1000,
           stockQty: stock,
         };
+        focusIdx = idx;
         return copy;
       }
+      focusIdx = lines.length;
       return [
         ...lines,
         {
@@ -403,9 +516,12 @@ export class PosComponent implements OnInit {
           qty,
           rate: p.salePrice,
           stockQty: stock,
+          category: p.category,
         },
       ];
     });
+    this.selectedLine.set(focusIdx);
+    this.orderPadBuffer.set('');
     this.syncTenderToTotal();
     if (!(Number.isFinite(stock) && stock < qty)) this.notice.set(`Added ${p.name}`);
     this.focusBarcode();
@@ -437,6 +553,10 @@ export class PosComponent implements OnInit {
 
   removeLine(i: number): void {
     this.cart.update((lines) => lines.filter((_, idx) => idx !== i));
+    const sel = this.selectedLine();
+    if (sel === i) this.selectedLine.set(-1);
+    else if (sel > i) this.selectedLine.set(sel - 1);
+    this.orderPadBuffer.set('');
     this.syncTenderToTotal();
   }
 
@@ -516,14 +636,23 @@ export class PosComponent implements OnInit {
       heldAt: new Date().toISOString(),
       cart: this.cart(),
       discount: this.discount(),
+      discountPct: this.discountPct(),
       tenderMode: this.tenderMode(),
       cashAmount: this.cashAmount(),
       cardAmount: this.cardAmount(),
+      orderNote: this.orderNote(),
+      partyId: this.selectedPartyId(),
+      customerLabel: this.customerLabel(),
     };
     this.heldSales.update((list) => [held, ...list]);
     this.persistHeldSales();
     this.cart.set([]);
     this.discount.set(0);
+    this.discountPct.set(false);
+    this.orderNote.set('');
+    this.clearCustomer();
+    this.selectedLine.set(-1);
+    this.orderPadBuffer.set('');
     this.syncTenderToTotal();
     this.notice.set(`Held ${held.id}`);
     this.focusBarcode();
@@ -538,9 +667,14 @@ export class PosComponent implements OnInit {
     if (this.cart().length && !confirm('Replace current cart with held sale?')) return;
     this.cart.set(h.cart);
     this.discount.set(h.discount);
+    this.discountPct.set(!!h.discountPct);
     this.tenderMode.set(h.tenderMode);
     this.cashAmount.set(h.cashAmount);
     this.cardAmount.set(h.cardAmount);
+    this.orderNote.set(h.orderNote || '');
+    this.selectedPartyId.set(h.partyId ?? null);
+    this.customerLabel.set(h.customerLabel || '');
+    this.selectedLine.set(h.cart.length ? 0 : -1);
     this.heldSales.update((list) => list.filter((x) => x.id !== h.id));
     this.persistHeldSales();
     this.showHolds.set(false);
@@ -573,11 +707,121 @@ export class PosComponent implements OnInit {
     }
     this.syncTenderToTotal();
     this.cashReceived.set(this.grandTotal());
+    this.payPadBuffer.set('');
     this.showPay.set(true);
   }
 
   setCashReceived(v: number): void {
     this.cashReceived.set(Math.max(0, Number(v) || 0));
+    this.payPadBuffer.set('');
+  }
+
+  bumpCashReceived(delta: number): void {
+    this.setCashReceived(this.cashReceived() + delta);
+  }
+
+  payPadDigit(d: string): void {
+    if (this.tenderMode() !== 'Cash') return;
+    let buf = this.payPadBuffer();
+    if (d === 'back') {
+      buf = buf.slice(0, -1);
+    } else if (d === '.') {
+      if (buf.includes('.')) return;
+      buf = buf.length ? `${buf}.` : '0.';
+    } else {
+      if (buf === '0') buf = d;
+      else buf = `${buf}${d}`;
+    }
+    this.payPadBuffer.set(buf);
+    this.cashReceived.set(Math.max(0, Number(buf) || 0));
+  }
+
+  setKeypadMode(mode: KeypadMode): void {
+    this.keypadMode.set(mode);
+    this.orderPadBuffer.set('');
+    if (mode === 'pct') this.discountPct.set(true);
+    if (mode === 'price') {
+      this.notice.set('Unit price comes from product master (server validates).');
+    }
+  }
+
+  selectLine(i: number): void {
+    this.selectedLine.set(i);
+    this.orderPadBuffer.set('');
+    this.keypadMode.set('qty');
+  }
+
+  orderPadDigit(d: string): void {
+    const mode = this.keypadMode();
+    if (mode === 'price') {
+      this.notice.set('Price overrides are not allowed at the terminal.');
+      return;
+    }
+
+    let buf = this.orderPadBuffer();
+    if (d === 'back') {
+      buf = buf.slice(0, -1);
+    } else if (d === '.') {
+      if (buf.includes('.')) return;
+      buf = buf.length ? `${buf}.` : '0.';
+    } else if (d === 'c') {
+      buf = '';
+    } else {
+      if (buf === '0' && d !== '.') buf = d;
+      else buf = `${buf}${d}`;
+    }
+    this.orderPadBuffer.set(buf);
+
+    if (mode === 'pct') {
+      const n = Math.min(100, Math.max(0, Number(buf) || 0));
+      this.discountPct.set(true);
+      this.setDiscount(n);
+      return;
+    }
+
+    // qty mode — needs a selected line
+    const i = this.selectedLine();
+    if (i < 0 || i >= this.cart().length) {
+      if (buf) this.notice.set('Select a cart line first, then enter quantity.');
+      return;
+    }
+    const line = this.cart()[i];
+    const raw = Number(buf);
+    if (!buf || Number.isNaN(raw)) return;
+    const qty = line.sellByWeight
+      ? Math.max(0.001, Math.round(raw * 1000) / 1000)
+      : Math.max(1, Math.floor(raw));
+    this.setQty(i, qty);
+  }
+
+  selectParty(p: Party): void {
+    this.selectedPartyId.set(p.id);
+    this.customerLabel.set(p.name);
+    this.showCustomer.set(false);
+    this.customerQuery.set('');
+  }
+
+  applyCustomer(name: string): void {
+    // Free-text note only when no CRM party is chosen (walk-in label).
+    const label = name.trim();
+    this.customerLabel.set(label);
+    if (!this.selectedPartyId()) {
+      /* keep party null — walk-in */
+    }
+    this.showCustomer.set(false);
+  }
+
+  clearCustomer(): void {
+    this.customerLabel.set('');
+    this.selectedPartyId.set(null);
+    this.customerQuery.set('');
+  }
+
+  categoryHue(category?: string | null): string {
+    const s = (category || 'default').toLowerCase();
+    let h = 0;
+    for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 360;
+    return `hsl(${h} 42% 88%)`;
   }
 
   confirmPayment(): void {
@@ -641,41 +885,136 @@ export class PosComponent implements OnInit {
         ? crypto.randomUUID()
         : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
+    const partyId = this.selectedPartyId();
+    const remarksParts = [this.orderNote(), !partyId && this.customerLabel() ? `Customer: ${this.customerLabel()}` : '']
+      .map((x) => (x || '').trim())
+      .filter(Boolean);
+    const payload = {
+      shiftId: shift.id,
+      saleDate: this.today,
+      discount: this.discountAmount(),
+      idempotencyKey,
+      partyId: partyId || undefined,
+      remarks: remarksParts.join(' · ') || undefined,
+      lines,
+      payments,
+    };
+
+    const finishLocalQueue = () => {
+      this.offline.enqueueSale({
+        shiftId: payload.shiftId,
+        discount: payload.discount,
+        idempotencyKey: payload.idempotencyKey,
+        partyId: payload.partyId ?? null,
+        lines: payload.lines.map((l) => ({
+          productId: l.productId,
+          qty: l.qty,
+          rate: l.rate,
+          amount: l.amount,
+        })),
+        payments: payload.payments,
+        queuedAt: new Date().toISOString(),
+      });
+      this.saving.set(false);
+      this.cart.set([]);
+      this.discount.set(0);
+      this.orderNote.set('');
+      this.clearCustomer();
+      this.selectedLine.set(-1);
+      this.syncTenderToTotal();
+      this.notice.set(`Sale queued offline (${idempotencyKey.slice(0, 8)}…). Sync when online.`);
+      this.focusBarcode();
+    };
+
     this.saving.set(true);
     this.error.set('');
-    this.api
-      .createSale({
-        shiftId: shift.id,
-        saleDate: this.today,
-        discount: this.discountAmount(),
-        idempotencyKey,
-        lines,
-        payments,
-      })
-      .subscribe({
-        next: (sale) => {
-          this.saving.set(false);
-          this.lastSale.set(sale);
-          this.cart.set([]);
-          this.discount.set(0);
-          this.syncTenderToTotal();
-          this.reload();
-          this.notice.set(`Sale ${sale.saleNo} posted.`);
-          setTimeout(() => this.printReceipt(sale, this.lastChange()), 100);
-          this.focusBarcode();
-        },
-        error: (e) => {
-          this.saving.set(false);
-          this.error.set(e?.error?.message || 'Sale failed');
-          this.focusBarcode();
-        },
-      });
+    if (!this.offline.online()) {
+      finishLocalQueue();
+      return;
+    }
+    this.api.createSale(payload).subscribe({
+      next: (sale) => {
+        this.saving.set(false);
+        this.lastSale.set(sale);
+        this.cart.set([]);
+        this.discount.set(0);
+        this.orderNote.set('');
+        this.clearCustomer();
+        this.selectedLine.set(-1);
+        this.orderPadBuffer.set('');
+        this.syncTenderToTotal();
+        this.reload();
+        this.notice.set(`Sale ${sale.saleNo} posted.`);
+        setTimeout(() => this.printReceipt(sale, this.lastChange()), 100);
+        this.focusBarcode();
+      },
+      error: (e) => {
+        const msg = e?.error?.message || '';
+        // Network / server down → queue; business validation stays on-screen
+        if (!e?.status || e.status === 0 || e.status >= 500) {
+          finishLocalQueue();
+          return;
+        }
+        this.saving.set(false);
+        this.error.set(msg || 'Sale failed');
+        this.focusBarcode();
+      },
+    });
+  }
+
+  syncPendingSales(): void {
+    if (!this.offline.online() || this.syncing() || !this.offline.pendingCount()) return;
+    this.syncing.set(true);
+    const queue = [...this.offline.pending()];
+    const runNext = (i: number) => {
+      if (i >= queue.length) {
+        this.syncing.set(false);
+        this.reload();
+        if (!this.offline.pendingCount()) this.notice.set('Offline queue synced.');
+        return;
+      }
+      const row = queue[i];
+      this.api
+        .createSale({
+          shiftId: row.shiftId,
+          discount: row.discount,
+          idempotencyKey: row.idempotencyKey,
+          partyId: row.partyId,
+          lines: row.lines,
+          payments: row.payments,
+        })
+        .subscribe({
+          next: (sale) => {
+            this.offline.dequeueByKey(row.idempotencyKey);
+            this.lastSale.set(sale);
+            // Receipt was deferred while offline — print once the server accepted the sale
+            setTimeout(() => this.printReceipt(sale, 0), 100);
+            runNext(i + 1);
+          },
+          error: (e) => {
+            if (e?.status === 400) {
+              // Unrecoverable business error — drop to avoid infinite retry
+              this.offline.dequeueByKey(row.idempotencyKey);
+              this.error.set(e?.error?.message || 'Dropped invalid queued sale.');
+              runNext(i + 1);
+              return;
+            }
+            this.syncing.set(false);
+          },
+        });
+    };
+    runNext(0);
   }
 
   printReceipt(sale?: PosSale | null, change = 0): void {
     const s = sale ?? this.lastSale();
     if (!s) return;
-    const w = window.open('', '_blank', 'width=320,height=640');
+    let w: Window | null = null;
+    try {
+      w = window.open('', '_blank', 'width=320,height=640');
+    } catch {
+      w = null;
+    }
     if (!w) {
       this.error.set('Allow pop-ups for this site to print 80mm receipts.');
       this.focusBarcode();
@@ -700,7 +1039,7 @@ export class PosComponent implements OnInit {
       .join('');
     const changeRow =
       change > 0 ? `<div class="row"><span>Change</span><span>${pkr(change)}</span></div>` : '';
-    w.document.write(`<!doctype html><html><head><title>${esc(s.saleNo)}</title>
+    const html = `<!doctype html><html><head><meta charset="utf-8"/><title>${esc(s.saleNo)}</title>
 <style>
   @page { size: 80mm auto; margin: 3mm; }
   body { font-family: "Courier New", ui-monospace, Menlo, monospace; font-size: 12px; width: 74mm; margin: 0 auto; color: #111; }
@@ -715,7 +1054,7 @@ export class PosComponent implements OnInit {
   .thanks { text-align: center; margin-top: 10px; font-size: 11px; }
 </style></head><body>
   <h1>${esc(SHOP_NAME)}</h1>
-  <div class="muted">${esc(BRANCH_LABEL)}<br>${esc(s.saleNo)} · ${esc(term?.code || '')}<br>${esc(new Date(s.saleDate).toLocaleString())}<br>Cashier / ${esc(shift?.terminalCode || 'POS')}</div>
+  <div class="muted">${esc(this.branchLabel())}<br>${esc(s.saleNo)} · ${esc(term?.code || '')}<br>${esc(new Date(s.saleDate).toLocaleString())}<br>Cashier / ${esc(shift?.terminalCode || 'POS')}</div>
   <table><thead><tr><th>Item</th><th class="n">Qty</th><th class="n">Rate</th><th class="n">Amt</th></tr></thead>
   <tbody>${lines}</tbody></table>
   <div class="row"><span>Subtotal</span><span>${pkr(s.subTotal ?? 0)}</span></div>
@@ -723,9 +1062,21 @@ export class PosComponent implements OnInit {
   <div class="row tot"><span>TOTAL</span><span>${pkr(s.grandTotal ?? 0)}</span></div>
   ${pays}${changeRow}
   <div class="thanks">Thank you — visit again</div>
-  <script>window.onload=()=>{try{window.focus();window.print();}catch(e){}setTimeout(()=>{try{window.close();}catch(e){}},500)}</script>
-</body></html>`);
-    w.document.close();
+  <script>window.onload=()=>{try{window.focus();window.print();}catch(e){}setTimeout(()=>{try{window.close();}catch(e){}},800)}</script>
+</body></html>`;
+    try {
+      w.document.open();
+      w.document.write(html);
+      w.document.close();
+    } catch {
+      this.error.set('Receipt window failed — try Reprint from Sales.');
+      try {
+        w.close();
+      } catch {
+        /* ignore */
+      }
+      this.focusBarcode();
+    }
   }
 
   openReturn(sale: PosSale): void {
@@ -858,6 +1209,44 @@ export class PosComponent implements OnInit {
 
   lineAmount(l: CartLine): number {
     return Math.round(l.qty * l.rate * 100) / 100;
+  }
+
+
+  stockTone(p: Product): StockTone {
+    const qty = Number(p.stockQty) || 0;
+    const reorder = Number(p.reorderLevel) || 0;
+    if (qty <= 0) return 'out';
+    if (reorder > 0 && qty <= reorder) return 'low';
+    if (qty <= 1) return 'low';
+    return 'ok';
+  }
+
+  stockLabel(p: Product): string {
+    const tone = this.stockTone(p);
+    if (tone === 'out') return 'Unavailable';
+    if (tone === 'low') return 'Low stock';
+    return 'In stock';
+  }
+
+  requestClearCart(): void {
+    if (!this.cart().length) return;
+    this.showClearConfirm.set(true);
+  }
+
+  confirmClearCart(): void {
+    this.cart.set([]);
+    this.discount.set(0);
+    this.orderNote.set('');
+    this.selectedLine.set(-1);
+    this.orderPadBuffer.set('');
+    this.showClearConfirm.set(false);
+    this.syncTenderToTotal();
+    this.focusBarcode();
+  }
+
+  cancelClearCart(): void {
+    this.showClearConfirm.set(false);
+    this.focusBarcode();
   }
 
   initials(name: string): string {

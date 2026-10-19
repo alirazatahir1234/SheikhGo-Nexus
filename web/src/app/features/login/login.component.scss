@@ -92,6 +92,23 @@
   color: var(--text-muted);
 }
 
+.login-shop {
+  margin: 0;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.login-shop a {
+  color: #0f766e;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.login-shop a:hover {
+  text-decoration: underline;
+}
+
 @media (max-width: 900px) {
   .login {
     grid-template-columns: 1fr;

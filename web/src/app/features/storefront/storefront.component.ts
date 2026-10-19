@@ -15,6 +15,7 @@ interface StoreProduct {
   stockQty: number;
   barcode?: string;
   sellByWeight: boolean;
+  stockStatus: string;
 }
 
 interface CartLine {
@@ -37,14 +38,31 @@ export class StorefrontComponent implements OnInit {
   readonly error = signal('');
   readonly notice = signal('');
   readonly placing = signal(false);
+  readonly category = signal('All');
+  readonly cartOpen = signal(false);
   customerName = '';
   phone = '';
   address = '';
   notes = '';
 
+  readonly categories = computed(() => {
+    const set = new Set<string>();
+    for (const p of this.products()) {
+      if (p.category?.trim()) set.add(p.category.trim());
+    }
+    return ['All', ...Array.from(set).sort()];
+  });
+
+  readonly filtered = computed(() => {
+    const cat = this.category();
+    return this.products().filter((p) => (cat === 'All' ? true : (p.category || '') === cat));
+  });
+
   readonly total = computed(() =>
     Math.round(this.cart().reduce((s, l) => s + l.qty * l.product.salePrice, 0) * 100) / 100,
   );
+
+  readonly cartCount = computed(() => this.cart().length);
 
   ngOnInit(): void {
     this.http.get<StoreProduct[]>(`${API_BASE_URL}/storefront/products`).subscribe({
@@ -59,22 +77,42 @@ export class StorefrontComponent implements OnInit {
     });
   }
 
+  stockClass(p: StoreProduct): string {
+    if (p.stockQty <= 0) return 'stock stock--out';
+    if (p.stockQty <= 5 || p.stockStatus === 'Low stock') return 'stock stock--low';
+    return 'stock stock--ok';
+  }
+
   add(p: StoreProduct): void {
+    if (p.stockQty <= 0) {
+      this.error.set(`${p.name} is out of stock.`);
+      return;
+    }
+    this.error.set('');
     this.cart.update((lines) => {
       const i = lines.findIndex((l) => l.product.id === p.id);
+      const step = p.sellByWeight ? 0.25 : 1;
       if (i >= 0) {
+        const nextQty = Math.round((lines[i].qty + step) * 1000) / 1000;
+        if (nextQty > p.stockQty) {
+          this.error.set(`Only ${p.stockQty} ${p.unit} available for ${p.name}.`);
+          return lines;
+        }
         const copy = [...lines];
-        copy[i] = { ...copy[i], qty: copy[i].qty + (p.sellByWeight ? 0.25 : 1) };
+        copy[i] = { ...copy[i], qty: nextQty };
         return copy;
       }
-      return [...lines, { product: p, qty: p.sellByWeight ? 0.25 : 1 }];
+      return [...lines, { product: p, qty: step }];
     });
+    this.cartOpen.set(true);
   }
 
   setQty(i: number, qty: number): void {
     this.cart.update((lines) => {
       const copy = [...lines];
-      copy[i] = { ...copy[i], qty: Math.max(0.001, qty) };
+      const max = copy[i].product.stockQty;
+      const next = Math.max(0.001, Math.min(max, qty));
+      copy[i] = { ...copy[i], qty: next };
       return copy;
     });
   }
@@ -94,8 +132,9 @@ export class StorefrontComponent implements OnInit {
     }
     this.placing.set(true);
     this.error.set('');
+    this.notice.set('');
     this.http
-      .post<{ orderNo: string; grandTotal: number }>(`${API_BASE_URL}/storefront/orders`, {
+      .post<{ orderNo: string; grandTotal: number; status: string }>(`${API_BASE_URL}/storefront/orders`, {
         customerName: this.customerName,
         phone: this.phone,
         address: this.address,
@@ -106,11 +145,14 @@ export class StorefrontComponent implements OnInit {
         next: (o) => {
           this.placing.set(false);
           this.cart.set([]);
-          this.notice.set(`Order ${o.orderNo} placed for PKR ${o.grandTotal}.`);
+          this.cartOpen.set(false);
+          this.notice.set(
+            `Order ${o.orderNo} placed (${o.status}) for PKR ${o.grandTotal}. We will confirm delivery shortly.`,
+          );
         },
         error: (e) => {
           this.placing.set(false);
-          this.error.set(e?.error?.message || 'Checkout failed — sign in if required.');
+          this.error.set(e?.error?.message || 'Checkout failed.');
         },
       });
   }

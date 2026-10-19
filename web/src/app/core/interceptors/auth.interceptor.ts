@@ -9,17 +9,24 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const auth = inject(AuthService);
   const router = inject(Router);
   const isAuthEndpoint = req.url.includes('/auth/');
+  /** Public storefront browse/order — do not force JWT (stale tokens break AllowAnonymous). */
+  const isPublicStorefront = req.url.includes('/storefront/');
   const token = localStorage.getItem(TOKEN_KEY);
 
   const authReq =
-    token && !isAuthEndpoint
+    token && !isAuthEndpoint && !isPublicStorefront
       ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } })
       : req;
 
   return next(authReq).pipe(
     catchError((error: HttpErrorResponse) => {
-      // Never wipe session / loop on login failures
-      if (error.status === 401 && !isAuthEndpoint && !req.url.includes('/auth/login')) {
+      // Never wipe session / loop on login failures or public shop calls
+      if (
+        error.status === 401 &&
+        !isAuthEndpoint &&
+        !isPublicStorefront &&
+        !req.url.includes('/auth/login')
+      ) {
         auth.logout();
         void router.navigateByUrl('/login');
       }

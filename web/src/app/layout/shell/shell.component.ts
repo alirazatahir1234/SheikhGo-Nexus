@@ -1,4 +1,4 @@
-import { Component, inject, signal, viewChild } from '@angular/core';
+import { Component, OnInit, inject, signal, viewChild } from '@angular/core';
 import { RouterOutlet, Router, NavigationEnd, RouterLink } from '@angular/router';
 import { filter, map, startWith } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -6,6 +6,7 @@ import { SidebarComponent } from '../sidebar/sidebar.component';
 import { TopbarComponent } from '../topbar/topbar.component';
 import { CommandPaletteComponent } from '../command-palette/command-palette.component';
 import { NavService } from '../../core/nav/nav.service';
+import { PosNotifyService } from '../../core/services/pos-notify.service';
 
 @Component({
   selector: 'app-shell',
@@ -36,11 +37,65 @@ import { NavService } from '../../core/nav/nav.service';
       </div>
     </div>
     <app-command-palette />
+    @if (notify.toast(); as t) {
+      <div
+        class="pos-toast"
+        [class.pos-toast--status]="t.type === 'Status'"
+        role="status"
+        (click)="notify.dismiss()"
+      >
+        <strong>{{ t.type }}</strong>
+        <span>{{ t.message }}</span>
+      </div>
+    }
+    @if (notify.hubStatus() === 'Reconnecting') {
+      <div class="pos-hub-chip" role="status">Live · reconnecting</div>
+    }
   `,
   styles: [
     `
       :host {
         display: block;
+      }
+      .pos-toast {
+        position: fixed;
+        right: 1rem;
+        bottom: 1rem;
+        z-index: 80;
+        max-width: min(22rem, calc(100vw - 2rem));
+        padding: 0.85rem 1rem;
+        border-radius: 0.65rem;
+        background: #0f766e;
+        color: #fff;
+        box-shadow: 0 10px 28px rgba(15, 23, 42, 0.18);
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+        cursor: pointer;
+        font-size: 0.9rem;
+      }
+      .pos-toast strong {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        opacity: 0.85;
+      }
+      .pos-toast--status {
+        background: #334155;
+      }
+      .pos-hub-chip {
+        position: fixed;
+        right: 1rem;
+        bottom: 4.5rem;
+        z-index: 79;
+        padding: 0.35rem 0.7rem;
+        border-radius: 999px;
+        background: #92400e;
+        color: #fff;
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        box-shadow: 0 6px 16px rgba(15, 23, 42, 0.16);
       }
       .shell {
         display: grid;
@@ -114,9 +169,10 @@ import { NavService } from '../../core/nav/nav.service';
     `,
   ],
 })
-export class ShellComponent {
+export class ShellComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly nav = inject(NavService);
+  readonly notify = inject(PosNotifyService);
   private readonly palette = viewChild(CommandPaletteComponent);
   readonly collapsed = signal(false);
 
@@ -128,6 +184,10 @@ export class ShellComponent {
     ),
     { initialValue: this.nav.breadcrumbsForUrl('/dashboard') },
   );
+
+  ngOnInit(): void {
+    void this.notify.start();
+  }
 
   openPalette(): void {
     this.palette()?.openPalette();

@@ -445,7 +445,7 @@ public record PosShiftReconciliationDto(
 public record PosSaleLineDto(Guid? Id, Guid ProductId, string? ProductName, decimal Qty, decimal Rate, decimal Amount);
 public record PosPaymentDto(Guid? Id, string Tender, decimal Amount, Guid? CashBankAccountId, Guid? CustomerPaymentId);
 public record PosSaleDto(Guid Id, string SaleNo, Guid ShiftId, Guid TerminalId, Guid PartyId, string? PartyName, DateTime SaleDate, decimal SubTotal, decimal Discount, decimal GrandTotal, DocumentStatus Status, Guid? SalesOrderId, Guid? DeliveryOrderId, Guid? SalesInvoiceId, string? Remarks, IReadOnlyList<PosSaleLineDto> Lines, IReadOnlyList<PosPaymentDto> Payments, string? IdempotencyKey = null, Guid? SaleReturnId = null);
-public record PosSaleCreateDto(Guid ShiftId, DateTime? SaleDate, string? Remarks, IReadOnlyList<PosSaleLineDto> Lines, IReadOnlyList<PosPaymentDto> Payments, string? IdempotencyKey = null, decimal Discount = 0);
+public record PosSaleCreateDto(Guid ShiftId, DateTime? SaleDate, string? Remarks, IReadOnlyList<PosSaleLineDto> Lines, IReadOnlyList<PosPaymentDto> Payments, string? IdempotencyKey = null, decimal Discount = 0, Guid? PartyId = null);
 public record PosSaleReturnCreateDto(Guid PosSaleId, string? Remarks, IReadOnlyList<PosSaleLineDto>? Lines = null);
 public record PosDailySalesReportDto(
     DateTime Date,

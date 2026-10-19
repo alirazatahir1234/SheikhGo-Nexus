@@ -530,8 +530,19 @@ public class PosService(
         if (shift.Status != PosShiftStatus.Open)
             throw new InvalidOperationException("Shift is not open.");
         var terminal = shift.Terminal ?? await db.PosTerminals.FirstAsync(x => x.Id == shift.TerminalId, ct);
-        var party = await db.Parties.FirstOrDefaultAsync(x => x.Code == "CUS-POS", ct)
-            ?? throw new InvalidOperationException("Walk-in party CUS-POS is not seeded.");
+        Party party;
+        if (dto.PartyId is Guid partyId)
+        {
+            party = await db.Parties.FirstOrDefaultAsync(
+                    x => x.Id == partyId && x.IsActive
+                         && (x.PartyType == PartyType.Customer || x.PartyType == PartyType.Both), ct)
+                ?? throw new InvalidOperationException("Selected customer is not valid for POS.");
+        }
+        else
+        {
+            party = await db.Parties.FirstOrDefaultAsync(x => x.Code == "CUS-POS", ct)
+                ?? throw new InvalidOperationException("Walk-in party CUS-POS is not seeded.");
+        }
 
         decimal sub = 0;
         var validatedLines = new List<(Guid ProductId, decimal Qty, decimal Rate, decimal Amount)>();

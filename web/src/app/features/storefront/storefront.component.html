@@ -3,61 +3,93 @@
     <div>
       <p class="eyebrow">SheikhGo Nexus</p>
       <h1>Sweets shop</h1>
-      <p class="lede">Order fresh sweets online — same inventory as the POS.</p>
+      <p class="lede">Order fresh sweets — same live stock as the counter POS.</p>
     </div>
-    <a routerLink="/pos/terminal" class="btn btn--ghost">Staff POS</a>
+    <div class="store__hero-actions">
+      <button type="button" class="btn btn--primary" (click)="cartOpen.set(true)">
+        Cart ({{ cartCount() }})
+      </button>
+      <a routerLink="/login" class="btn btn--ghost">Staff sign in</a>
+    </div>
   </header>
 
   @if (error()) { <div class="alert alert--warn">{{ error() }}</div> }
   @if (notice()) { <div class="alert alert--ok">{{ notice() }}</div> }
 
+  <div class="cats" role="tablist">
+    @for (c of categories(); track c) {
+      <button type="button" class="cat" [class.active]="category() === c" (click)="category.set(c)">{{ c }}</button>
+    }
+  </div>
+
   <div class="store__grid">
     <section class="catalog">
-      <h2>Catalog</h2>
+      <h2 class="sr-only">Catalog</h2>
       @if (loading()) {
         <p class="muted">Loading…</p>
       } @else {
         <div class="cards">
-          @for (p of products(); track p.id) {
-            <article class="card">
+          @for (p of filtered(); track p.id) {
+            <article class="card" [class.card--out]="p.stockQty <= 0">
               <h3>{{ p.name }}</h3>
-              <p class="muted">{{ p.category || 'Sweets' }} · {{ p.unit }} · stock {{ p.stockQty | number: '1.0-2' }}</p>
+              <p class="muted">{{ p.category || 'Sweets' }} · {{ p.unit }}</p>
+              <p [class]="stockClass(p)">{{ p.stockStatus }} · {{ p.stockQty | number: '1.0-2' }} {{ p.unit }}</p>
               <div class="card__row">
                 <strong>{{ p.salePrice | currency: 'PKR' : 'symbol' : '1.0-0' }}</strong>
-                <button type="button" class="btn btn--primary btn--sm" (click)="add(p)" [disabled]="p.stockQty <= 0">Add</button>
+                <button
+                  type="button"
+                  class="btn btn--primary btn--sm"
+                  (click)="add(p)"
+                  [disabled]="p.stockQty <= 0"
+                >
+                  {{ p.stockQty <= 0 ? 'Sold out' : 'Add' }}
+                </button>
               </div>
             </article>
           } @empty {
-            <p class="muted">No products published yet.</p>
+            <p class="muted">No products in this category.</p>
           }
         </div>
       }
     </section>
 
-    <aside class="cart panel">
-      <h2>Your cart</h2>
+    <aside class="cart panel" [class.cart--open]="cartOpen()">
+      <div class="cart__head">
+        <h2>Your cart</h2>
+        <button type="button" class="btn btn--ghost btn--sm cart__close" (click)="cartOpen.set(false)">Close</button>
+      </div>
       @for (l of cart(); track l.product.id; let i = $index) {
         <div class="cart-line">
           <div>
             <strong>{{ l.product.name }}</strong>
             <div class="muted">{{ l.product.salePrice | currency: 'PKR' : 'symbol' : '1.0-0' }} / {{ l.product.unit }}</div>
           </div>
-          <input type="number" [step]="l.product.sellByWeight ? 0.001 : 1" [ngModel]="l.qty" (ngModelChange)="setQty(i, $event)" />
-          <button type="button" class="btn btn--ghost btn--sm" (click)="remove(i)">×</button>
+          <input
+            type="number"
+            inputmode="decimal"
+            [step]="l.product.sellByWeight ? 0.001 : 1"
+            [ngModel]="l.qty"
+            (ngModelChange)="setQty(i, $event)"
+          />
+          <button type="button" class="btn btn--ghost btn--sm" (click)="remove(i)" aria-label="Remove">×</button>
         </div>
       } @empty {
         <p class="muted">Cart is empty.</p>
       }
       <div class="total"><span>Total</span><strong>{{ total() | currency: 'PKR' : 'symbol' : '1.0-0' }}</strong></div>
 
-      <label class="field"><span>Name</span><input [(ngModel)]="customerName" /></label>
-      <label class="field"><span>Phone</span><input [(ngModel)]="phone" /></label>
-      <label class="field"><span>Delivery address</span><input [(ngModel)]="address" /></label>
+      <label class="field"><span>Name</span><input [(ngModel)]="customerName" autocomplete="name" /></label>
+      <label class="field"><span>Phone</span><input [(ngModel)]="phone" type="tel" inputmode="tel" autocomplete="tel" /></label>
+      <label class="field"><span>Delivery address</span><input [(ngModel)]="address" autocomplete="street-address" /></label>
       <label class="field"><span>Notes</span><input [(ngModel)]="notes" /></label>
-      <button type="button" class="btn btn--primary" (click)="checkout()" [disabled]="placing() || !cart().length">
+      <button type="button" class="btn btn--primary btn--block" (click)="checkout()" [disabled]="placing() || !cart().length">
         {{ placing() ? 'Placing…' : 'Place order' }}
       </button>
-      <p class="muted tiny">Checkout uses your signed-in session so stock stays consistent with ERP.</p>
+      <p class="muted tiny">Creates a draft sales order against live warehouse stock (same ledger as POS).</p>
     </aside>
   </div>
+
+  @if (cartOpen()) {
+    <div class="cart-backdrop" (click)="cartOpen.set(false)"></div>
+  }
 </div>
